@@ -1,0 +1,149 @@
+:root {
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #24180f;
+  background: #16110d;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 20px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.agent-panel,
+.reader-panel {
+  border: 1px solid rgba(116, 82, 44, 0.28);
+  background: #f2dfb8;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.agent-panel {
+  border-radius: 10px;
+  padding: 22px;
+}
+
+.reader-panel {
+  border-radius: 10px;
+  padding: 34px;
+  overflow: auto;
+}
+
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow,
+.card-type {
+  margin: 0 0 8px;
+  color: #75512b;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+h1,
+h2 {
+  margin: 0 0 14px;
+}
+
+.status-pill {
+  border: 1px solid rgba(84, 54, 25, 0.22);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #5d3a1d;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.status-pill.is-online {
+  border-color: rgba(28, 91, 60, 0.35);
+  color: #1c5b3c;
+}
+
+.card-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.agent-card {
+  border: 1px solid rgba(84, 54, 25, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 249, 231, 0.48);
+  padding: 16px;
+}
+
+.agent-card p {
+  line-height: 1.7;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.actions button {
+  border: 0;
+  border-radius: 7px;
+  background: #4f3119;
+  color: #fff4dc;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.summary {
+  border-left: 3px solid #6b4928;
+  padding-left: 12px;
+  color: #5f462e;
+  line-height: 1.7;
+}
+
+.chapter-body {
+  margin-top: 28px;
+  max-width: 780px;
+  white-space: pre-wrap;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  line-height: 1.9;
+}
+
+.muted {
+  color: #6f573d;
+  line-height: 1.7;
+}
+
+.notice-text {
+  color: #6e4d12;
+}
+
+.error-text {
+  color: #8f1f1f;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+}

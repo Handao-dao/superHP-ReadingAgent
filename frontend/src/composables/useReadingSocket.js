@@ -115,6 +115,16 @@ export function useReadingSocket() {
     if (!sent) busy.value = false
   }
 
+  function requestCards(phase = 'start') {
+    return send({
+      type: 'cards',
+      request_id: makeRequestId(),
+      current_unit_id: currentChapterId.value,
+      current_chapter_id: currentChapterId.value,
+      phase,
+    })
+  }
+
   function handleEvent(message) {
     switch (message.type) {
       case 'ready':
@@ -123,6 +133,9 @@ export function useReadingSocket() {
         statusMessage.value = '阅读会话已连接'
         return
       case 'cards.updated':
+        if (message.current_unit_id && activeChapter.value?.meta?.id !== message.current_unit_id) {
+          activeChapter.value = null
+        }
         cards.value = message.cards || []
         currentChapterId.value = message.current_unit_id || message.current_chapter_id || currentChapterId.value
         busy.value = false
@@ -213,6 +226,7 @@ export function useReadingSocket() {
     statusMessage,
     connect,
     disconnect,
+    requestCards,
     sendAction,
   }
 }

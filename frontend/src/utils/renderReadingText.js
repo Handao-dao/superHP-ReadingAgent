@@ -21,37 +21,10 @@ function inlineMarkup(text = '') {
 export function splitReadingBlocks(raw = '') {
   return String(raw || '')
     .replace(/\r\n/g, '\n')
+    .replace(/<!--[\s\S]*?-->/g, '')
     .split(/\n{2,}/)
     .map((part) => part.trim())
     .filter(Boolean)
-}
-
-export function splitLongBlock(text, limit) {
-  if (text.length <= limit) return [text]
-  const sentences = text.split(/(?<=[.!?。！？])\s+/).filter(Boolean)
-  if (sentences.length <= 1) return chunkText(text, limit)
-
-  const chunks = []
-  let current = ''
-  for (const sentence of sentences) {
-    const candidate = current ? `${current} ${sentence}` : sentence
-    if (candidate.length > limit && current) {
-      chunks.push(current)
-      current = sentence
-    } else {
-      current = candidate
-    }
-  }
-  if (current) chunks.push(current)
-  return chunks.flatMap((chunk) => chunk.length > limit ? chunkText(chunk, limit) : [chunk])
-}
-
-function chunkText(text, limit) {
-  const chunks = []
-  for (let index = 0; index < text.length; index += limit) {
-    chunks.push(text.slice(index, index + limit))
-  }
-  return chunks
 }
 
 export function renderReadingBlock(block = '') {

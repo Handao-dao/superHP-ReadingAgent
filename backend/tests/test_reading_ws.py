@@ -7,7 +7,12 @@ from superhp_agent.corpus import CorpusStore
 from superhp_agent.main import app
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
-from superhp_agent.runtime.actions import MARK_CHAPTER_READ, OPEN_CHAPTER
+from superhp_agent.runtime.actions import (
+    GENERATE_ANNOTATION,
+    MARK_CHAPTER_READ,
+    OPEN_CHAPTER,
+    READ_ORIGINAL,
+)
 from superhp_agent.schemas import AgentAction
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
@@ -29,14 +34,12 @@ def write_unit(root: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         """---
-id: hp01-ch01-sec01
+id: hp01-ch01
 chapter_id: hp01-ch01
 book_id: hp01
 book_title: "Harry Potter and the Philosopher's Stone"
 chapter_no: 1
 chapter_title: "The Boy Who Lived"
-section_no: 1
-section_count: 1
 summary: "Summary"
 ---
 
@@ -66,8 +69,8 @@ def test_socket_hello_sends_ready_and_cards(tmp_path):
 
         assert websocket.events[0]["type"] == "ready"
         assert websocket.events[1]["type"] == "cards.updated"
-        assert websocket.events[1]["cards"][0]["actions"][0]["id"] == OPEN_CHAPTER
-        assert websocket.events[1]["cards"][0]["actions"][0]["payload"]["unit_id"] == "hp01-ch01-sec01"
+        assert websocket.events[1]["cards"][0]["actions"][0]["id"] == GENERATE_ANNOTATION
+        assert websocket.events[1]["cards"][0]["actions"][0]["payload"]["unit_id"] == "hp01-ch01"
 
     asyncio.run(run_case())
 
@@ -82,8 +85,8 @@ def test_socket_open_unit_sends_loading_opened_and_cards(tmp_path):
                 "request_id": "r2",
                 "action": {
                     "id": OPEN_CHAPTER,
-                    "label": "打开这一节",
-                    "payload": {"unit_id": "hp01-ch01-sec01"},
+                    "label": "打开这一章",
+                    "payload": {"unit_id": "hp01-ch01"},
                 },
             }
         )
@@ -93,11 +96,10 @@ def test_socket_open_unit_sends_loading_opened_and_cards(tmp_path):
             "chapter.opened",
             "cards.updated",
         ]
-        assert websocket.events[0]["unit_id"] == "hp01-ch01-sec01"
+        assert websocket.events[0]["unit_id"] == "hp01-ch01"
         assert websocket.events[1]["chapter"]["body"] == "Body text."
         assert websocket.events[1]["chapter"]["meta"]["chapter_id"] == "hp01-ch01"
-        assert websocket.events[1]["chapter"]["meta"]["section_no"] == 1
-        assert websocket.events[2]["current_unit_id"] == "hp01-ch01-sec01"
+        assert websocket.events[2]["current_unit_id"] == "hp01-ch01"
 
     asyncio.run(run_case())
 
@@ -112,15 +114,15 @@ def test_socket_open_unit_updates_memory(tmp_path):
                 "request_id": "r2",
                 "action": {
                     "id": OPEN_CHAPTER,
-                    "label": "打开这一节",
-                    "payload": {"unit_id": "hp01-ch01-sec01"},
+                    "label": "打开这一章",
+                    "payload": {"unit_id": "hp01-ch01"},
                 },
             }
         )
 
         stored = memory.load()
-        assert stored.current_unit_id == "hp01-ch01-sec01"
-        assert stored.opened_unit_ids == ["hp01-ch01-sec01"]
+        assert stored.current_unit_id == "hp01-ch01"
+        assert stored.opened_unit_ids == ["hp01-ch01"]
 
     asyncio.run(run_case())
 
@@ -136,16 +138,37 @@ def test_socket_mark_read_updates_memory_and_cards(tmp_path):
                 "action": {
                     "id": MARK_CHAPTER_READ,
                     "label": "标记已读",
-                    "payload": {"unit_id": "hp01-ch01-sec01"},
+                    "payload": {"unit_id": "hp01-ch01"},
                 },
             }
         )
 
         stored = memory.load()
-        assert stored.read_unit_ids == ["hp01-ch01-sec01"]
+        assert stored.read_unit_ids == ["hp01-ch01"]
         assert websocket.events[0]["type"] == "unit.marked_read"
         assert websocket.events[1]["type"] == "cards.updated"
-        assert websocket.events[1]["cards"][0]["type"] == "progress"
+        assert websocket.events[1]["cards"][0]["type"] == "reading"
+
+    asyncio.run(run_case())
+
+
+def test_socket_cards_message_can_request_complete_phase(tmp_path):
+    async def run_case():
+        session, websocket, _ = build_session(tmp_path)
+
+        await session.handle_raw_message(
+            {
+                "type": "cards",
+                "request_id": "r-cards",
+                "current_unit_id": "hp01-ch01",
+                "phase": "complete",
+            }
+        )
+
+        assert websocket.events[0]["type"] == "cards.updated"
+        assert websocket.events[0]["phase"] == "complete"
+        assert websocket.events[0]["cards"][0]["type"] == "progress"
+        assert websocket.events[0]["cards"][0]["actions"][-1]["id"] == READ_ORIGINAL
 
     asyncio.run(run_case())
 
@@ -183,8 +206,8 @@ def test_socket_unknown_exception_returns_internal_error(tmp_path):
                 "request_id": "r5",
                 "action": {
                     "id": OPEN_CHAPTER,
-                    "label": "打开这一节",
-                    "payload": {"unit_id": "hp01-ch01-sec01"},
+                    "label": "打开这一章",
+                    "payload": {"unit_id": "hp01-ch01"},
                 },
             }
         )

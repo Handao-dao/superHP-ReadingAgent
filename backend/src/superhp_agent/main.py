@@ -137,8 +137,9 @@ async def list_vocabulary(
 async def get_agent_cards(
     current_chapter_id: str | None = Query(default=None),
     current_unit_id: str | None = Query(default=None),
+    phase: str = Query(default="start"),
 ):
-    return flow_router.inspect(current_chapter_id=current_chapter_id, current_unit_id=current_unit_id)
+    return flow_router.inspect(current_chapter_id=current_chapter_id, current_unit_id=current_unit_id, phase=phase)
 
 
 @app.websocket("/ws/reading")

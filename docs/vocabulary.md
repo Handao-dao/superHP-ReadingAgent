@@ -25,7 +25,7 @@ backend/data/superhp.sqlite3
 
 ```http
 GET /api/vocabulary
-GET /api/vocabulary?unit_id=hp01-ch01-sec01
+GET /api/vocabulary?unit_id=hp01-ch01
 GET /api/vocabulary?chapter_id=hp01-ch01
 ```
 

@@ -5,9 +5,7 @@ from superhp_agent.runtime import (
 )
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
-    MARK_CHAPTER_READ,
     OPEN_ANNOTATED_COPY,
-    OPEN_CHAPTER,
     READ_ORIGINAL,
     REVIEW_CHAPTER_VOCAB,
     START_NEXT_CHAPTER,
@@ -36,19 +34,19 @@ class StubStateReader:
 
 def unit_state(**overrides):
     base = dict(
-        id="hp01-ch01-sec01",
+        id="hp01-ch01",
         chapter_id="hp01-ch01",
         book_id="hp01",
         book_title="Harry Potter and the Philosopher's Stone",
         chapter_no=1,
         chapter_title="The Boy Who Lived",
         section_no=1,
-        section_count=2,
+        section_count=1,
         summary="示例摘要",
         has_annotated_copy=False,
         is_read=False,
         vocab_count=0,
-        next_unit_id="hp01-ch01-sec02",
+        next_unit_id="hp01-ch02",
     )
     base.update(overrides)
     return ReadingUnitState(**base)
@@ -72,45 +70,45 @@ def test_router_starts_with_first_unit_when_no_current_unit():
 
     cards = router.inspect()
 
-    assert cards[0].id == "start-reading"
-    assert "第 1/2 节" in cards[0].body
-    assert action_ids(cards[0]) == [OPEN_CHAPTER]
-    assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch01-sec01"
-    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01-sec01"
+    assert cards[0].id == "unit-hp01-ch01-start"
+    assert "第 1 章" in cards[0].body
+    assert action_ids(cards[0]) == [GENERATE_ANNOTATION, READ_ORIGINAL]
+    assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch01"
+    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01"
 
 
 def test_router_uses_memory_current_unit_when_no_explicit_unit():
     router = ReadingFlowRouter(
         StubStateReader(
             [
-                unit_state(id="hp01-ch01-sec01", section_no=1),
-                unit_state(id="hp01-ch01-sec02", section_no=2),
+                unit_state(id="hp01-ch01", chapter_no=1),
+                unit_state(id="hp01-ch02", chapter_no=2),
             ],
-            current_unit_id="hp01-ch01-sec02",
+            current_unit_id="hp01-ch02",
         )
     )
 
     cards = router.inspect()
 
-    assert "第 2/2 节" in cards[0].body
-    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01-sec02"
+    assert "第 2 章" in cards[0].body
+    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch02"
 
 
 def test_explicit_unit_overrides_memory_current_unit():
     router = ReadingFlowRouter(
         StubStateReader(
             [
-                unit_state(id="hp01-ch01-sec01", section_no=1),
-                unit_state(id="hp01-ch01-sec02", section_no=2),
+                unit_state(id="hp01-ch01", chapter_no=1),
+                unit_state(id="hp01-ch02", chapter_no=2),
             ],
-            current_unit_id="hp01-ch01-sec02",
+            current_unit_id="hp01-ch02",
         )
     )
 
-    cards = router.inspect(current_unit_id="hp01-ch01-sec01")
+    cards = router.inspect(current_unit_id="hp01-ch01")
 
-    assert "第 1/2 节" in cards[0].body
-    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01-sec01"
+    assert "第 1 章" in cards[0].body
+    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01"
 
 
 def test_unannotated_unit_offers_annotation_or_original():
@@ -118,11 +116,11 @@ def test_unannotated_unit_offers_annotation_or_original():
 
     cards = builder.unit_cards(unit_state(has_annotated_copy=False))
 
-    assert cards[0].type == "annotation"
+    assert cards[0].type == "reading"
     assert action_ids(cards[0]) == [GENERATE_ANNOTATION, READ_ORIGINAL]
 
 
-def test_annotated_unread_unit_offers_continue_review_and_mark_read():
+def test_annotated_start_unit_offers_annotation_original_and_review():
     builder = ReadingCardBuilder()
 
     cards = builder.unit_cards(unit_state(has_annotated_copy=True, is_read=False, vocab_count=3))
@@ -130,21 +128,31 @@ def test_annotated_unread_unit_offers_continue_review_and_mark_read():
     assert cards[0].type == "reading"
     assert action_ids(cards[0]) == [
         OPEN_ANNOTATED_COPY,
+        READ_ORIGINAL,
         REVIEW_CHAPTER_VOCAB,
-        MARK_CHAPTER_READ,
     ]
 
 
-def test_read_unit_offers_review_next_and_reopen():
+def test_complete_unit_offers_next_review_and_reopen():
     builder = ReadingCardBuilder()
 
-    cards = builder.unit_cards(unit_state(has_annotated_copy=True, is_read=True, vocab_count=2))
+    cards = builder.complete_unit(unit_state(has_annotated_copy=True, is_read=False, vocab_count=2))
 
     assert cards[0].type == "progress"
     assert action_ids(cards[0]) == [
-        REVIEW_CHAPTER_VOCAB,
         START_NEXT_CHAPTER,
+        REVIEW_CHAPTER_VOCAB,
         OPEN_ANNOTATED_COPY,
     ]
-    assert cards[0].actions[1].payload["chapter_id"] == "hp01-ch01-sec02"
-    assert cards[0].actions[1].payload["unit_id"] == "hp01-ch01-sec02"
+    assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch02"
+    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch02"
+    assert cards[0].actions[0].payload["completed_unit_id"] == "hp01-ch01"
+
+
+def test_router_complete_phase_uses_complete_card():
+    router = ReadingFlowRouter(StubStateReader([unit_state(has_annotated_copy=True, vocab_count=1)]))
+
+    cards = router.inspect(current_unit_id="hp01-ch01", phase="complete")
+
+    assert cards[0].id == "unit-hp01-ch01-complete"
+    assert action_ids(cards[0]) == [START_NEXT_CHAPTER, REVIEW_CHAPTER_VOCAB, OPEN_ANNOTATED_COPY]

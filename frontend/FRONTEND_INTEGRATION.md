@@ -25,7 +25,7 @@
 核心设计：
 
 - 阅读内容显示在固定高度的纸张窗口中。
-- 第一版分页使用简化段落分页，后续可替换为 DOM 测量分页。
+- 第一版分页使用固定窗口 + CSS columns 的伪分页，让浏览器按真实排版切页。
 - 用户通过左右按钮、方向键或空格翻页。
 - 正文最后一页之后进入引导页，集中展示后端 cards。
 - 译注生成中不清空上下文，而是在纸张中央展示 summary。
@@ -41,9 +41,9 @@ type ReaderMode = "empty" | "reading" | "guidance" | "generating" | "error"
 后续升级方向：
 
 1. 固定窗口保留不变。
-2. 将简化段落分页替换为隐藏 DOM 测量分页。
+2. 后续建立书签系统，用于章节内精细定位、继续阅读和回看。
 3. 再考虑双页书本、翻页动画、阅读位置恢复。
-4. 阅读位置恢复暂定保存 `unit_id`、`body_kind`、`page_index` 与 `progress_ratio`；由于分页受窗口尺寸和字体影响，恢复时优先按比例映射到当前总页数。
+4. 阅读位置恢复暂定保存 `unit_id`、`body_kind`、`page_index`、`progress_ratio` 与可选书签锚点；由于分页受窗口尺寸和字体影响，恢复时优先按书签或比例映射到当前总页数。
 
 ## HTTP API
 
@@ -147,7 +147,7 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
 {
   "type": "hello",
   "request_id": "optional-client-id",
-  "current_unit_id": "hp01-ch01-sec01"
+  "current_unit_id": "hp01-ch01"
 }
 ```
 
@@ -178,8 +178,8 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
     "id": "generate_annotation",
     "label": "生成译注",
     "payload": {
-      "unit_id": "hp01-ch01-sec01",
-      "chapter_id": "hp01-ch01-sec01"
+      "unit_id": "hp01-ch01",
+      "chapter_id": "hp01-ch01"
     }
   }
 }
@@ -209,7 +209,7 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
 ```json
 {
   "type": "cards.updated",
-  "current_unit_id": "hp01-ch01-sec01",
+  "current_unit_id": "hp01-ch01",
   "cards": []
 }
 ```
@@ -223,7 +223,7 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
 ```json
 {
   "type": "chapter.loading",
-  "unit_id": "hp01-ch01-sec01",
+  "unit_id": "hp01-ch01",
   "body_kind": "source"
 }
 ```
@@ -320,7 +320,7 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
 ```json
 {
   "type": "annotation.failed",
-  "unit_id": "hp01-ch01-sec01",
+  "unit_id": "hp01-ch01",
   "message": "..."
 }
 ```
@@ -412,8 +412,8 @@ type ReadingUnitMeta = {
   book_title: string
   chapter_no: number
   chapter_title: string
-  section_no: number
-  section_count: number
+  section_no?: number
+  section_count?: number
   summary: string
   has_annotated_copy: boolean
   status: string
@@ -424,7 +424,7 @@ type ReadingUnitMeta = {
 
 - `book_title`：书名。
 - `chapter_no` + `chapter_title`：章节标题。
-- `section_no` / `section_count`：切分进度。
+- `section_no` / `section_count`：旧版阅读单元兼容字段；章节粒度下前端不再展示。
 - `summary`：章节或单元概要。
 - `has_annotated_copy`：是否已有译注副本。
 
@@ -529,4 +529,5 @@ type ReadingLoadStatus =
 5. 展示 annotation 进度、重试、失败、完成状态。
 6. 接入 vocabulary 列表。
 7. 设计断线重连和错误恢复体验。
-8. 后续接入阅读位置保存：翻页后节流发送当前位置，重新打开同一阅读单元后恢复到最近页。
+8. 后续接入阅读位置保存：翻页后节流发送当前位置，重新打开同一章节后恢复到最近页。
+9. 设计书签系统：支持章节内书签、继续阅读锚点、从侧边栏定位到书签，以及动态词汇状态变化后的阅读位置恢复。

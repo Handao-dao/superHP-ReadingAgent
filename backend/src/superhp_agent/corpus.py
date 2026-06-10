@@ -1,4 +1,4 @@
-"""Safe reading-unit corpus loading for Markdown + YAML frontmatter.
+"""Safe chapter corpus loading for Markdown + YAML frontmatter.
 
 CorpusStore is the only place that maps user-visible unit ids to files. Keeping
 all reads behind this class lets tools and actions ask for ``unit_id`` without
@@ -16,7 +16,7 @@ import yaml
 
 @dataclass(frozen=True)
 class ReadingUnit:
-    """One readable section in the local novel corpus."""
+    """One readable chapter in the local novel corpus."""
 
     id: str
     chapter_id: str
@@ -65,7 +65,7 @@ class CorpusStore:
         assert self._units is not None
         return sorted(
             self._units.values(),
-            key=lambda item: (item.book_id, item.chapter_no, item.section_no, item.id),
+            key=lambda item: (item.book_id, item.chapter_no, item.id),
         )
 
     def get_unit(self, unit_id: str) -> ReadingUnitDocument:
@@ -80,7 +80,7 @@ class CorpusStore:
         return ReadingUnitDocument(meta=unit, body=body.strip())
 
     def list_chapters(self) -> list[ReadingUnit]:
-        """Compatibility alias: returns reading units, not whole chapters."""
+        """Compatibility alias for older chapter-oriented callers."""
         return self.list_units()
 
     def get_chapter(self, chapter_id: str) -> ReadingUnitDocument:

@@ -15,12 +15,12 @@ You will receive one English passage from a Harry Potter chapter.
 
 You must:
 1. Identify words or expressions that may confuse the target English learner.
-2. Insert a short Chinese translation using the [[word|translation]] format.
+2. Replace each selected word or expression with the [[word|translation]] format.
 3. Return the full annotated passage text only.
 
 # Annotation Rules
 1. Preserve the original text exactly. Do not rewrite, summarize, reorder, or correct the input text.
-2. Only insert Chinese translations using the [[word|translation]] format after selected words or expressions.
+2. Only annotate selected words or expressions by replacing that exact text with [[word|translation]].
 3. Use double square brackets, English word or phrase, pipe character |, Chinese translation.
 4. Do not include the pipe character | inside the word or translation text.
 5. The Chinese translation must match the exact meaning in context.
@@ -30,6 +30,7 @@ You must:
 9. If a phrase is the real difficult unit, annotate the whole phrase instead of a single word.
 10. If the same word appears multiple times in the text, you may annotate it each time.
 11. For proper nouns and magical terms, prefer concise standard Chinese renderings where they are widely used.
+12. Do not duplicate the original word before or after the marker. Correct: "a [[wand|魔杖]]"; incorrect: "a wand[[wand|魔杖]]" or "a wand [[wand|魔杖]]".
 
 # Output Rules
 Return only the annotated passage text.

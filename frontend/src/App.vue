@@ -1,16 +1,18 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { listChapters } from './api/chapters'
 import { useReadingSocket } from './composables/useReadingSocket'
-import { renderReadingBlock, splitLongBlock, splitReadingBlocks } from './utils/renderReadingText'
-
-const PAGE_CHAR_LIMIT = 1350
-const ANNOTATED_PAGE_CHAR_LIMIT = 1050
+import { renderReadingBlock, splitReadingBlocks } from './utils/renderReadingText'
 
 const chapters = ref([])
 const listLoading = ref(false)
 const listErrorMessage = ref('')
 const currentPage = ref(0)
+const completeCardsRequestedFor = ref('')
+const readingViewport = ref(null)
+const readingFlow = ref(null)
+const pageStride = ref(0)
+const totalReadingPages = ref(0)
 
 const {
   activeChapter,
@@ -23,6 +25,7 @@ const {
   loadStatus,
   noticeMessage,
   progressMessage,
+  requestCards,
   statusMessage,
   connect,
   sendAction,
@@ -35,24 +38,19 @@ const currentMeta = computed(() => {
   return chapters.value.find((unit) => unit.id === currentChapterId.value) || null
 })
 
-const pageLimit = computed(() => {
-  return activeChapter.value?.body_kind === 'annotated' ? ANNOTATED_PAGE_CHAR_LIMIT : PAGE_CHAR_LIMIT
-})
-
 const paragraphs = computed(() => {
   const body = activeChapter.value?.body || ''
   return splitReadingBlocks(body)
-    .flatMap((part) => splitLongBlock(part, Math.floor(pageLimit.value * 0.72)))
 })
 
-const pages = computed(() => paginateParagraphs(paragraphs.value, pageLimit.value))
-const totalReadingPages = computed(() => pages.value.length)
-const hasActiveReading = computed(() => Boolean(activeChapter.value && totalReadingPages.value > 0))
-const isGuidancePage = computed(() => hasActiveReading.value && currentPage.value >= totalReadingPages.value)
-const visiblePage = computed(() => pages.value[Math.min(currentPage.value, Math.max(0, totalReadingPages.value - 1))] || [])
-const renderedPage = computed(() => visiblePage.value.map((block) => renderReadingBlock(block)))
+const renderedBlocks = computed(() => paragraphs.value.map((block) => renderReadingBlock(block)))
+const hasActiveReading = computed(() => Boolean(activeChapter.value && renderedBlocks.value.length > 0))
+const isGuidancePage = computed(() => hasActiveReading.value && totalReadingPages.value > 0 && currentPage.value >= totalReadingPages.value)
+const flowTransform = computed(() => ({
+  transform: `translateX(-${currentPage.value * pageStride.value}px)`,
+}))
 const canGoPrev = computed(() => currentPage.value > 0)
-const canGoNext = computed(() => hasActiveReading.value && currentPage.value < totalReadingPages.value)
+const canGoNext = computed(() => hasActiveReading.value && totalReadingPages.value > 0 && currentPage.value < totalReadingPages.value)
 
 const isGenerating = computed(() => {
   return ['generating_annotation', 'model_retrying', 'json_repairing'].includes(loadStatus.value)
@@ -68,14 +66,15 @@ const readerMode = computed(() => {
 
 const pageLabel = computed(() => {
   if (!hasActiveReading.value) return '未开始'
+  if (totalReadingPages.value <= 0) return '排版中'
   if (isGuidancePage.value) return '引导页'
   return `${currentPage.value + 1} / ${totalReadingPages.value}`
 })
 
-const sectionLabel = computed(() => {
+const chapterLabel = computed(() => {
   const meta = currentMeta.value
   if (!meta) return '等待阅读单元'
-  return `第 ${meta.chapter_no} 章 · ${meta.section_no}/${meta.section_count} 节`
+  return `第 ${meta.chapter_no} 章`
 })
 
 const summaryText = computed(() => {
@@ -124,48 +123,61 @@ function handleKeydown(event) {
   }
 }
 
+async function recalculatePages() {
+  await nextTick()
+  if (document.fonts?.ready) await document.fonts.ready
+  await new Promise((resolve) => requestAnimationFrame(resolve))
 
-function paginateParagraphs(items, limit) {
-  if (!items.length) return []
-  const result = []
-  let page = []
-  let count = 0
-
-  for (const paragraph of items) {
-    const nextCount = count + paragraph.length + 80
-    if (page.length && nextCount > limit) {
-      result.push(page)
-      page = [paragraph]
-      count = paragraph.length
-    } else {
-      page.push(paragraph)
-      count = nextCount
-    }
+  const viewport = readingViewport.value
+  const flow = readingFlow.value
+  if (!viewport || !flow || !renderedBlocks.value.length) {
+    totalReadingPages.value = 0
+    pageStride.value = 0
+    return
   }
 
-  if (page.length) result.push(page)
-  return result
+  const styles = window.getComputedStyle(flow)
+  const gap = Number.parseFloat(styles.columnGap) || 0
+  const viewportWidth = viewport.clientWidth
+  pageStride.value = viewportWidth + gap
+  flow.style.setProperty('--reader-column-width', `${viewportWidth}px`)
+  flow.style.setProperty('--reader-column-gap', `${gap}px`)
+
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+  const pages = Math.max(1, Math.ceil((flow.scrollWidth + 1) / Math.max(1, pageStride.value)))
+  totalReadingPages.value = pages
+  if (currentPage.value > pages) currentPage.value = pages
 }
 
 watch(
   () => activeChapter.value?.meta?.id + activeChapter.value?.body_kind,
   () => {
     currentPage.value = 0
+    totalReadingPages.value = 0
+    completeCardsRequestedFor.value = ''
+    recalculatePages()
   }
 )
 
-watch(totalReadingPages, (count) => {
-  if (count > 0 && currentPage.value > count) currentPage.value = count
+watch(() => activeChapter.value?.body, recalculatePages)
+
+watch(isGuidancePage, (isGuidance) => {
+  const unitId = activeChapter.value?.meta?.id
+  if (!isGuidance || !unitId || completeCardsRequestedFor.value === unitId) return
+  completeCardsRequestedFor.value = unitId
+  requestCards('complete')
 })
 
 onMounted(() => {
   loadChapterList()
   connect()
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', recalculatePages)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', recalculatePages)
 })
 </script>
 
@@ -177,7 +189,7 @@ onBeforeUnmount(() => {
         <h1>{{ currentMeta?.book_title || '章节阅读助手' }}</h1>
         <p class="chapter-line">
           <span>{{ currentMeta ? `${currentMeta.chapter_no}. ${currentMeta.chapter_title}` : '选择一个阅读动作开始' }}</span>
-          <span>{{ sectionLabel }}</span>
+          <span>{{ chapterLabel }}</span>
         </p>
       </div>
 
@@ -210,26 +222,30 @@ onBeforeUnmount(() => {
         <template v-if="readerMode === 'generating'">
           <div class="summary-page">
             <p class="small-label">{{ progressMessage || noticeMessage || '正在生成译注...' }}</p>
-            <h2>本节概要</h2>
+            <h2>本章概要</h2>
             <p>{{ summaryText }}</p>
           </div>
         </template>
 
         <template v-else-if="readerMode === 'reading'">
           <div class="reading-page" :class="{ 'is-annotated': activeChapter?.body_kind === 'annotated' }">
-            <div
-              v-for="(html, index) in renderedPage"
-              :key="`${currentPage}-${index}`"
-              class="reading-block"
-              v-html="html"
-            ></div>
+            <div ref="readingViewport" class="reading-viewport">
+              <div ref="readingFlow" class="reading-flow" :style="flowTransform">
+                <div
+                  v-for="(html, index) in renderedBlocks"
+                  :key="index"
+                  class="reading-block"
+                  v-html="html"
+                ></div>
+              </div>
+            </div>
           </div>
         </template>
 
         <template v-else-if="readerMode === 'guidance'">
           <div class="guidance-page">
             <p class="small-label">阅读引导</p>
-            <h2>{{ hasActiveReading ? '这一节读完了，下一步呢？' : '准备开始阅读' }}</h2>
+            <h2>{{ hasActiveReading ? '这一章读完了，下一步呢？' : '准备开始阅读' }}</h2>
             <p class="guidance-summary">{{ summaryText }}</p>
 
             <div class="guide-card-list">

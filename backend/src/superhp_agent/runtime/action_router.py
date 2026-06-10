@@ -10,6 +10,9 @@ from superhp_agent.runtime.cards import ReadingCardBuilder
 from superhp_agent.runtime.reading_state import ReadingStateReader, ReadingUnitState
 from superhp_agent.schemas import AgentCard
 
+CARD_PHASE_START = "start"
+CARD_PHASE_COMPLETE = "complete"
+
 
 class ReadingFlowRouter:
     """Choose the next guided cards from read-only state.
@@ -26,17 +29,22 @@ class ReadingFlowRouter:
         self.state_reader = state_reader
         self.card_builder = card_builder or ReadingCardBuilder()
 
-    def inspect(self, current_chapter_id: str | None = None, current_unit_id: str | None = None) -> list[AgentCard]:
+    def inspect(
+        self,
+        current_chapter_id: str | None = None,
+        current_unit_id: str | None = None,
+        phase: str = CARD_PHASE_START,
+    ) -> list[AgentCard]:
         """Return the cards the frontend should offer next."""
         unit_id = current_unit_id or current_chapter_id
         if unit_id:
             current = self.state_reader.get_state(unit_id)
             if current is not None:
-                return self.card_builder.unit_cards(current)
+                return self._cards_for_phase(current, phase)
 
         current = self.state_reader.current_state()
         if current is not None:
-            return self.card_builder.unit_cards(current)
+            return self._cards_for_phase(current, phase)
 
         first = self.state_reader.first_state()
         if first is None:
@@ -48,3 +56,8 @@ class ReadingFlowRouter:
 
     def cards_for_chapter(self, chapter: ReadingUnitState) -> list[AgentCard]:
         return self.cards_for_unit(chapter)
+
+    def _cards_for_phase(self, unit: ReadingUnitState, phase: str) -> list[AgentCard]:
+        if phase == CARD_PHASE_COMPLETE:
+            return self.card_builder.complete_unit(unit)
+        return self.card_builder.start_unit(unit)

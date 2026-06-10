@@ -16,8 +16,8 @@ backend/data/memory/
 
 ```json
 {
-  "current_unit_id": "hp01-ch01-sec01",
-  "opened_unit_ids": ["hp01-ch01-sec01"],
+  "current_unit_id": "hp01-ch01",
+  "opened_unit_ids": ["hp01-ch01"],
   "read_unit_ids": [],
   "annotated_unit_ids": [],
   "updated_at": "2026-06-09T...Z"
@@ -41,7 +41,7 @@ backend/data/memory/
 ## Design Notes
 
 - `current_unit_id` 是 Router 选择“继续阅读哪里”的主要依据。
-- `read_unit_ids` 会让对应 reading unit 进入已读状态，从而展示“下一节/复习/回看”类卡片。
+- `read_unit_ids` 会让对应章节进入已读状态，从而展示“下一章/复习/回看”类卡片。
 - `annotated_unit_ids` 与 `backend/data/annotated_corpus/{unit_id}.annotated.md` 都可表示已标注；后续标注链路完成后应同时写入。
 - memory 不替代 vocabulary 数据库；生词仍应由独立表或插件 API 管理。
 ## Runtime Boundary
@@ -57,7 +57,7 @@ backend/data/memory/
 ```json
 {
   "positions": {
-    "hp01-ch01-sec01": {
+    "hp01-ch01": {
       "body_kind": "annotated",
       "page_index": 4,
       "progress_ratio": 0.36,

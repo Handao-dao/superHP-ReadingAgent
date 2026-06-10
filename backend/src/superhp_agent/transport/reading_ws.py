@@ -36,6 +36,7 @@ class ReadingSocketMessage(BaseModel):
     action: AgentAction | None = None
     current_chapter_id: str | None = None
     current_unit_id: str | None = None
+    phase: str | None = None
 
 
 class ReadingSocketEventSink:
@@ -111,6 +112,12 @@ class ReadingSocketSession:
 
         if message.type == "ping":
             await self.send_event("pong", request_id=message.request_id)
+            return
+
+        if message.type == "cards":
+            if message.current_unit_id or message.current_chapter_id:
+                self.current_unit_id = message.current_unit_id or message.current_chapter_id
+            await self.send_cards(request_id=message.request_id, phase=message.phase or "start")
             return
 
         if message.type == "action":
@@ -196,15 +203,21 @@ class ReadingSocketSession:
             protocol="reading.v1",
         )
 
-    async def send_cards(self, request_id: str | None = None) -> None:
+    async def send_cards(self, request_id: str | None = None, *, phase: str = "start") -> None:
         """Ask the deterministic router for fresh choices and push them down."""
-        cards = self.flow_router.inspect(current_unit_id=self.current_unit_id)
-        self._log_event("cards_shown", current_unit_id=self.current_unit_id, card_ids=[card.id for card in cards])
+        cards = self.flow_router.inspect(current_unit_id=self.current_unit_id, phase=phase)
+        self._log_event(
+            "cards_shown",
+            current_unit_id=self.current_unit_id,
+            phase=phase,
+            card_ids=[card.id for card in cards],
+        )
         await self.send_event(
             "cards.updated",
             request_id=request_id,
             current_chapter_id=self.current_unit_id,
             current_unit_id=self.current_unit_id,
+            phase=phase,
             cards=[card.model_dump() for card in cards],
         )
 

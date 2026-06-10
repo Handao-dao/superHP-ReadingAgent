@@ -134,7 +134,7 @@ class ReadingStateReader:
 
     @staticmethod
     def _next_unit_ids(units: list[ReadingUnit]) -> dict[str, str]:
-        ordered = sorted(units, key=lambda item: (item.book_id, item.chapter_no, item.section_no, item.id))
+        ordered = sorted(units, key=lambda item: (item.book_id, item.chapter_no, item.id))
         result: dict[str, str] = {}
         for idx, unit in enumerate(ordered[:-1]):
             result[unit.id] = ordered[idx + 1].id

@@ -174,7 +174,7 @@ class OpenAnnotatedUnitHandler:
         # are secondary indexes for vocabulary review.
         annotated_path = _annotated_path(context, unit_id)
         if not annotated_path.exists():
-            raise ActionExecutionError("annotated_copy_not_found", "还没有生成这一节的译注副本。")
+            raise ActionExecutionError("annotated_copy_not_found", "还没有生成这一章的译注副本。")
 
         await context.emit_event(
             "chapter.loading",
@@ -220,6 +220,32 @@ class MarkReadHandler:
             chapter_id=unit_id,
             unit_id=unit_id,
         )
+
+
+class StartNextUnitHandler:
+    """Complete the current unit and move the session pointer to the next unit."""
+    async def handle(
+        self,
+        action: AgentAction,
+        context: ActionContext,
+        *,
+        request_id: str | None = None,
+    ) -> None:
+        next_unit_id = _require_unit_id(action.payload)
+        completed_unit_id = str(action.payload.get("completed_unit_id") or context.current_unit_id or "")
+        if completed_unit_id and context.memory_store:
+            context.memory_store.mark_read(completed_unit_id)
+            await context.emit_event(
+                "unit.marked_read",
+                request_id=request_id,
+                chapter_id=completed_unit_id,
+                unit_id=completed_unit_id,
+            )
+
+        context.corpus.get_unit(next_unit_id)
+        context.current_unit_id = next_unit_id
+        if context.memory_store:
+            context.memory_store.mark_opened(next_unit_id)
 
 
 class GenerateAnnotationHandler:
@@ -310,7 +336,7 @@ def default_action_handlers() -> dict[str, ActionHandler]:
     return {
         OPEN_CHAPTER: open_handler,
         READ_ORIGINAL: open_handler,
-        START_NEXT_CHAPTER: open_handler,
+        START_NEXT_CHAPTER: StartNextUnitHandler(),
         OPEN_ANNOTATED_COPY: OpenAnnotatedUnitHandler(),
         MARK_CHAPTER_READ: MarkReadHandler(),
         GENERATE_ANNOTATION: GenerateAnnotationHandler(),
@@ -387,8 +413,6 @@ def _render_annotated_markdown(doc: ReadingUnitDocument, result: AnnotationResul
         f"chapter_id: {doc.meta.chapter_id}\n"
         f"book_id: {doc.meta.book_id}\n"
         f"chapter_no: {doc.meta.chapter_no}\n"
-        f"section_no: {doc.meta.section_no}\n"
-        f"section_count: {doc.meta.section_count}\n"
         "body_kind: annotated\n"
         f"annotated_at: {annotated_at}\n"
         "---\n\n"

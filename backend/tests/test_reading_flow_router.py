@@ -71,7 +71,7 @@ def test_router_starts_with_first_unit_when_no_current_unit():
     cards = router.inspect()
 
     assert cards[0].id == "unit-hp01-ch01-start"
-    assert "第 1 章" in cards[0].body
+    assert "Chapter 1" in cards[0].body
     assert action_ids(cards[0]) == [GENERATE_ANNOTATION, READ_ORIGINAL]
     assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch01"
     assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01"
@@ -90,7 +90,7 @@ def test_router_uses_memory_current_unit_when_no_explicit_unit():
 
     cards = router.inspect()
 
-    assert "第 2 章" in cards[0].body
+    assert "Chapter 2" in cards[0].body
     assert cards[0].actions[0].payload["unit_id"] == "hp01-ch02"
 
 
@@ -107,7 +107,7 @@ def test_explicit_unit_overrides_memory_current_unit():
 
     cards = router.inspect(current_unit_id="hp01-ch01")
 
-    assert "第 1 章" in cards[0].body
+    assert "Chapter 1" in cards[0].body
     assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01"
 
 

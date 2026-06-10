@@ -215,7 +215,7 @@ def test_annotator_service_rejects_truncated_output():
 def test_lookup_service_parses_lookup_result():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content='{"word":"spell","word_cn":"咒语","sentence_cn":"他念了一个咒语。"}')
+            LLMResponse(content='{"word":"spell","word_cn":"咒语","pos":"noun","sentence_cn":"他念了一个咒语。"}')
         ])
         service = WordLookupService(provider)
 
@@ -224,8 +224,23 @@ def test_lookup_service_parses_lookup_result():
         assert result == {
             "word": "spell",
             "word_cn": "咒语",
+            "pos": "noun",
             "sentence_cn": "他念了一个咒语。",
         }
+
+    asyncio.run(run_case())
+
+
+def test_lookup_service_normalizes_pos_alias():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content='{"word":"quickly","word_cn":"迅速地","pos":"adv","sentence_cn":"他迅速地走了。"}')
+        ])
+        service = WordLookupService(provider)
+
+        result = await service.lookup("quickly", "He walked quickly.")
+
+        assert result["pos"] == "adverb"
 
     asyncio.run(run_case())
 

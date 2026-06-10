@@ -71,11 +71,13 @@ def test_manual_vocabulary_can_be_mastered_and_deleted(tmp_path):
         word="crutches",
         translation="拐杖",
         context="He had crutches.",
+        pos="noun",
     )
 
     rows = db.list_vocabulary(unit_id="hp01-ch01")
     assert rows[0]["id"] == vocab_id
     assert rows[0]["word"] == "crutches"
+    assert rows[0]["pos"] == "noun"
     assert rows[0]["mastered"] == 0
 
     assert db.set_mastered_by_word("CRUTCHES", True)

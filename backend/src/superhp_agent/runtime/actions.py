@@ -26,13 +26,13 @@ class ActionTemplate:
 
 
 ACTIONS: Final[dict[str, ActionTemplate]] = {
-    OPEN_CHAPTER: ActionTemplate(OPEN_CHAPTER, "打开这一章"),
-    GENERATE_ANNOTATION: ActionTemplate(GENERATE_ANNOTATION, "生成译注"),
-    OPEN_ANNOTATED_COPY: ActionTemplate(OPEN_ANNOTATED_COPY, "阅读译注"),
-    MARK_CHAPTER_READ: ActionTemplate(MARK_CHAPTER_READ, "标记已读"),
-    REVIEW_CHAPTER_VOCAB: ActionTemplate(REVIEW_CHAPTER_VOCAB, "复习本章生词"),
-    START_NEXT_CHAPTER: ActionTemplate(START_NEXT_CHAPTER, "读下一章"),
-    READ_ORIGINAL: ActionTemplate(READ_ORIGINAL, "直接读原文"),
+    OPEN_CHAPTER: ActionTemplate(OPEN_CHAPTER, "Open"),
+    GENERATE_ANNOTATION: ActionTemplate(GENERATE_ANNOTATION, "Generate"),
+    OPEN_ANNOTATED_COPY: ActionTemplate(OPEN_ANNOTATED_COPY, "Annotated"),
+    MARK_CHAPTER_READ: ActionTemplate(MARK_CHAPTER_READ, "Mark Read"),
+    REVIEW_CHAPTER_VOCAB: ActionTemplate(REVIEW_CHAPTER_VOCAB, "Vocab"),
+    START_NEXT_CHAPTER: ActionTemplate(START_NEXT_CHAPTER, "Next"),
+    READ_ORIGINAL: ActionTemplate(READ_ORIGINAL, "Original"),
 }
 
 

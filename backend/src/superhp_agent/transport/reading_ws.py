@@ -205,18 +205,20 @@ class ReadingSocketSession:
 
     async def send_cards(self, request_id: str | None = None, *, phase: str = "start") -> None:
         """Ask the deterministic router for fresh choices and push them down."""
-        cards = self.flow_router.inspect(current_unit_id=self.current_unit_id, phase=phase)
+        resolved_unit_id = self.flow_router.resolve_unit_id(current_unit_id=self.current_unit_id)
+        cards = self.flow_router.inspect(current_unit_id=resolved_unit_id, phase=phase)
+        self.current_unit_id = resolved_unit_id
         self._log_event(
             "cards_shown",
-            current_unit_id=self.current_unit_id,
+            current_unit_id=resolved_unit_id,
             phase=phase,
             card_ids=[card.id for card in cards],
         )
         await self.send_event(
             "cards.updated",
             request_id=request_id,
-            current_chapter_id=self.current_unit_id,
-            current_unit_id=self.current_unit_id,
+            current_chapter_id=resolved_unit_id,
+            current_unit_id=resolved_unit_id,
             phase=phase,
             cards=[card.model_dump() for card in cards],
         )

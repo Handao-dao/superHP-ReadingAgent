@@ -7,6 +7,7 @@ from pathlib import Path
 
 from superhp_agent.corpus import CorpusStore, ReadingUnit
 from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.storage import AppDB
 
 
@@ -125,7 +126,7 @@ class ReadingStateReader:
         return states[0] if states else None
 
     def _has_annotated_copy(self, unit_id: str) -> bool:
-        return (self.annotated_dir / f"{unit_id}.annotated.md").exists()
+        return has_any_annotated_copy(self.annotated_dir, unit_id)
 
     def _vocab_count(self, unit_id: str) -> int:
         if self.db is None:

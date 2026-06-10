@@ -6,6 +6,7 @@ import os
 
 from superhp_agent.prompts import LOOKUP_SYSTEM_PROMPT, build_lookup_user_prompt
 from superhp_agent.providers.base import LLMProvider
+from superhp_agent.storage import normalize_pos
 from superhp_agent.utils import extract_json
 
 
@@ -54,6 +55,7 @@ class WordLookupService:
                 return {
                     "word": str(payload.get("word") or word),
                     "word_cn": str(payload.get("word_cn") or ""),
+                    "pos": normalize_pos(payload.get("pos")),
                     "sentence_cn": str(payload.get("sentence_cn") or ""),
                 }
             except ValueError as exc:

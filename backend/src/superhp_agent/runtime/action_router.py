@@ -51,6 +51,21 @@ class ReadingFlowRouter:
             return self.card_builder.empty_corpus()
         return self.card_builder.start_reading(first)
 
+    def resolve_unit_id(
+        self,
+        current_chapter_id: str | None = None,
+        current_unit_id: str | None = None,
+    ) -> str | None:
+        """Return the unit id that inspect would use for cards."""
+        unit_id = current_unit_id or current_chapter_id
+        if unit_id and self.state_reader.get_state(unit_id) is not None:
+            return unit_id
+        current = self.state_reader.current_state()
+        if current is not None:
+            return current.id
+        first = self.state_reader.first_state()
+        return first.id if first is not None else None
+
     def cards_for_unit(self, unit: ReadingUnitState) -> list[AgentCard]:
         return self.card_builder.unit_cards(unit)
 

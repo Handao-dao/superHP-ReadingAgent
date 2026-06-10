@@ -19,6 +19,18 @@ const totalReadingPages = ref(0)
 const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
+const selectedVocabularyUnitId = ref('')
+const densityMenuOpen = ref(false)
+const densityMenu = ref(null)
+const densityOptions = [
+  { key: 'H', label: 'High', level: 'beginner' },
+  { key: 'M', label: 'Medium', level: 'intermediate' },
+  { key: 'L', label: 'Low', level: 'advanced' },
+]
+const selectedDensity = ref(localStorage.getItem('superhp_annotation_density') || 'M')
+if (!densityOptions.some((option) => option.key === selectedDensity.value)) {
+  selectedDensity.value = 'M'
+}
 const manualAnnotations = ref(new Map())
 const hiddenAnnotations = ref(new Set())
 const lookupVisible = ref(false)
@@ -112,14 +124,21 @@ const pageLabel = computed(() => {
   return `${currentPage.value + 1} / ${totalReadingPages.value}`
 })
 
+const paperPageLabel = computed(() => {
+  if (!hasActiveReading.value) return 'Not started'
+  if (totalReadingPages.value <= 0) return 'Laying out'
+  if (isGuidancePage.value) return 'Guide'
+  return `${currentPage.value + 1} / ${totalReadingPages.value}`
+})
+
 const chapterLabel = computed(() => {
   const meta = currentMeta.value
-  if (!meta) return '等待阅读单元'
-  return `第 ${meta.chapter_no} 章`
+  if (!meta) return 'Waiting for unit'
+  return `Chapter ${meta.chapter_no}`
 })
 
 const summaryText = computed(() => {
-  return currentMeta.value?.summary || cards.value[0]?.body || '阅读助手正在准备下一步。'
+  return currentMeta.value?.summary || cards.value[0]?.body || 'The reading assistant is preparing the next step.'
 })
 
 const currentTitle = computed(() => {
@@ -128,11 +147,23 @@ const currentTitle = computed(() => {
   return `${meta.chapter_no}. ${meta.chapter_title}`
 })
 
+const chapterDetailText = computed(() => {
+  const meta = currentMeta.value
+  if (!meta) return ''
+  return `Chapter ${meta.chapter_no} · ${meta.chapter_title}`
+})
+
+const guideActionTitle = computed(() => (hasActiveReading.value ? 'Next Step' : 'Reading Mode'))
+
 const surfaceTone = computed(() => ({
   'is-guidance': readerMode.value === 'guidance',
   'is-generating': readerMode.value === 'generating',
   'is-error': readerMode.value === 'error',
 }))
+
+const selectedLevel = computed(() => {
+  return densityOptions.find((option) => option.key === selectedDensity.value)?.level || 'intermediate'
+})
 
 async function loadChapterList() {
   listLoading.value = true
@@ -147,7 +178,24 @@ async function loadChapterList() {
 }
 
 function handleAction(action) {
-  sendAction(action)
+  if (action.id === 'review_chapter_vocab') {
+    selectedVocabularyUnitId.value = action.payload?.unit_id || action.payload?.chapter_id || currentChapterId.value || ''
+    activeView.value = 'vocabulary'
+    closeLookupBubble()
+    return
+  }
+  const actionUnitId = action.payload?.unit_id || action.payload?.chapter_id
+  if (actionUnitId) currentChapterId.value = actionUnitId
+  const actionWithDensity = ['generate_annotation', 'open_annotated_copy'].includes(action.id)
+    ? {
+        ...action,
+        payload: {
+          ...(action.payload || {}),
+          level: selectedLevel.value,
+        },
+      }
+    : action
+  sendAction(actionWithDensity)
 }
 
 function handleSelectChapter(chapter) {
@@ -165,6 +213,17 @@ function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
 
+function toggleDensityMenu() {
+  if (isGenerating.value) return
+  densityMenuOpen.value = !densityMenuOpen.value
+}
+
+function selectDensity(key) {
+  selectedDensity.value = densityOptions.some((option) => option.key === key) ? key : 'M'
+  localStorage.setItem('superhp_annotation_density', selectedDensity.value)
+  densityMenuOpen.value = false
+}
+
 function nextPage() {
   if (canGoNext.value) currentPage.value += 1
 }
@@ -175,6 +234,7 @@ function prevPage() {
 
 function handleKeydown(event) {
   if (event.key === 'Escape') {
+    densityMenuOpen.value = false
     closeLookupBubble()
     return
   }
@@ -188,6 +248,12 @@ function handleKeydown(event) {
     event.preventDefault()
     prevPage()
   }
+}
+
+function handleDocumentPointerdown(event) {
+  if (!densityMenuOpen.value) return
+  if (densityMenu.value?.contains(event.target)) return
+  densityMenuOpen.value = false
 }
 
 function normalizeWord(word = '') {
@@ -283,6 +349,7 @@ async function addLookupAnnotation() {
     await addVocabulary({
       word: lookupWordText.value,
       translation,
+      pos: lookupResult.value?.pos || 'other',
       context: lookupSentence.value,
       unitId,
     })
@@ -335,6 +402,7 @@ function handleVocabularyChanged() {
 }
 
 async function recalculatePages() {
+  const wasGuidance = isGuidancePage.value
   await nextTick()
   if (document.fonts?.ready) await document.fonts.ready
   await new Promise((resolve) => requestAnimationFrame(resolve))
@@ -357,7 +425,7 @@ async function recalculatePages() {
   await new Promise((resolve) => requestAnimationFrame(resolve))
   const pages = Math.max(1, Math.ceil((flow.scrollWidth + 1) / Math.max(1, pageStride.value)))
   totalReadingPages.value = pages
-  if (currentPage.value > pages) currentPage.value = pages
+  if (currentPage.value >= pages) currentPage.value = wasGuidance ? pages : pages - 1
 }
 
 watch(
@@ -392,11 +460,13 @@ onMounted(() => {
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
+  document.addEventListener('pointerdown', handleDocumentPointerdown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', recalculatePages)
+  document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
 </script>
 
@@ -448,10 +518,10 @@ onBeforeUnmount(() => {
       <header class="reader-topbar">
       <div class="title-block">
         <p class="eyebrow">SuperHP Agent</p>
-        <h1>{{ currentMeta?.book_title || '章节阅读助手' }}</h1>
+        <h1>{{ currentMeta?.book_title || 'Harry Potter Reading Assistant' }}</h1>
         <p class="chapter-line">
-          <span>{{ currentMeta ? `${currentMeta.chapter_no}. ${currentMeta.chapter_title}` : '选择一个阅读动作开始' }}</span>
-          <span>{{ chapterLabel }}</span>
+          <span>{{ currentMeta ? `${currentMeta.chapter_no}. ${currentMeta.chapter_title}` : 'Choose a reading action to begin' }}</span>
+          <span v-if="currentMeta">{{ chapterLabel }}</span>
         </p>
       </div>
 
@@ -459,6 +529,33 @@ onBeforeUnmount(() => {
         <div class="view-switch" aria-label="页面切换">
           <button type="button" :class="{ 'is-active': activeView === 'reader' }" @click="activeView = 'reader'">阅读</button>
           <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="activeView = 'vocabulary'">生词表</button>
+        </div>
+        <div ref="densityMenu" class="density-menu">
+          <button
+            type="button"
+            class="density-trigger"
+            :class="{ 'is-open': densityMenuOpen }"
+            :disabled="isGenerating"
+            aria-haspopup="menu"
+            :aria-expanded="densityMenuOpen"
+            @click="toggleDensityMenu"
+          >
+            Density: {{ selectedDensity }}
+          </button>
+          <div v-if="densityMenuOpen" class="density-options" role="menu">
+            <button
+              v-for="option in densityOptions"
+              :key="option.key"
+              type="button"
+              role="menuitemradio"
+              :aria-checked="selectedDensity === option.key"
+              :class="{ 'is-active': selectedDensity === option.key }"
+              @click="selectDensity(option.key)"
+            >
+              <strong>{{ option.key }}</strong>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
         </div>
         <button type="button" class="catalog-toggle" @click="toggleSidebar">目录</button>
         <span class="status-pill" :class="{ 'is-online': connected }">{{ connected ? '在线' : '离线' }}</span>
@@ -488,8 +585,8 @@ onBeforeUnmount(() => {
 
         <template v-if="readerMode === 'generating'">
           <div class="summary-page">
-            <p class="small-label">{{ progressMessage || noticeMessage || '正在生成译注...' }}</p>
-            <h2>本章概要</h2>
+            <p class="small-label">{{ progressMessage || noticeMessage || 'Generating annotations...' }}</p>
+            <h2>Chapter Summary</h2>
             <p>{{ summaryText }}</p>
           </div>
         </template>
@@ -511,15 +608,19 @@ onBeforeUnmount(() => {
 
         <template v-else-if="readerMode === 'guidance'">
           <div class="guidance-page">
-            <p class="small-label">阅读引导</p>
-            <h2>{{ hasActiveReading ? '这一章读完了，下一步呢？' : '准备开始阅读' }}</h2>
-            <p class="guidance-summary">{{ summaryText }}</p>
+            <section class="guidance-hero">
+              <p class="small-label">Reading Flow</p>
+              <h2>{{ hasActiveReading ? 'Chapter Complete' : 'Ready to Read' }}</h2>
+              <div v-if="currentMeta" class="chapter-context">
+                <p>{{ currentMeta.book_title }}</p>
+                <p>{{ chapterDetailText }}</p>
+              </div>
+              <p class="guidance-summary">{{ summaryText }}</p>
+            </section>
 
-            <div class="guide-card-list">
+            <div class="guide-action-panel">
+              <p class="small-label">{{ guideActionTitle }}</p>
               <article v-for="card in cards" :key="card.id" class="guide-card">
-                <p class="card-type">{{ card.type }}</p>
-                <h3>{{ card.title }}</h3>
-                <p>{{ card.body }}</p>
                 <div class="actions">
                   <button
                     v-for="action in card.actions"
@@ -536,17 +637,17 @@ onBeforeUnmount(() => {
 
         <template v-else-if="readerMode === 'error'">
           <div class="summary-page error-state">
-            <p class="small-label">阅读会话遇到问题</p>
-            <h2>暂时无法继续</h2>
+            <p class="small-label">Session Error</p>
+            <h2>Unable to Continue</h2>
             <p>{{ errorMessage || listErrorMessage }}</p>
           </div>
         </template>
 
         <template v-else>
           <div class="summary-page empty-state">
-            <p class="small-label">等待开始</p>
-            <h2>选择一个阅读动作开始</h2>
-            <p>首版界面只提供按钮选择，不提供自由聊天输入。当前已发现 {{ chapters.length }} 个阅读单元。</p>
+            <p class="small-label">Waiting</p>
+            <h2>Choose a Reading Action</h2>
+            <p>This first reader flow uses guided buttons instead of free chat. {{ chapters.length }} reading units are available.</p>
           </div>
         </template>
 
@@ -585,8 +686,8 @@ onBeforeUnmount(() => {
         </aside>
 
         <footer class="paper-footer">
-          <span>{{ activeChapter?.body_kind === 'annotated' ? '译注副本' : '原文阅读' }}</span>
-          <span>{{ pageLabel }}</span>
+          <span>{{ activeChapter?.body_kind === 'annotated' ? 'Annotated' : 'Original' }}</span>
+          <span>{{ paperPageLabel }}</span>
         </footer>
       </article>
 
@@ -604,7 +705,9 @@ onBeforeUnmount(() => {
           <VocabularyPanel
             :current-unit-id="currentChapterId"
             :current-title="currentTitle"
+            :chapters="chapters"
             :refresh-key="vocabularyRefreshKey"
+            v-model:selected-unit-id="selectedVocabularyUnitId"
             @changed="handleVocabularyChanged"
           />
         </article>

@@ -23,6 +23,9 @@ from superhp_agent.storage import AppDB
 
 
 class FakeAnnotator:
+    def __init__(self):
+        self.levels = []
+
     async def annotate_text(
         self,
         text,
@@ -32,6 +35,7 @@ class FakeAnnotator:
         event_sink=None,
         request_id=None,
     ):
+        self.levels.append(level)
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
@@ -188,18 +192,19 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         memory = memory_store(tmp_path)
         annotated_dir = tmp_path / "data" / "annotated"
         db = AppDB(tmp_path / "app.sqlite3")
+        annotator = FakeAnnotator()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             emit=emit,
             memory_store=memory,
             annotated_dir=annotated_dir,
-            annotator_service=FakeAnnotator(),
+            annotator_service=annotator,
             db=db,
         )
         dispatcher = ActionDispatcher()
 
         await dispatcher.dispatch(
-            AgentAction(id=GENERATE_ANNOTATION, label="生成译注", payload={"unit_id": "hp01-ch01"}),
+            AgentAction(id=GENERATE_ANNOTATION, label="生成译注", payload={"unit_id": "hp01-ch01", "level": "advanced"}),
             context,
             request_id="r3",
         )
@@ -213,11 +218,43 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert events[2]["stored_vocabulary_count"] == 1
         assert events[-1]["unit"]["body"] == "Body [[text|文本]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
-        assert (annotated_dir / "hp01-ch01.annotated.md").exists()
-        assert "Body [[text|文本]]." in (annotated_dir / "hp01-ch01.annotated.md").read_text(encoding="utf-8")
+        assert annotator.levels == ["advanced"]
+        annotated_file = annotated_dir / "hp01-ch01.advanced.annotated.md"
+        assert annotated_file.exists()
+        annotated_text = annotated_file.read_text(encoding="utf-8")
+        assert "level: advanced" in annotated_text
+        assert "Body [[text|文本]]." in annotated_text
         assert memory.load().annotated_unit_ids == ["hp01-ch01"]
         assert db.count_vocabulary_for_unit("hp01-ch01") == 1
         assert db.list_vocabulary(unit_id="hp01-ch01")[0]["word"] == "text"
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_generate_annotation_falls_back_to_intermediate_for_bad_level(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+
+        async def emit(event_type, **payload):
+            return None
+
+        annotator = FakeAnnotator()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            annotated_dir=tmp_path / "data" / "annotated",
+            annotator_service=annotator,
+        )
+        dispatcher = ActionDispatcher()
+
+        await dispatcher.dispatch(
+            AgentAction(id=GENERATE_ANNOTATION, label="生成译注", payload={"unit_id": "hp01-ch01", "level": "unknown"}),
+            context,
+        )
+
+        assert annotator.levels == ["intermediate"]
+        assert (tmp_path / "data" / "annotated" / "hp01-ch01.intermediate.annotated.md").exists()
 
     asyncio.run(run_case())
 
@@ -228,7 +265,7 @@ def test_dispatch_open_annotated_copy_reads_saved_body(tmp_path):
         write_unit(corpus_root)
         annotated_dir = tmp_path / "data" / "annotated"
         annotated_dir.mkdir(parents=True)
-        (annotated_dir / "hp01-ch01.annotated.md").write_text(
+        (annotated_dir / "hp01-ch01.advanced.annotated.md").write_text(
             "---\nbody_kind: annotated\n---\n\nSaved [[body|正文]].\n",
             encoding="utf-8",
         )
@@ -245,13 +282,87 @@ def test_dispatch_open_annotated_copy_reads_saved_body(tmp_path):
         dispatcher = ActionDispatcher()
 
         await dispatcher.dispatch(
-            AgentAction(id=OPEN_ANNOTATED_COPY, label="回看译注", payload={"unit_id": "hp01-ch01"}),
+            AgentAction(id=OPEN_ANNOTATED_COPY, label="回看译注", payload={"unit_id": "hp01-ch01", "level": "advanced"}),
             context,
         )
 
         assert [event["type"] for event in events] == ["chapter.loading", "chapter.opened"]
         assert events[-1]["unit"]["body"] == "Saved [[body|正文]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_open_annotated_copy_reads_legacy_intermediate_copy(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        annotated_dir = tmp_path / "data" / "annotated"
+        annotated_dir.mkdir(parents=True)
+        (annotated_dir / "hp01-ch01.annotated.md").write_text(
+            "---\nbody_kind: annotated\n---\n\nLegacy [[body|正文]].\n",
+            encoding="utf-8",
+        )
+        events = []
+
+        async def emit(event_type, **payload):
+            events.append({"type": event_type, **payload})
+
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            annotated_dir=annotated_dir,
+        )
+        dispatcher = ActionDispatcher()
+
+        await dispatcher.dispatch(
+            AgentAction(id=OPEN_ANNOTATED_COPY, label="回看译注", payload={"unit_id": "hp01-ch01", "level": "intermediate"}),
+            context,
+        )
+
+        assert [event["type"] for event in events] == ["chapter.loading", "chapter.opened"]
+        assert events[-1]["unit"]["body"] == "Legacy [[body|正文]]."
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_open_annotated_copy_generates_missing_density(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        annotated_dir = tmp_path / "data" / "annotated"
+        annotated_dir.mkdir(parents=True)
+        (annotated_dir / "hp01-ch01.intermediate.annotated.md").write_text(
+            "---\nbody_kind: annotated\n---\n\nMedium [[body|正文]].\n",
+            encoding="utf-8",
+        )
+        events = []
+
+        async def emit(event_type, **payload):
+            events.append({"type": event_type, **payload})
+
+        annotator = FakeAnnotator()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            annotated_dir=annotated_dir,
+            annotator_service=annotator,
+        )
+        dispatcher = ActionDispatcher()
+
+        await dispatcher.dispatch(
+            AgentAction(id=OPEN_ANNOTATED_COPY, label="回看译注", payload={"unit_id": "hp01-ch01", "level": "beginner"}),
+            context,
+        )
+
+        assert [event["type"] for event in events] == [
+            "annotation.started",
+            "annotation.progress",
+            "annotation.completed",
+            "chapter.opened",
+        ]
+        assert annotator.levels == ["beginner"]
+        assert (annotated_dir / "hp01-ch01.beginner.annotated.md").exists()
 
     asyncio.run(run_case())
 

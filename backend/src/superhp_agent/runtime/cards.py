@@ -25,8 +25,8 @@ class ReadingCardBuilder:
             AgentCard(
                 id="empty-corpus",
                 type="setup",
-                title="还没有可阅读的文本",
-                body="请先把章节 Markdown 放入 corpus/ 目录。",
+                title="No Reading Texts Yet",
+                body="Add chapter Markdown files to the corpus/ directory first.",
                 actions=[],
             )
         ]
@@ -48,8 +48,8 @@ class ReadingCardBuilder:
             AgentCard(
                 id=f"unit-{unit.id}-start",
                 type="reading",
-                title="开始这一章",
-                body=self._unit_title(unit, "将要阅读"),
+                title="Ready to Read",
+                body=self._unit_title(unit, "Next up"),
                 actions=actions,
             )
         ]
@@ -68,17 +68,21 @@ class ReadingCardBuilder:
         if unit.vocab_count > 0:
             actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
         if unit.has_annotated_copy:
-            actions.append(action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id))
+            back_action = action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id)
+            back_action.label = "Back to Annotated"
+            actions.append(back_action)
         else:
-            actions.append(action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id))
+            back_action = action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id)
+            back_action.label = "Back to Original"
+            actions.append(back_action)
 
-        title = "这一章已完成" if unit.next_unit_id else "已经读到最后一章"
+        title = "Chapter Complete" if unit.next_unit_id else "Final Chapter Complete"
         return [
             AgentCard(
                 id=f"unit-{unit.id}-complete",
                 type="progress",
                 title=title,
-                body=self._vocab_body(unit, "可以进入下一步。"),
+                body=self._vocab_body(unit, "You can move on."),
                 actions=actions,
             )
         ]
@@ -93,12 +97,13 @@ class ReadingCardBuilder:
     @staticmethod
     def _unit_title(unit: ReadingUnitState, prefix: str) -> str:
         return (
-            f"{prefix}《{unit.book_title}》第 {unit.chapter_no} 章 "
-            f"{unit.chapter_title}。"
+            f"{prefix}: {unit.book_title}, Chapter {unit.chapter_no}, "
+            f"{unit.chapter_title}."
         )
 
     @staticmethod
     def _vocab_body(unit: ReadingUnitState, prefix: str) -> str:
         if unit.vocab_count <= 0:
             return prefix
-        return f"{prefix} 本章目前关联了 {unit.vocab_count} 个生词。"
+        word_label = "word" if unit.vocab_count == 1 else "words"
+        return f"{prefix} This chapter currently has {unit.vocab_count} vocabulary {word_label}."

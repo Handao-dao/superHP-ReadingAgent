@@ -23,7 +23,7 @@ class FakeSettings:
 def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     annotated_dir = tmp_path / "annotated"
     annotated_dir.mkdir()
-    (annotated_dir / "hp01-ch01.annotated.md").write_text("Annotated", encoding="utf-8")
+    (annotated_dir / "hp01-ch01.advanced.annotated.md").write_text("Annotated", encoding="utf-8")
     unit = ReadingUnit(
         id="hp01-ch01",
         chapter_id="hp01-ch01",

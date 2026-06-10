@@ -1,82 +1,78 @@
-# SuperHP Agent 架构与实操计划
+# SuperHP Agent 架构与实操状态
 
 ## Summary
 
-把项目从“用户粘贴文本的通用标注工具”升级为“阅读单元驱动的《哈利波特》专门阅读助手”。实施分两条主线推进：
+SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单元驱动的《哈利波特》专门阅读助手”。当前主流程已经闭环：用户从目录选择章节，通过 guided cards 生成/打开译注或阅读原文，在固定纸面中伪分页阅读，并可查词、添加生词、复习本章生词、标记已读和进入下一章。
 
-1. **工程化升级**：参考 nanobot 的分层思想，拆出 runtime、provider、storage、event、tool/action、transport 等边界，让后端不再把任务、LLM 初始化、流式返回、保存逻辑集中在入口文件。
-2. **特化阅读体验**：引入 `corpus/` Markdown 小说文本，按“书 -> 章”存储；每章有唯一 `id`，并通过后续书签系统处理章节内精细定位。界面采用选择驱动的 agent cards，不开放自由问答。
+后端采用明确分层：transport 负责 HTTP/WebSocket，runtime 负责 cards 与 action side effects，services 负责模型译注和查词，storage/memory/corpus 负责本地数据。Router 只决定“给用户什么选项”，Dispatcher 才执行“用户选择之后发生什么”。
 
-首轮目标采用“阅读单元闭环”：能列出阅读单元、打开阅读单元、生成译注、保存译注副本、按阅读单元记录生词、回看已译注文本，并由 guided cards 提供下一步选择。
+## Completed Backend
 
-## Key Changes
+- `CorpusStore` 已支持扫描 `corpus/` Markdown、解析 YAML frontmatter、按 `unit_id` 安全读取正文，并拒绝路径越界与重复 id。
+- Provider 抽象、OpenAI-compatible provider、模型重试与错误归一化已完成。
+- `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并从 `[[word|translation]]` 中提取生词。
+- `WordLookupService` 已支持上下文查词，返回 `word_cn/sentence_cn/pos`。
+- WebSocket reading session 已支持 `ready/cards.updated/chapter.loading/chapter.opened/annotation.* /unit.marked_read/error`。
+- Guided cards 已支持 start/complete 两个阶段：生成译注、打开译注、阅读原文、读下一章、复习生词、回看正文。
+- 标注副本已按 Density level 保存为 `{unit_id}.{level}.annotated.md`，legacy `{unit_id}.annotated.md` 作为 intermediate fallback。
+- SQLite 已接入 `units/vocabulary/unit_vocabulary`，支持生词上下文、掌握状态、词性、章节关联和未掌握词计数。
+- Memory 已记录 current/opened/read/annotated unit ids 和 event log；WebSocket 初始 cards 会解析并回传真实 current unit id。
+- HTTP 已提供 units、unit detail、vocabulary CRUD/mark、word lookup、agent cards 等接口。
 
-- 使用 `Markdown + YAML frontmatter` 存储小说文本。
-- `id` 表示章节唯一 ID，例如 `hp01-ch03`。
-- `chapter_id` 表示原小说章节分组 ID，例如 `hp01-ch03`。
-- 标注副本保存到 `backend/data/annotated_corpus/{unit_id}.annotated.md`。
-- 删除旧的 history 产品形态，回看改为读取阅读单元译注副本。
-- 保留全局 vocabulary，同时新增阅读单元与生词关联，后续可按 `chapter_id` 聚合。
-- 用户界面不提供自由问答框，只提供 agent cards 和预定义 action。
-- 搜索/读取工具严格限制在 `corpus/`，且只通过业务接口调用。
-- 传输层采用 WebSocket 承载 guided reading session，HTTP 保留给稳定资源读取和插件接口。
+## Completed Frontend
 
-## Backend Plan
+- 主界面已是三栏阅读壳：左侧目录、中央固定纸面阅读器、移动端目录抽屉。
+- 目录按书分组，显示当前章、已读、已有译注、未掌握生词数，并通过 WebSocket 请求该章 start cards。
+- 阅读区采用固定纸面 + CSS columns 伪分页，支持按钮、方向键和空格翻页；正文重排不会误跳 complete card。
+- 生成译注时展示 chapter summary 和进度状态；start/complete guidance 页已降级为 action panel，避免重复标题和说明。
+- 右上角 Density 下拉使用 `H/M/L`，持久化到 `localStorage` 并注入 generate/open annotated actions。
+- 当前章节 id 持久化到 `localStorage`，刷新后可恢复卡片页的章节上下文和 summary。
+- 渲染层支持普通英文词和已标注词点击查词；手动添加标注会写入生词库并即时重排当前正文。
+- 生词表页面已支持全部/章节筛选、未掌握/已掌握、搜索、删除、重新学习、词性 badge。
+- `review_chapter_vocab` card action 已前端拦截，直接打开生词表并筛选当前章。
+- 阅读区域和 card 文案已基本英文化；侧边栏、顶部状态栏、查词与生词表仍保留部分中文。
 
-1. 拆分工程边界：`config`, `corpus`, `storage`, `runtime`, `tools`, `transport`, `main`。 **已完成基础版**
-2. 实现 `CorpusStore`：扫描阅读单元、解析 frontmatter、按 `unit_id` 读取正文、拒绝路径穿越。 **已完成基础版**
-3. 实现 Provider 抽象：统一模型调用、重试、流式接口、OpenAI-compatible provider。 **已完成基础版**
-4. 实现 deterministic Router 与 guided cards：继续阅读、生成译注、复习本章生词、标记已读、下一章。 **已完成模板版**
-5. 实现 WebSocket reading session：连接后推送 cards，action 后推送加载/打开/卡片更新事件。 **已完成基础版**
-6. 实现 ActionDispatcher/ActionHandler：Router 只生成选项，Dispatcher 负责 action 分发，Handler 负责副作用执行，Transport 只收发消息。 **已完成基础版**
-7. 实现本地 memory：reading_memory.json 记录当前阅读进度，events.jsonl 记录行为日志。 **已完成基础版**
-8. 实现 SQLite schema：units/chapters、reading_progress、vocabulary、unit_vocabulary。 **schema 草稿已建，尚未接入业务**
-9. 迁移旧项目标注链路：阅读单元文本 -> 段落完整分块 -> 并发 LLM 标注 -> progress event -> 后端合并 -> 保存 annotated copy。 **已完成基础版，默认 chunk 目标 1000 words、并发 100、已加入输出截断检测**
-10. 迁移点击查词：请求中携带 `unit_id`，手动添加生词时关联当前阅读单元。 **部分完成，译注抽词已写入 unit_vocabulary，点击查词待接入**
-11. 实现 guided action 的真实副作用：打开原文、生成译注、回看译注、标记已读、读下一章、复习本章生词。 **部分完成，复习生词待接入**
-12. 记录阅读位置：前端翻页时保存 `unit_id`、`body_kind`、`page_index` 与可选 `progress_ratio`，用户重新打开时恢复到最近位置。 **未来计划，暂缓实现**
+## Current APIs
 
-## Frontend Plan
+- `GET /api/health`
+- `GET /api/units`
+- `GET /api/units/{unit_id}`
+- `GET /api/chapters` / `GET /api/chapters/{chapter_id}`：兼容旧命名，当前仍以 unit 为核心。
+- `GET /api/vocabulary?unit_id=...&chapter_id=...`
+- `POST /api/vocabulary`
+- `PATCH /api/vocabulary/{vocab_id}/master`
+- `DELETE /api/vocabulary/{vocab_id}`
+- `POST /api/vocabulary/mark-by-word`
+- `POST /api/word-lookup`
+- `GET /api/agent-cards`
+- `WS /ws/reading`
 
-1. 阅读首页改为 guided card + reader。 **已完成基础版**
-2. 删除自由文本输入框。 **已完成**
-3. 阅读区展示 book、chapter、summary、status。 **部分完成**
-4. 如果已有译注副本，默认展示译注；否则展示原文和“生成译注”卡片。 **后端状态已支持，译注读取未接入**
-5. 生词页支持按阅读单元/章节筛选。 **未完成**
-6. 历史页删除或重定向到阅读单元列表/阅读页。 **新项目暂无历史页**
+## Remaining Extensions
 
-## API Draft
+- 书签系统：章节内锚点、继续阅读入口、侧边栏书签列表、动态词汇变化后的定位恢复。
+- 阅读位置保存：翻页后节流保存 `unit_id/body_kind/page_index/progress_ratio`，重新进入章节时恢复。
+- 自动译注词性：让 annotator 输出或二次补全 `pos`，避免批量译注生词默认 `other`。
+- 生词复习模式：在生词表之外增加 quiz/flashcard/spaced repetition。
+- 前端英文化收尾：逐步英文化查词、生词表、状态栏或保留双语策略。
+- 更细的用户状态：后续可把 mastered/manual annotations/bookmarks 从本地单用户状态升级到用户维度。
 
-- `GET /api/health` **已完成**
-- `GET /api/units` **已完成**
-- `GET /api/units/{unit_id}` **已完成**
-- `GET /api/chapters` **兼容保留：当前返回阅读单元列表**
-- `GET /api/chapters/{chapter_id}` **兼容保留：当前参数实际接收 unit_id**
-- `WS /ws/reading` **已完成基础版**
-- `POST /api/units/{unit_id}/annotate-task` **未完成**
-- `GET /api/units/{unit_id}/annotate-stream?task_id=...` **未完成，可能改为 WS progress event**
-- `POST /api/units/{unit_id}/read` **未完成**
-- `GET /api/vocabulary?unit_id=...&chapter_id=...` **已完成基础版**
-- `GET /api/agent-cards` **已完成兼容版**
+## Test Status
 
-## Test Plan
+- 后端已有测试覆盖 corpus、memory、provider、router、WebSocket、action dispatcher、annotator/lookup services、storage、main API。
+- 当前常规验证命令：
 
-- `CorpusStore` 只能读取 `corpus/` 内阅读单元。 **已覆盖基础路径**
-- Markdown frontmatter 解析正确，缺少或重复 `id` 要报错。 **重复 id 已覆盖，缺少字段待补**
-- 章节扫描能按 book/chapter 排序。 **已覆盖**
-- WebSocket 连接能推送 ready/cards，打开单元能返回正文和 metadata。 **已覆盖**
-- ActionDispatcher 能分发打开阅读单元、标记已读、未知 action。 **已覆盖**
-- Memory 文件为空时 Router 默认从第一个阅读单元开始；存在当前进度时默认继续该单元。 **已覆盖**
-- 打开阅读单元、标记已读会写入 memory 并追加事件日志。 **已覆盖**
-- 标注 completed 后生成 annotated copy。 **已覆盖基础版**
-- 模型返回 `finish_reason=length` 时不保存为 completed，并由后端分块并发标注后按原顺序合并完整译注。 **已覆盖基础版**
-- 译注副本能通过 `open_annotated_copy` 回看。 **已覆盖基础版**
-- 生词能按 `unit_id` / `chapter_id` 查询。 **已覆盖 storage 层，API 已完成基础版**
-- 前端没有自由文本输入框，guided card 按钮能触发对应 action。 **需补 e2e/组件测试**
+```bash
+cd backend
+uv run python -m pytest
+uv run ruff check .
+
+cd ../frontend
+npm run build
+```
 
 ## Assumptions
 
-- 小说文本由本地加入项目，格式采用 `.md + YAML frontmatter`。
-- 首版不做 RAG，不做开放问答，不做用户自由 prompt。
-- 工具系统用于受控 action，不直接暴露给用户。
-- nanobot 的 subagent、cron、MCP、多渠道能力暂不引入。
+- 小说文本作为本地个人学习资料放入 `corpus/`，公开仓库应谨慎处理版权文本。
+- 首版不做开放问答，不做 RAG，不让 LLM 直接拥有执行权限。
+- 工具能力只通过受控 action 或后端 API 间接使用。
+- 当前实现默认单用户本地状态，暂不区分账号。

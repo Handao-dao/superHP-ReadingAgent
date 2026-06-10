@@ -18,6 +18,7 @@ from superhp_agent.corpus import (
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.providers.factory import make_provider
 from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
+from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.schemas import (
     AddVocabularyRequest,
     AddVocabularyResponse,
@@ -35,7 +36,7 @@ from superhp_agent.schemas import (
 )
 from superhp_agent.services.annotator import LazyAnnotatorService
 from superhp_agent.services.lookup import WordLookupService
-from superhp_agent.storage import AppDB
+from superhp_agent.storage import AppDB, normalize_pos
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
 # These singletons are intentionally created at import time: they are cheap,
@@ -97,7 +98,7 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         section_no=unit.section_no,
         section_count=unit.section_count,
         summary=unit.summary,
-        has_annotated_copy=(settings.annotated_dir / f"{unit.id}.annotated.md").exists(),
+        has_annotated_copy=has_any_annotated_copy(settings.annotated_dir, unit.id),
         status="read" if is_read else "unread",
         vocab_count=db.count_vocabulary_for_unit(unit.id),
     )
@@ -114,6 +115,7 @@ def _vocabulary_entry(row: dict) -> VocabularyEntry:
         word=str(row["word"]),
         translation=str(row["translation"]),
         global_translation=str(row["global_translation"]),
+        pos=str(row.get("pos") or "other"),
         mastered=bool(row["mastered"]),
         context=str(row["context"] or ""),
         encounter_count=int(row["encounter_count"]),
@@ -183,6 +185,7 @@ async def add_vocabulary(payload: AddVocabularyRequest):
             word=payload.word,
             translation=payload.translation,
             context=payload.context,
+            pos=payload.pos,
         )
     except CorpusError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -192,6 +195,7 @@ async def add_vocabulary(payload: AddVocabularyRequest):
         id=vocab_id,
         word=payload.word.strip(),
         translation=payload.translation.strip(),
+        pos=normalize_pos(payload.pos),
         unit_id=unit.id,
     )
 

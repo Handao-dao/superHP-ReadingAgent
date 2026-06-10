@@ -11,7 +11,7 @@ export async function fetchVocabulary({ unitId = '', chapterId = '' } = {}) {
   return { items, total: items.length }
 }
 
-export async function addVocabulary({ word, translation, context, unitId }) {
+export async function addVocabulary({ word, translation, context, pos = 'other', unitId }) {
   const response = await fetch(BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -19,6 +19,7 @@ export async function addVocabulary({ word, translation, context, unitId }) {
       word,
       translation,
       context,
+      pos,
       unit_id: unitId,
     }),
   })

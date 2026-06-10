@@ -36,13 +36,17 @@ backend/data/memory/
 - `unit_opened`
 - `unit_marked_read`
 - `annotation_requested`
+- `annotation_completed`
 - `error`
 
 ## Design Notes
 
 - `current_unit_id` 是 Router 选择“继续阅读哪里”的主要依据。
 - `read_unit_ids` 会让对应章节进入已读状态，从而展示“下一章/复习/回看”类卡片。
-- `annotated_unit_ids` 与 `backend/data/annotated_corpus/{unit_id}.annotated.md` 都可表示已标注；后续标注链路完成后应同时写入。
+- `annotated_unit_ids` 与 `backend/data/annotated_corpus/{unit_id}.{level}.annotated.md` 都可表示已标注。
+- legacy `backend/data/annotated_corpus/{unit_id}.annotated.md` 仍可作为 intermediate fallback。
+- WebSocket `cards.updated` 会回传 Router 实际解析出的 `current_unit_id`。
+- 前端还会把当前 unit id 写入 `localStorage.superhp_current_unit_id`，用于刷新后恢复卡片上下文。
 - memory 不替代 vocabulary 数据库；生词仍应由独立表或插件 API 管理。
 ## Runtime Boundary
 

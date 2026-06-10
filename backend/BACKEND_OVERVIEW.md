@@ -84,7 +84,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - 阅读单元元数据索引。
 - 生词表。
 - 单元与生词的关联。
-- 生词出现次数、上下文、时间戳。
+- 生词出现次数、上下文、词性、掌握状态、时间戳。
 
 简单说：memory 管流程状态，storage 管可查询数据。
 
@@ -138,6 +138,8 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - 标记已读。
 - 调用译注服务生成 annotated Markdown。
 - 写入 memory、event log、vocabulary DB。
+- 打开译注时会按 action payload 中的 `level` 查找 `{unit_id}.{level}.annotated.md`；如果当前 level 不存在，则自动生成该密度版本。
+- legacy `{unit_id}.annotated.md` 作为 intermediate fallback 读取，不做强制迁移。
 
 这里是后端副作用最集中的地方，因此需要保持 handler 小而清楚。
 
@@ -170,6 +172,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - 把 action 交给 `ActionDispatcher`。
 - 通过 `ReadingSocketEventSink` 转发后端事件。
 - 把异常转换成前端可理解的 error 事件。
+- 初始和 action 后的 `cards.updated` 会回传 Router 实际解析出的 `current_unit_id`，帮助前端刷新后恢复章节上下文。
 
 它不负责决定业务流程，也不直接生成译注。
 
@@ -202,6 +205,7 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。
 - 所有 chunk 成功后，后端按 `chunk.index` 排序合并完整译注。
 - 后端从合并后的 `[[word|翻译]]` 标记中提取 vocabulary，保持对外的 `AnnotationResult` 结构。
+- 译注 prompt 支持 `beginner/intermediate/advanced` 三档密度；前端 UI 显示为 `H/M/L`。
 
 `LazyAnnotatorService` 用于延迟创建真实 provider，让没有配置 API key 的情况下仍然可以启动后端、浏览 corpus、查看已生成数据。
 
@@ -210,6 +214,15 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 `WordLookupService` 是查词服务。它可以看作阅读流程之外的插件能力。
 
 它不应该由主 Router 直接管理，因为查词更像用户在阅读界面中的局部辅助动作，而不是“下一步阅读流程”的核心状态转移。
+
+当前查词 API 返回：
+
+- `word`
+- `word_cn`
+- `pos`
+- `sentence_cn`
+
+手动添加生词时会关联当前 `unit_id`，保存上下文和词性，并把词条重新置为未掌握。
 
 ## 工具层
 
@@ -244,8 +257,9 @@ schema 是后端和前端之间的契约。字段命名里还保留了一些 `ch
 4. 用户点击一个 card action。
 5. WebSocket session 把 action 交给 `ActionDispatcher`。
 6. 对应 handler 读取 corpus、写 memory、调用 annotator 或读取译注副本。
-7. 后端通过 WebSocket 推送进度和结果。
-8. action 完成后重新生成 cards，等待用户下一次选择。
+7. 生成译注时按 `level` 写入 level-specific annotated copy，并写入 vocabulary DB。
+8. 后端通过 WebSocket 推送进度和结果。
+9. action 完成后重新生成 cards，等待用户下一次选择。
 
 ## 后续扩展建议
 

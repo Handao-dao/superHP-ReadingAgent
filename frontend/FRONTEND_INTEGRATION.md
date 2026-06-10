@@ -20,7 +20,7 @@
 
 ## 第一版阅读界面
 
-当前前端采用固定纸张窗口，而不是左右分栏调试布局。
+当前前端采用三栏阅读壳：左侧目录、中央固定纸张窗口、移动端目录抽屉。侧边栏和顶部状态栏保留部分中文，阅读纸面区域和 guided card 已基本英文化。
 
 核心设计：
 
@@ -29,8 +29,12 @@
 - 用户通过左右按钮、方向键或空格翻页。
 - 正文最后一页之后进入引导页，集中展示后端 cards。
 - 译注生成中不清空上下文，而是在纸张中央展示 summary。
+- 引导页上半区展示书名、章节、summary；下半区是轻量 action panel，避免重复 card title/body。
 - 长文本译注由后端分块并发处理、后端合并保存；前端只展示进度，不展示 chunk 正文预览。
 - 进度、重试、JSON 修复、错误信息以小字显示在 summary 上方或纸张顶部。
+- 右上角 `Density: H/M/L` 下拉映射为 `beginner/intermediate/advanced`，生成或打开译注时写入 action payload。
+- 当前阅读单元 id 通过 `localStorage` 持久化，刷新后可恢复卡片页的章节上下文。
+- 译注正文和普通英文词都可点击查词；添加标注会写入生词表并即时重排正文。
 
 当前页面模式可以理解为：
 
@@ -101,7 +105,39 @@ type ReaderMode = "empty" | "reading" | "guidance" | "generating" | "error"
 
 - 展示当前单元生词。
 - 展示章节生词。
-- 后续扩展复习界面。
+- 支持生词表页的章节筛选、搜索、掌握/重新学习、删除。
+
+### `POST /api/vocabulary`
+
+用途：把用户查词得到的词条写入生词库，并关联当前阅读单元。
+
+前端用途：
+
+- 查词气泡中的 `添加标注`。
+- 写入后即时加入 `manualAnnotations`，重新渲染当前正文。
+
+### `PATCH /api/vocabulary/{vocab_id}/master`
+
+用途：按词条 id 标记掌握/未掌握。
+
+### `DELETE /api/vocabulary/{vocab_id}`
+
+用途：删除一个生词词条。
+
+### `POST /api/vocabulary/mark-by-word`
+
+用途：阅读区按词标记掌握，通常用于取消当前标注。
+
+### `POST /api/word-lookup`
+
+用途：上下文查词。
+
+返回字段包括：
+
+- `word`
+- `word_cn`
+- `pos`
+- `sentence_cn`
 
 ### `GET /api/agent-cards`
 
@@ -176,16 +212,22 @@ WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送�
   "request_id": "action-1",
   "action": {
     "id": "generate_annotation",
-    "label": "生成译注",
+    "label": "Generate",
     "payload": {
       "unit_id": "hp01-ch01",
-      "chapter_id": "hp01-ch01"
+      "chapter_id": "hp01-ch01",
+      "level": "intermediate"
     }
   }
 }
 ```
 
 前端不要自行推断复杂流程。优先原样发送后端 card 中给出的 action。
+
+例外：
+
+- `generate_annotation` 和 `open_annotated_copy` 会由前端注入当前 `level`。
+- `review_chapter_vocab` 是本地页面跳转，前端直接切到生词表并筛选当前章节。
 
 ## 后端推送事件
 
@@ -417,6 +459,7 @@ type ReadingUnitMeta = {
   summary: string
   has_annotated_copy: boolean
   status: string
+  vocab_count: number
 }
 ```
 
@@ -451,6 +494,7 @@ type VocabularyEntry = {
   word: string
   translation: string
   global_translation: string
+  pos: "noun" | "verb" | "adjective" | "adverb" | "phrase" | "other" | string
   mastered: boolean
   context: string
   encounter_count: number
@@ -463,9 +507,9 @@ type VocabularyEntry = {
 
 前端展示：
 
-- 当前单元词汇列表。
-- 章节词汇复习。
-- 后续可扩展 mastered 状态切换。
+- 生词表列表、词性 badge、上下文、章节筛选。
+- 未掌握/已掌握 tab。
+- 删除、标记掌握、重新学习。
 
 ## 推荐前端状态
 
@@ -518,16 +562,15 @@ type ReadingLoadStatus =
 3. 进度事件应该可见，但不要打断阅读。
 4. 错误提示要保留用户的上下文，不要把页面重置为空。
 5. WebSocket 断开时，页面可以保留最后一次正文和 cards，并提示重连。
-6. 生词复习入口可以先作为 card action 展示，具体复习页后续再细化。
+6. 生词复习入口已作为 card action 接入，点击后打开生词表并筛选当前章节。
+7. 已掌握词和手动标注属于前端渲染覆盖层，不应触发模型重新生成。
+8. Density 变化影响模型选词，应通过 level-specific annotated copy 缓存隔离。
 
 ## 后续前端任务拆分
 
-1. 建立 WebSocket client 和事件分发器。
-2. 建立阅读页面状态 store。
-3. 渲染 cards/actions。
-4. 渲染 source/annotated 正文。
-5. 展示 annotation 进度、重试、失败、完成状态。
-6. 接入 vocabulary 列表。
-7. 设计断线重连和错误恢复体验。
-8. 后续接入阅读位置保存：翻页后节流发送当前位置，重新打开同一章节后恢复到最近页。
-9. 设计书签系统：支持章节内书签、继续阅读锚点、从侧边栏定位到书签，以及动态词汇状态变化后的阅读位置恢复。
+1. 阅读位置保存：翻页后节流保存当前位置，重新打开同一章节后恢复到最近页。
+2. 书签系统：支持章节内书签、继续阅读锚点、从侧边栏定位到书签。
+3. 断线重连体验：保留最后正文和 cards，并提供明确重连状态。
+4. 生词复习模式：在列表之外扩展 flashcard/quiz。
+5. 前端英文化收尾：查词、生词表、状态栏文案按产品风格逐步统一。
+6. 组件测试或 e2e：覆盖 density action payload、复习生词跳转、伪分页边界、刷新恢复。

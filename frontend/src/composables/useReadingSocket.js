@@ -1,4 +1,6 @@
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+
+const CURRENT_UNIT_STORAGE_KEY = 'superhp_current_unit_id'
 
 function makeRequestId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
@@ -23,7 +25,7 @@ function userFacingError(message, fallback = '阅读会话发生错误。') {
 export function useReadingSocket() {
   const cards = ref([])
   const activeChapter = ref(null)
-  const currentChapterId = ref(null)
+  const currentChapterId = ref(localStorage.getItem(CURRENT_UNIT_STORAGE_KEY) || null)
   const connected = ref(false)
   const busy = ref(false)
   const loadStatus = ref('connecting')
@@ -37,6 +39,14 @@ export function useReadingSocket() {
   let intentionalClose = false
 
   const canSend = computed(() => connected.value && socket?.readyState === WebSocket.OPEN)
+
+  watch(currentChapterId, (unitId) => {
+    if (unitId) {
+      localStorage.setItem(CURRENT_UNIT_STORAGE_KEY, unitId)
+    } else {
+      localStorage.removeItem(CURRENT_UNIT_STORAGE_KEY)
+    }
+  })
 
   function connect() {
     if (socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(socket.readyState)) return
@@ -151,29 +161,32 @@ export function useReadingSocket() {
         if (!['failed', 'offline'].includes(loadStatus.value)) loadStatus.value = 'idle'
         return
       case 'chapter.loading':
+        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'loading_unit'
-        progressMessage.value = message.body_kind === 'annotated' ? '正在打开译注副本...' : '正在加载原文...'
-        statusMessage.value = '正在加载阅读单元...'
+        progressMessage.value = message.body_kind === 'annotated' ? 'Opening annotated copy...' : 'Loading original text...'
+        statusMessage.value = 'Loading reading unit...'
         return
       case 'chapter.opened':
         activeChapter.value = message.unit || message.chapter
         currentChapterId.value = activeChapter.value?.meta?.id || currentChapterId.value
-        statusMessage.value = '阅读单元已打开'
+        statusMessage.value = 'Reading unit opened'
         progressMessage.value = ''
         noticeMessage.value = ''
         loadStatus.value = 'idle'
         return
       case 'annotation.started':
+        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'generating_annotation'
-        noticeMessage.value = '开始生成译注...'
-        progressMessage.value = '开始生成译注...'
+        noticeMessage.value = 'Starting annotation...'
+        progressMessage.value = 'Starting annotation...'
         return
       case 'annotation.progress':
+        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'generating_annotation'
-        progressMessage.value = message.message || '正在生成译注...'
+        progressMessage.value = message.message || 'Generating annotations...'
         noticeMessage.value = progressMessage.value
         return
       case 'annotation.model_retry':
@@ -185,14 +198,14 @@ export function useReadingSocket() {
       case 'annotation.json_repair':
         busy.value = true
         loadStatus.value = 'json_repairing'
-        progressMessage.value = message.message || '模型返回格式异常，正在修复...'
+        progressMessage.value = message.message || 'Repairing model output...'
         noticeMessage.value = progressMessage.value
         return
       case 'annotation.completed':
         busy.value = false
         loadStatus.value = 'completed'
-        progressMessage.value = '译注已生成'
-        noticeMessage.value = '译注已生成'
+        progressMessage.value = 'Annotations ready'
+        noticeMessage.value = 'Annotations ready'
         return
       case 'annotation.failed':
         errorMessage.value = userFacingError(message.message, '译注生成失败。')

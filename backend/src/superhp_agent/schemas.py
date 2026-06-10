@@ -37,6 +37,7 @@ class VocabularyEntry(BaseModel):
     word: str
     translation: str
     global_translation: str
+    pos: str = "other"
     mastered: bool = False
     context: str = ""
     encounter_count: int = 1
@@ -54,6 +55,7 @@ class WordLookupRequest(BaseModel):
 class WordLookupResult(BaseModel):
     word: str
     word_cn: str
+    pos: str = "other"
     sentence_cn: str = ""
 
 
@@ -61,6 +63,7 @@ class AddVocabularyRequest(BaseModel):
     word: str
     translation: str
     context: str = ""
+    pos: str = "other"
     unit_id: str
 
 
@@ -68,6 +71,7 @@ class AddVocabularyResponse(BaseModel):
     id: int
     word: str
     translation: str
+    pos: str = "other"
     unit_id: str
 
 

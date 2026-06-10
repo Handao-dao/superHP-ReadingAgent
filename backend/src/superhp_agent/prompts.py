@@ -46,22 +46,38 @@ LEVEL_PROFILES = {
         "label": "a beginner English learner, roughly A1-A2 level",
         "rules": (
             "Annotate frequently enough to help a beginner understand the text, "
-            "but do not annotate every content word. Target annotation density: high."
+            "but do not annotate every content word. "
+            "Skip only very common function words and very basic everyday vocabulary. "
+            "Annotate most content words beyond A1-A2 level, especially unfamiliar nouns, verbs, adjectives, and adverbs. "
+            "Annotate all idioms, phrasal verbs, fixed expressions, culturally specific expressions, and wizarding-world terms that may affect understanding. "
+            "For idioms and phrasal verbs, annotate the whole expression rather than individual words. "
+            "Avoid repeated annotations of the same word within the same passage unless the meaning changes. "
+            "Target annotation density: relatively high, about 25%-40% of meaningful content words."
         ),
     },
     "intermediate": {
         "label": "an intermediate English learner, roughly B1-B2 level",
         "rules": (
             "Do not annotate A1-B1 high-frequency vocabulary that an intermediate learner should know. "
-            "Focus on B2+ vocabulary, uncommon verbs, literary words, wizarding-world terms, idioms, and phrasal verbs. "
-            "Target annotation density: moderate."
+            "Focus on B2+ vocabulary, uncommon verbs, descriptive adjectives, adverbs with subtle meanings, "
+            "less common nouns, literary words, wizarding-world terms, idioms, phrasal verbs, and words whose meaning depends strongly on context. "
+            "Annotate culturally specific expressions and wizarding-world terms whose meaning is not obvious from the individual words. "
+            "For idioms, phrasal verbs, and fixed expressions, annotate the whole expression rather than separate words. "
+            "Avoid repeated annotations of the same word within the same passage unless necessary. "
+            "Target annotation density: moderate, about 8%-18% of meaningful content words."
         ),
     },
     "advanced": {
         "label": "an advanced English learner, roughly C1-C2 level",
         "rules": (
-            "Annotate only rare, archaic, literary, dialectal, culturally specific, magical-world, or contextually subtle expressions. "
-            "When in doubt, do not annotate. Target annotation density: low."
+            "Annotate only words or expressions that may challenge an advanced or near-fluent English reader. "
+            "Do not annotate ordinary descriptive adjectives, common adverbs, common phrasal verbs, common idioms, "
+            "or standard academic vocabulary. "
+            "Focus only on truly rare, archaic, literary, metaphorical, dialectal, culturally specific, wizarding-world, or contextually subtle expressions. "
+            "Annotate wizarding-world terms only if they are obscure, important for understanding the sentence, or appear for the first time as key terms. "
+            "For complex expressions, annotate the whole phrase when appropriate rather than isolated words. "
+            "When in doubt, do not annotate. "
+            "Target annotation density: low, about 2%-6% of meaningful content words."
         ),
     },
 }
@@ -91,13 +107,15 @@ LOOKUP_SYSTEM_PROMPT = """
 # Role
 You are an expert English-Chinese dictionary and translation assistant specialized in the Harry Potter novels.
 
-Your job is to help Chinese readers understand a specific English word in context. You receive one word and the sentence containing it. You provide a concise Chinese translation of the word and a natural Chinese translation of the entire sentence.
+Your job is to help Chinese readers understand a specific English word in context. You receive one word and the sentence containing it. You provide a concise Chinese translation of the word, a lightweight part-of-speech category, and a natural Chinese translation of the entire sentence.
 
 # Rules
 1. Word translation must match the exact meaning in context.
 2. Keep the word translation concise. Prefer 1-4 Chinese characters.
 3. The sentence translation should be natural Chinese, preserving the original meaning and tone.
-4. Do not add explanations, notes, or commentary.
+4. The pos value must be one of: noun, verb, adjective, adverb, phrase, other.
+5. Use phrase for multi-word expressions or fixed collocations. Use other when the category is unclear.
+6. Do not add explanations, notes, or commentary.
 
 # Output Rules
 You must output valid JSON only.
@@ -108,6 +126,7 @@ Do not wrap the JSON in code fences.
 {
   "word": "the original word",
   "word_cn": "中文翻译",
+  "pos": "noun|verb|adjective|adverb|phrase|other",
   "sentence_cn": "整句中文翻译"
 }
 """.strip()

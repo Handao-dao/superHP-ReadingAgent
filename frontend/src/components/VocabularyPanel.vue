@@ -11,27 +11,54 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  selectedUnitId: {
+    type: String,
+    default: '',
+  },
+  chapters: {
+    type: Array,
+    default: () => [],
+  },
   refreshKey: {
     type: Number,
     default: 0,
   },
 })
 
-const emit = defineEmits(['changed'])
+const emit = defineEmits(['changed', 'update:selectedUnitId'])
 
 const items = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 const tab = ref('active')
 const search = ref('')
-const currentOnly = ref(false)
+
+const posLabels = {
+  noun: '名词',
+  verb: '动词',
+  adjective: '形容词',
+  adverb: '副词',
+  phrase: '短语',
+  other: '其他',
+}
+
+const selectedChapterTitle = computed(() => {
+  if (!props.selectedUnitId) return '所有章节'
+  const chapter = props.chapters.find((item) => item.id === props.selectedUnitId)
+  if (!chapter) return props.currentTitle || '当前章节'
+  return `${chapter.chapter_no}. ${chapter.chapter_title}`
+})
+
+const scopedItems = computed(() => {
+  if (!props.selectedUnitId) return items.value
+  return items.value.filter((item) => item.unit_id === props.selectedUnitId)
+})
 
 const filteredItems = computed(() => {
   const query = search.value.trim().toLowerCase()
-  return items.value.filter((item) => {
+  return scopedItems.value.filter((item) => {
     if (tab.value === 'active' && item.mastered) return false
     if (tab.value === 'mastered' && !item.mastered) return false
-    if (currentOnly.value && props.currentUnitId && item.unit_id !== props.currentUnitId) return false
     if (!query) return true
     return (
       item.word.toLowerCase().includes(query) ||
@@ -41,8 +68,12 @@ const filteredItems = computed(() => {
   })
 })
 
-const activeCount = computed(() => items.value.filter((item) => !item.mastered).length)
-const masteredCount = computed(() => items.value.filter((item) => item.mastered).length)
+const activeCount = computed(() => scopedItems.value.filter((item) => !item.mastered).length)
+const masteredCount = computed(() => scopedItems.value.filter((item) => item.mastered).length)
+
+function updateSelectedUnitId(event) {
+  emit('update:selectedUnitId', event.target.value)
+}
 
 async function loadVocabulary() {
   loading.value = true
@@ -88,7 +119,7 @@ onMounted(loadVocabulary)
       <div>
         <p class="small-label">Vocabulary</p>
         <h2>生词表</h2>
-        <p>{{ currentTitle || '所有章节' }}</p>
+        <p>{{ selectedChapterTitle }}</p>
       </div>
       <div class="vocab-stats">
         <span>{{ activeCount }} 未掌握</span>
@@ -105,9 +136,18 @@ onMounted(loadVocabulary)
         <span>搜索</span>
         <input v-model="search" type="search" placeholder="word / 译文 / context" />
       </label>
-      <label class="current-filter">
-        <input v-model="currentOnly" type="checkbox" :disabled="!currentUnitId" />
-        <span>当前章</span>
+      <label class="chapter-select">
+        <span>章节</span>
+        <select :value="selectedUnitId" @change="updateSelectedUnitId">
+          <option value="">全部章节</option>
+          <option
+            v-for="chapter in chapters"
+            :key="chapter.id"
+            :value="chapter.id"
+          >
+            {{ chapter.chapter_no }}. {{ chapter.chapter_title }}
+          </option>
+        </select>
       </label>
     </div>
 
@@ -118,7 +158,10 @@ onMounted(loadVocabulary)
     <div v-else class="vocab-table">
       <article v-for="item in filteredItems" :key="item.id" class="vocab-row">
         <div class="vocab-word-main">
-          <h3>{{ item.word }}</h3>
+          <h3>
+            <span>{{ item.word }}</span>
+            <span class="pos-badge">{{ posLabels[item.pos] || posLabels.other }}</span>
+          </h3>
           <p>{{ item.translation || item.global_translation }}</p>
         </div>
         <p class="vocab-context">{{ item.context || '暂无例句' }}</p>

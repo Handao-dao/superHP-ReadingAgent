@@ -16,11 +16,25 @@ from typing import Any
 from superhp_agent.corpus import ReadingUnit
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[(.+?)\|.+?\]\]")
+VALID_POS = {"noun", "verb", "adjective", "adverb", "phrase", "other"}
 
 
 def strip_annotation_markers(text: str) -> str:
     """Return source text with inline annotation markers removed."""
     return ANNOTATION_MARKER_RE.sub(r"\1", text)
+
+
+def normalize_pos(pos: str | None) -> str:
+    """Normalize lightweight vocabulary part-of-speech labels."""
+    value = str(pos or "").strip().lower()
+    aliases = {
+        "n": "noun",
+        "v": "verb",
+        "adj": "adjective",
+        "adv": "adverb",
+    }
+    value = aliases.get(value, value)
+    return value if value in VALID_POS else "other"
 
 
 class AppDB:
@@ -84,17 +98,22 @@ class AppDB:
                 word = str(getattr(item, "word", "") or "").strip()
                 translation = str(getattr(item, "translation", "") or "").strip()
                 context = strip_annotation_markers(str(getattr(item, "context", "") or "")).strip()
+                pos = normalize_pos(getattr(item, "pos", "other"))
                 if not word or not translation:
                     continue
                 self._conn.execute(
                     """
-                    INSERT INTO vocabulary (word, translation)
-                    VALUES (?, ?)
+                    INSERT INTO vocabulary (word, translation, pos)
+                    VALUES (?, ?, ?)
                     ON CONFLICT(word) DO UPDATE SET
                         translation=excluded.translation,
+                        pos=CASE
+                            WHEN vocabulary.pos = 'other' THEN excluded.pos
+                            ELSE vocabulary.pos
+                        END,
                         last_seen_at=datetime('now','localtime')
                     """,
-                    (word, translation),
+                    (word, translation, pos),
                 )
                 vocab_id = self._conn.execute(
                     "SELECT id FROM vocabulary WHERE word = ?",
@@ -123,11 +142,13 @@ class AppDB:
         word: str,
         translation: str,
         context: str = "",
+        pos: str = "other",
     ) -> int:
         """Store one user-selected lookup result and return its vocabulary id."""
         word = word.strip()
         translation = translation.strip()
         context = strip_annotation_markers(context).strip()
+        pos = normalize_pos(pos)
         if not word or not translation:
             raise ValueError("word and translation are required")
 
@@ -135,15 +156,16 @@ class AppDB:
             self.sync_unit(unit)
             self._conn.execute(
                 """
-                INSERT INTO vocabulary (word, translation, mastered, mastered_at)
-                VALUES (?, ?, 0, NULL)
+                INSERT INTO vocabulary (word, translation, pos, mastered, mastered_at)
+                VALUES (?, ?, ?, 0, NULL)
                 ON CONFLICT(word) DO UPDATE SET
                     translation=excluded.translation,
+                    pos=excluded.pos,
                     mastered=0,
                     mastered_at=NULL,
                     last_seen_at=datetime('now','localtime')
                 """,
-                (word, translation),
+                (word, translation, pos),
             )
             vocab_id = int(
                 self._conn.execute(
@@ -241,6 +263,7 @@ class AppDB:
                 v.id,
                 v.word,
                 v.translation AS global_translation,
+                v.pos,
                 v.mastered,
                 uv.translation,
                 uv.context,
@@ -288,6 +311,7 @@ class AppDB:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 word TEXT NOT NULL UNIQUE,
                 translation TEXT NOT NULL,
+                pos TEXT NOT NULL DEFAULT 'other',
                 mastered INTEGER DEFAULT 0,
                 mastered_at TEXT DEFAULT NULL,
                 first_seen_at TEXT DEFAULT (datetime('now','localtime')),
@@ -315,4 +339,15 @@ class AppDB:
             CREATE INDEX IF NOT EXISTS idx_unit_vocab_chapter ON unit_vocabulary(chapter_id);
             """
         )
+        self._ensure_columns()
         self._conn.commit()
+
+    def _ensure_columns(self) -> None:
+        """Apply tiny schema upgrades for existing local databases."""
+        columns = {
+            str(row["name"])
+            for row in self._conn.execute("PRAGMA table_info(vocabulary)").fetchall()
+        }
+        if "pos" not in columns:
+            self._conn.execute("ALTER TABLE vocabulary ADD COLUMN pos TEXT NOT NULL DEFAULT 'other'")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_vocab_pos ON vocabulary(pos)")

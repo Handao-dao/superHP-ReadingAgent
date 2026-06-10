@@ -1,8 +1,12 @@
-"""Action execution layer for guided reading flows."""
+"""Action execution layer for guided reading flows.
+
+The router decides which choices to display; this module decides what happens
+after the user chooses one. Keeping those layers separate makes side effects
+like memory writes, annotation generation, and file creation easy to audit.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -18,20 +22,27 @@ from superhp_agent.runtime.actions import (
     READ_ORIGINAL,
     START_NEXT_CHAPTER,
 )
+from superhp_agent.runtime.events import (
+    CallableEventSink,
+    EventEmitter,
+    EventSink,
+    emit_backend_event,
+)
 from superhp_agent.schemas import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.services.annotator import AnnotationResult
 from superhp_agent.storage import AppDB
 
-EventEmitter = Callable[..., Awaitable[None]]
-
 
 class AnnotationService(Protocol):
+    """Minimal annotator capability required by the generate action."""
     async def annotate_text(
         self,
         text: str,
         *,
         mastered_words: list[str] | None = None,
         level: str = "intermediate",
+        event_sink: EventSink | None = None,
+        request_id: str | None = None,
     ) -> AnnotationResult: ...
 
 
@@ -56,13 +67,33 @@ class ActionExecutionError(RuntimeError):
 
 @dataclass
 class ActionContext:
+    """Explicit capability bundle passed from transport to action handlers.
+
+    Handlers only receive what they need: corpus reads, event emission, optional
+    memory/storage services, and the connection's current unit id.
+    """
     corpus: CorpusStore
-    emit: EventEmitter
+    emit: EventEmitter | None = None
+    event_sink: EventSink | None = None
     memory_store: ReadingMemoryStore | None = None
     annotated_dir: Path | None = None
     annotator_service: AnnotationService | None = None
     db: AppDB | None = None
     current_unit_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.event_sink is None and self.emit is not None:
+            self.event_sink = CallableEventSink(self.emit)
+
+    async def emit_event(
+        self,
+        event_type: str,
+        *,
+        request_id: str | None = None,
+        **payload: Any,
+    ) -> None:
+        if self.event_sink is not None:
+            await emit_backend_event(self.event_sink, event_type, request_id=request_id, **payload)
 
     def log_event(self, event_type: str, **payload: Any) -> None:
         if self.memory_store:
@@ -70,6 +101,7 @@ class ActionContext:
 
 
 class ActionHandler(Protocol):
+    """Common interface for one user-selectable action."""
     async def handle(
         self,
         action: AgentAction,
@@ -80,6 +112,7 @@ class ActionHandler(Protocol):
 
 
 class ActionDispatcher:
+    """Map action ids to handler objects and run the selected action."""
     def __init__(self, handlers: dict[str, ActionHandler] | None = None):
         self.handlers = handlers or default_action_handlers()
 
@@ -97,6 +130,7 @@ class ActionDispatcher:
 
 
 class OpenUnitHandler:
+    """Open source Markdown and mark it as the active unit."""
     async def handle(
         self,
         action: AgentAction,
@@ -105,7 +139,7 @@ class OpenUnitHandler:
         request_id: str | None = None,
     ) -> None:
         unit_id = _require_unit_id(action.payload)
-        await context.emit(
+        await context.emit_event(
             "chapter.loading",
             request_id=request_id,
             chapter_id=unit_id,
@@ -127,6 +161,7 @@ class OpenUnitHandler:
 
 
 class OpenAnnotatedUnitHandler:
+    """Open an already generated annotated copy from local data storage."""
     async def handle(
         self,
         action: AgentAction,
@@ -135,11 +170,13 @@ class OpenAnnotatedUnitHandler:
         request_id: str | None = None,
     ) -> None:
         unit_id = _require_unit_id(action.payload)
+        # The annotated copy is the user's durable reading artifact; DB writes
+        # are secondary indexes for vocabulary review.
         annotated_path = _annotated_path(context, unit_id)
         if not annotated_path.exists():
             raise ActionExecutionError("annotated_copy_not_found", "还没有生成这一节的译注副本。")
 
-        await context.emit(
+        await context.emit_event(
             "chapter.loading",
             request_id=request_id,
             chapter_id=unit_id,
@@ -162,6 +199,7 @@ class OpenAnnotatedUnitHandler:
 
 
 class MarkReadHandler:
+    """Mark the current or provided unit as completed."""
     async def handle(
         self,
         action: AgentAction,
@@ -176,7 +214,7 @@ class MarkReadHandler:
         context.current_unit_id = unit_id
         if context.memory_store:
             context.memory_store.mark_read(unit_id)
-        await context.emit(
+        await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
             chapter_id=unit_id,
@@ -185,6 +223,7 @@ class MarkReadHandler:
 
 
 class GenerateAnnotationHandler:
+    """Generate, persist, and return an annotated copy for one unit."""
     async def handle(
         self,
         action: AgentAction,
@@ -199,11 +238,13 @@ class GenerateAnnotationHandler:
             raise ActionExecutionError("annotator_not_configured", "译注服务尚未配置模型 provider。")
 
         context.log_event("annotation_requested", unit_id=unit_id)
-        await context.emit("annotation.started", request_id=request_id, unit_id=unit_id, chapter_id=unit_id)
+        await context.emit_event("annotation.started", request_id=request_id, unit_id=unit_id, chapter_id=unit_id)
         doc = context.corpus.get_unit(unit_id)
         context.current_unit_id = doc.meta.id
 
-        await context.emit(
+        # Emit progress before the model call so the frontend can show useful
+        # feedback during longer annotation runs.
+        await context.emit_event(
             "annotation.progress",
             request_id=request_id,
             unit_id=unit_id,
@@ -212,10 +253,14 @@ class GenerateAnnotationHandler:
             message="正在生成译注...",
         )
         try:
-            result = await context.annotator_service.annotate_text(doc.body)
+            result = await context.annotator_service.annotate_text(
+                doc.body,
+                event_sink=context.event_sink,
+                request_id=request_id,
+            )
         except Exception as exc:
             context.log_event("annotation_failed", unit_id=unit_id, error=str(exc))
-            await context.emit(
+            await context.emit_event(
                 "annotation.failed",
                 request_id=request_id,
                 unit_id=unit_id,
@@ -224,6 +269,8 @@ class GenerateAnnotationHandler:
             )
             return
 
+        # The annotated copy is the user's durable reading artifact; DB writes
+        # are secondary indexes for vocabulary review.
         annotated_path = _annotated_path(context, unit_id)
         annotated_path.parent.mkdir(parents=True, exist_ok=True)
         annotated_path.write_text(_render_annotated_markdown(doc, result), encoding="utf-8")
@@ -239,7 +286,7 @@ class GenerateAnnotationHandler:
             stored_vocabulary_count=stored_vocabulary_count,
         )
 
-        await context.emit(
+        await context.emit_event(
             "annotation.completed",
             request_id=request_id,
             unit_id=unit_id,
@@ -258,6 +305,7 @@ class GenerateAnnotationHandler:
 
 
 def default_action_handlers() -> dict[str, ActionHandler]:
+    """Register v1 action ids with their deterministic handlers."""
     open_handler = OpenUnitHandler()
     return {
         OPEN_CHAPTER: open_handler,
@@ -270,6 +318,7 @@ def default_action_handlers() -> dict[str, ActionHandler]:
 
 
 def _payload_unit_id(payload: dict[str, Any]) -> str:
+    """Accept both new unit_id and legacy chapter_id payload names."""
     value = payload.get("unit_id") or payload.get("chapter_id")
     return str(value) if value else ""
 
@@ -282,6 +331,7 @@ def _require_unit_id(payload: dict[str, Any]) -> str:
 
 
 def _annotated_path(context: ActionContext, unit_id: str) -> Path:
+    """Resolve generated-copy paths from ids, never from client filenames."""
     if context.annotated_dir is None:
         raise ActionExecutionError("annotated_dir_not_configured", "译注副本目录尚未配置。")
     return context.annotated_dir / f"{unit_id}.annotated.md"
@@ -296,6 +346,8 @@ async def _emit_opened_unit(
     request_id: str | None,
     action_id: str,
 ) -> None:
+    # Keep legacy chapter fields in the payload while the frontend migrates to
+    # reading-unit terminology.
     detail = ReadingUnitDetail(
         meta=ReadingUnitMeta(
             id=doc.meta.id,
@@ -312,7 +364,7 @@ async def _emit_opened_unit(
         body=body,
         body_kind=body_kind,
     )
-    await context.emit(
+    await context.emit_event(
         "chapter.opened",
         request_id=request_id,
         action_id=action_id,
@@ -322,6 +374,7 @@ async def _emit_opened_unit(
 
 
 def _render_annotated_markdown(doc: ReadingUnitDocument, result: AnnotationResult) -> str:
+    """Persist annotation output as Markdown with machine-readable metadata."""
     vocab_lines = "\n".join(
         f"# - {item.word}: {item.translation}"
         for item in result.vocabulary

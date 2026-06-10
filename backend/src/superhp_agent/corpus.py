@@ -1,4 +1,9 @@
-"""Safe reading-unit corpus loading for Markdown + YAML frontmatter."""
+"""Safe reading-unit corpus loading for Markdown + YAML frontmatter.
+
+CorpusStore is the only place that maps user-visible unit ids to files. Keeping
+all reads behind this class lets tools and actions ask for ``unit_id`` without
+ever accepting arbitrary paths from the frontend or an agent.
+"""
 
 from __future__ import annotations
 
@@ -32,6 +37,8 @@ class ReadingUnit:
 
 @dataclass(frozen=True)
 class ReadingUnitDocument:
+    """Full source document returned when a user opens one reading unit."""
+
     meta: ReadingUnit
     body: str
 
@@ -41,17 +48,19 @@ ChapterDocument = ReadingUnitDocument
 
 
 class CorpusError(ValueError):
-    pass
+    """Raised when corpus files are missing, malformed, or unsafe to read."""
+
 
 
 class CorpusStore:
-    """Read markdown reading units from a single corpus root."""
+    """Read markdown reading units from a single, bounded corpus root."""
 
     def __init__(self, corpus_dir: str | Path):
         self.corpus_dir = Path(corpus_dir).expanduser().resolve()
         self._units: dict[str, ReadingUnit] | None = None
 
     def list_units(self) -> list[ReadingUnit]:
+        """Return units in stable reading order for cards and navigation."""
         self._ensure_loaded()
         assert self._units is not None
         return sorted(
@@ -60,6 +69,7 @@ class CorpusStore:
         )
 
     def get_unit(self, unit_id: str) -> ReadingUnitDocument:
+        """Load one unit body by id after metadata has been indexed."""
         self._ensure_loaded()
         assert self._units is not None
         unit = self._units.get(unit_id)
@@ -78,6 +88,7 @@ class CorpusStore:
         return self.get_unit(chapter_id)
 
     def refresh(self) -> None:
+        """Rescan corpus files; useful after adding Markdown during development."""
         self._units = self._scan()
 
     def _ensure_loaded(self) -> None:
@@ -85,6 +96,7 @@ class CorpusStore:
             self.refresh()
 
     def _scan(self) -> dict[str, ReadingUnit]:
+        """Build the id index and reject duplicate reading-unit ids."""
         if not self.corpus_dir.exists():
             return {}
         units: dict[str, ReadingUnit] = {}
@@ -98,6 +110,7 @@ class CorpusStore:
         return units
 
     def _iter_markdown_files(self) -> Iterable[Path]:
+        """Yield Markdown files only if their resolved path stays under corpus/."""
         root = self.corpus_dir
         for path in root.rglob("*.md"):
             resolved = path.resolve()
@@ -109,6 +122,7 @@ class CorpusStore:
 
     @staticmethod
     def _split_frontmatter(raw: str, path: Path) -> tuple[dict, str]:
+        """Separate YAML metadata from the text body and validate its shape."""
         if not raw.startswith("---"):
             raise CorpusError(f"Missing YAML frontmatter: {path}")
         parts = raw.split("---", 2)
@@ -121,6 +135,7 @@ class CorpusStore:
 
     @staticmethod
     def _unit_from_frontmatter(data: dict, path: Path) -> ReadingUnit:
+        """Normalize frontmatter into the internal ReadingUnit model."""
         required = [
             "id",
             "book_id",

@@ -8,6 +8,7 @@ from superhp_agent.main import app
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
 from superhp_agent.runtime.actions import MARK_CHAPTER_READ, OPEN_CHAPTER
+from superhp_agent.schemas import AgentAction
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
 
@@ -163,6 +164,33 @@ def test_socket_invalid_action_returns_error(tmp_path):
 
         assert websocket.events[0]["type"] == "error"
         assert websocket.events[0]["error"]["code"] == "unsupported_action"
+
+    asyncio.run(run_case())
+
+
+def test_socket_unknown_exception_returns_internal_error(tmp_path):
+    class BrokenDispatcher:
+        async def dispatch(self, action: AgentAction, context, *, request_id=None):
+            raise RuntimeError("boom")
+
+    async def run_case():
+        session, websocket, _ = build_session(tmp_path)
+        session.action_dispatcher = BrokenDispatcher()
+
+        await session.handle_raw_message(
+            {
+                "type": "action",
+                "request_id": "r5",
+                "action": {
+                    "id": OPEN_CHAPTER,
+                    "label": "打开这一节",
+                    "payload": {"unit_id": "hp01-ch01-sec01"},
+                },
+            }
+        )
+
+        assert websocket.events[0]["type"] == "error"
+        assert websocket.events[0]["error"]["code"] == "internal_error"
 
     asyncio.run(run_case())
 

@@ -12,6 +12,7 @@ from superhp_agent.providers.registry import find_by_name, match_by_model
 
 @dataclass(frozen=True)
 class ProviderSnapshot:
+    """Provider plus config signature for future hot-reload comparisons."""
     provider: LLMProvider
     model: str
     provider_name: str
@@ -19,6 +20,7 @@ class ProviderSnapshot:
 
 
 def make_provider(settings: Settings) -> LLMProvider:
+    """Create the configured provider from settings and registry metadata."""
     spec = find_by_name(settings.llm_provider) or match_by_model(settings.llm_model_id)
     if spec is None:
         spec = find_by_name("custom")
@@ -42,6 +44,7 @@ def make_provider(settings: Settings) -> LLMProvider:
 
 
 def provider_signature(settings: Settings) -> tuple[object, ...]:
+    """Return non-secret settings that identify the active provider config."""
     return (
         settings.llm_provider,
         settings.llm_model_id,

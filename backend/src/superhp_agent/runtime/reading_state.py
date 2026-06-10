@@ -12,6 +12,7 @@ from superhp_agent.storage import AppDB
 
 @dataclass(frozen=True)
 class ReadingUnitState:
+    """Frontend-ready snapshot assembled from corpus, memory, and artifacts."""
     id: str
     chapter_id: str
     book_id: str
@@ -86,6 +87,7 @@ class ReadingStateReader:
         self.db = db
 
     def list_states(self) -> list[ReadingUnitState]:
+        """Build an ordered state list without mutating progress or files."""
         units = self.corpus.list_units()
         next_by_id = self._next_unit_ids(units)
         memory = self.memory_store.load() if self.memory_store else None
@@ -110,6 +112,7 @@ class ReadingStateReader:
         return None
 
     def current_state(self) -> ReadingUnitState | None:
+        """Return the last opened unit, if memory has one."""
         if self.memory_store is None:
             return None
         current_unit_id = self.memory_store.load().current_unit_id

@@ -17,6 +17,7 @@ _THINKING_STYLE_MAP = {
 
 
 class OpenAICompatProvider(LLMProvider):
+    """Adapter for vendors that expose an OpenAI-compatible chat API."""
     def __init__(
         self,
         *,
@@ -37,6 +38,7 @@ class OpenAICompatProvider(LLMProvider):
         return self.default_model
 
     async def _ensure_client(self):
+        """Import and construct the SDK client lazily on first model call."""
         if self._client is not None:
             return self._client
         async with self._client_lock:
@@ -125,6 +127,8 @@ class OpenAICompatProvider(LLMProvider):
         reasoning_effort: str | None,
         extra_body: dict[str, Any] | None,
     ) -> dict[str, Any]:
+        # extra_body carries provider-specific extensions such as thinking flags
+        # while the public provider API stays small and stable.
         body = dict(extra_body or {})
         thinking_body = self._thinking_extra_body(reasoning_effort)
         if thinking_body:
@@ -260,6 +264,7 @@ class OpenAICompatProvider(LLMProvider):
         return result
 
     def _handle_error(self, exc: Exception) -> LLMResponse:
+        """Normalize SDK exceptions into retry-aware LLMResponse objects."""
         response = getattr(exc, "response", None)
         status_code = getattr(exc, "status_code", None)
         if status_code is None and response is not None:

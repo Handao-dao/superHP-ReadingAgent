@@ -17,6 +17,11 @@ from superhp_agent.schemas import AgentCard
 
 
 class ReadingCardBuilder:
+    """Build small, choice-based cards for the constrained reading UI.
+
+    Keeping copy and action ids here makes it easier to refine the UX without
+    touching WebSocket transport or action execution code.
+    """
     def empty_corpus(self) -> list[AgentCard]:
         return [
             AgentCard(
@@ -43,6 +48,7 @@ class ReadingCardBuilder:
         return self.unit_cards(unit)
 
     def unit_cards(self, unit: ReadingUnitState) -> list[AgentCard]:
+        """Select the card variant from the user's progress on one unit."""
         if unit.is_read:
             return self._read_unit(unit)
         if not unit.has_annotated_copy:
@@ -84,6 +90,8 @@ class ReadingCardBuilder:
         ]
 
     def _read_unit(self, unit: ReadingUnitState) -> list[AgentCard]:
+        # Review comes before navigation so the user can consolidate vocabulary
+        # while the just-finished unit is still fresh.
         actions = []
         if unit.vocab_count > 0:
             actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))

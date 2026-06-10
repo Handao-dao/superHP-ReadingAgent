@@ -1,4 +1,9 @@
-"""SQLite storage for reading units, progress, and vocabulary."""
+"""SQLite storage for reading units, progress, and vocabulary.
+
+The JSON memory file is enough for simple flow decisions, but vocabulary needs a
+queryable store for review screens and cross-unit aggregation. AppDB owns that
+relational side of the local backend state.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +16,7 @@ from superhp_agent.corpus import ReadingUnit
 
 
 class AppDB:
+    """Thin SQLite gateway used by services and API endpoints."""
     def __init__(self, db_path: str | Path):
         self.path = Path(db_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -18,6 +24,8 @@ class AppDB:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
+        # FastAPI and WebSocket handlers can interleave on the same process, so
+        # serialize access around the shared sqlite connection.
         self._lock = threading.RLock()
         self._init_tables()
 
@@ -25,6 +33,7 @@ class AppDB:
         self._conn.close()
 
     def sync_unit(self, unit: ReadingUnit) -> None:
+        """Upsert corpus metadata so vocabulary rows can reference a unit."""
         with self._lock:
             self._conn.execute(
                 """
@@ -59,6 +68,7 @@ class AppDB:
             self._conn.commit()
 
     def add_vocabulary_items(self, unit: ReadingUnit, items: list[Any]) -> int:
+        """Store extracted vocabulary and its unit-specific encounter context."""
         inserted = 0
         with self._lock:
             self.sync_unit(unit)
@@ -99,6 +109,7 @@ class AppDB:
         return inserted
 
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
+        """Return the number shown on guided cards for one reading unit."""
         with self._lock:
             row = self._conn.execute(
                 "SELECT COUNT(*) AS count FROM unit_vocabulary WHERE unit_id = ?",
@@ -143,6 +154,7 @@ class AppDB:
             return [dict(row) for row in self._conn.execute(query, params).fetchall()]
 
     def _init_tables(self) -> None:
+        """Create the local schema lazily so first run needs no setup command."""
         self._conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS units (

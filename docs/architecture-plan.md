@@ -31,9 +31,10 @@
 6. 实现 ActionDispatcher/ActionHandler：Router 只生成选项，Dispatcher 负责 action 分发，Handler 负责副作用执行，Transport 只收发消息。 **已完成基础版**
 7. 实现本地 memory：reading_memory.json 记录当前阅读进度，events.jsonl 记录行为日志。 **已完成基础版**
 8. 实现 SQLite schema：units/chapters、reading_progress、vocabulary、unit_vocabulary。 **schema 草稿已建，尚未接入业务**
-9. 迁移旧项目标注链路：阅读单元文本 -> LLM 标注 -> progress event -> 保存 annotated copy。 **已完成基础版，chunk/批处理待完善**
+9. 迁移旧项目标注链路：阅读单元文本 -> 段落完整分块 -> 并发 LLM 标注 -> progress event -> 后端合并 -> 保存 annotated copy。 **已完成基础版，默认 chunk 目标 1000 words、并发 100、已加入输出截断检测**
 10. 迁移点击查词：请求中携带 `unit_id`，手动添加生词时关联当前阅读单元。 **部分完成，译注抽词已写入 unit_vocabulary，点击查词待接入**
 11. 实现 guided action 的真实副作用：打开原文、生成译注、回看译注、标记已读、读下一节、复习本节生词。 **部分完成，复习生词待接入**
+12. 记录阅读位置：前端翻页时保存 `unit_id`、`body_kind`、`page_index` 与可选 `progress_ratio`，用户重新打开时恢复到最近位置。 **未来计划，暂缓实现**
 
 ## Frontend Plan
 
@@ -68,7 +69,9 @@
 - Memory 文件为空时 Router 默认从第一个阅读单元开始；存在当前进度时默认继续该单元。 **已覆盖**
 - 打开阅读单元、标记已读会写入 memory 并追加事件日志。 **已覆盖**
 - 标注 completed 后生成 annotated copy。 **已覆盖基础版**
-- 译注副本能通过 `open_annotated_copy` 回看。 **已覆盖基础版**`n- 生词能按 `unit_id` / `chapter_id` 查询。 **已覆盖 storage 层，API 已完成基础版**
+- 模型返回 `finish_reason=length` 时不保存为 completed，并由后端分块并发标注后按原顺序合并完整译注。 **已覆盖基础版**
+- 译注副本能通过 `open_annotated_copy` 回看。 **已覆盖基础版**
+- 生词能按 `unit_id` / `chapter_id` 查询。 **已覆盖 storage 层，API 已完成基础版**
 - 前端没有自由文本输入框，guided card 按钮能触发对应 action。 **需补 e2e/组件测试**
 
 ## Assumptions

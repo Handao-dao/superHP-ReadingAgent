@@ -22,7 +22,15 @@ from superhp_agent.storage import AppDB
 
 
 class FakeAnnotator:
-    async def annotate_text(self, text, *, mastered_words=None, level="intermediate"):
+    async def annotate_text(
+        self,
+        text,
+        *,
+        mastered_words=None,
+        level="intermediate",
+        event_sink=None,
+        request_id=None,
+    ):
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],

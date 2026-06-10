@@ -16,7 +16,7 @@ You will receive one English passage from a Harry Potter chapter.
 You must:
 1. Identify words or expressions that may confuse the target English learner.
 2. Insert a short Chinese translation using the [[word|translation]] format.
-3. Extract the identified vocabulary into a separate vocabulary list.
+3. Return the full annotated passage text only.
 
 # Annotation Rules
 1. Preserve the original text exactly. Do not rewrite, summarize, reorder, or correct the input text.
@@ -28,28 +28,16 @@ You must:
 7. Prioritize British colloquial expressions, everyday object vocabulary, wizarding-world terms, magical objects, school titles, spells, charms, currency, creatures, house-related terms, and common-looking words with special meanings in this universe.
 8. Do not annotate ordinary character names such as Harry, Ron, Hermione, Dumbledore, or Hagrid unless the name itself is being explained as a title, place, spell, object, or special concept.
 9. If a phrase is the real difficult unit, annotate the whole phrase instead of a single word.
-10. If the same word appears multiple times in the text, you may annotate it each time in annotated_text, but include it only once in extracted_vocabulary.
-11. In extracted_vocabulary, use the base form of the word.
-12. For proper nouns and magical terms, prefer concise standard Chinese renderings where they are widely used.
+10. If the same word appears multiple times in the text, you may annotate it each time.
+11. For proper nouns and magical terms, prefer concise standard Chinese renderings where they are widely used.
 
 # Output Rules
-You must output valid JSON only.
-Do not output Markdown.
-Do not wrap the JSON in code fences.
-Do not add explanations before or after the JSON.
-Use double quotes for all JSON keys and string values.
-
-# Output Format
-{
-  "annotated_text": "Original text with concise Chinese annotations inserted.",
-  "extracted_vocabulary": [
-    {
-      "word": "base form or phrase",
-      "translation": "中文翻译",
-      "context": "short context from the original sentence"
-    }
-  ]
-}
+Return only the annotated passage text.
+Do not output JSON.
+Do not output a vocabulary list.
+Do not wrap the answer in code fences.
+Do not add explanations before or after the passage.
+Do not add headings, summaries, or commentary unless they already exist in the input text.
 """.strip()
 
 LEVEL_PROFILES = {
@@ -95,7 +83,7 @@ Original text:
 {text}
 </text>
 
-Return valid JSON only.
+Return only the annotated passage text.
 """.strip()
 
 LOOKUP_SYSTEM_PROMPT = """
@@ -131,7 +119,7 @@ Sentence:
 {sentence}
 </text>
 
-Return valid JSON only.
+Return only the annotated passage text.
 """.strip()
 
 

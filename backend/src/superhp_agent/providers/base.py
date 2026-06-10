@@ -18,6 +18,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class GenerationSettings:
+    """Default generation knobs shared by all provider implementations."""
     temperature: float = 0.2
     max_tokens: int = 4096
     reasoning_effort: str | None = None
@@ -25,6 +26,7 @@ class GenerationSettings:
 
 @dataclass
 class LLMResponse:
+    """Provider-neutral response envelope returned to application services."""
     content: str | None
     finish_reason: str = "stop"
     usage: dict[str, int] = field(default_factory=dict)
@@ -43,6 +45,7 @@ class LLMResponse:
 
 
 class LLMProvider(ABC):
+    """Abstract base class that hides vendor SDK details from the app."""
     _SENTINEL = object()
     _RETRY_DELAYS = (1.0, 2.0, 4.0)
     _RETRYABLE_STATUS_CODES = frozenset({408, 409, 429})
@@ -101,6 +104,8 @@ class LLMProvider(ABC):
         extra_body: dict[str, Any] | None = None,
         on_content_delta: Callable[[str], Awaitable[None]] | None = None,
     ) -> LLMResponse:
+        # Providers can override true streaming; the base fallback preserves the
+        # same interface for services that do not care about token deltas.
         response = await self.chat(
             messages,
             model=model,
@@ -128,6 +133,8 @@ class LLMProvider(ABC):
         extra_body: dict[str, Any] | None = None,
         on_retry_wait: Callable[[str], Awaitable[None]] | None = None,
     ) -> LLMResponse:
+        # SENTINEL lets callers intentionally pass None to mean "use provider
+        # defaults" while still allowing explicit numeric overrides.
         if max_tokens is self._SENTINEL or max_tokens is None:
             max_tokens = self.generation.max_tokens
         if temperature is self._SENTINEL or temperature is None:
@@ -160,6 +167,8 @@ class LLMProvider(ABC):
         on_content_delta: Callable[[str], Awaitable[None]] | None = None,
         on_retry_wait: Callable[[str], Awaitable[None]] | None = None,
     ) -> LLMResponse:
+        # SENTINEL lets callers intentionally pass None to mean "use provider
+        # defaults" while still allowing explicit numeric overrides.
         if max_tokens is self._SENTINEL or max_tokens is None:
             max_tokens = self.generation.max_tokens
         if temperature is self._SENTINEL or temperature is None:

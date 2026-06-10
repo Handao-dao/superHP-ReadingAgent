@@ -1,4 +1,9 @@
-"""FastAPI entrypoint for SuperHP Agent."""
+"""FastAPI entrypoint and application composition root.
+
+This module wires the long-lived services together. HTTP endpoints expose read
+models for the frontend, while the WebSocket endpoint delegates guided reading
+side effects to ``ReadingSocketSession`` and the runtime action dispatcher.
+"""
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,11 +30,19 @@ from superhp_agent.services.annotator import LazyAnnotatorService
 from superhp_agent.storage import AppDB
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
+# These singletons are intentionally created at import time: they are cheap,
+# stateless or locally stateful, and FastAPI can reuse them across requests.
 settings = get_settings()
 corpus = CorpusStore(settings.corpus_dir)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
-annotator_service = LazyAnnotatorService(lambda: make_provider(settings))
+# LLM providers are lazy so the app can boot and serve corpus/memory endpoints
+# even when no API key has been configured yet.
+annotator_service = LazyAnnotatorService(
+    lambda: make_provider(settings),
+    max_chunk_words=settings.annotation_max_chunk_words,
+    max_concurrency=settings.annotation_max_concurrency,
+)
 state_reader = ReadingStateReader(corpus, settings.annotated_dir, memory_store, db)
 flow_router = ReadingFlowRouter(state_reader)
 
@@ -45,6 +58,7 @@ app.add_middleware(
 
 
 def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
+    """Translate internal corpus metadata into the public API schema."""
     return ReadingUnitMeta(
         id=unit.id,
         chapter_id=unit.chapter_id,
@@ -64,6 +78,7 @@ def _unit_detail(doc: ReadingUnitDocument) -> ReadingUnitDetail:
 
 
 def _vocabulary_entry(row: dict) -> VocabularyEntry:
+    """Normalize SQLite rows before they cross the API boundary."""
     return VocabularyEntry(
         id=int(row["id"]),
         word=str(row["word"]),
@@ -98,6 +113,8 @@ async def get_unit(unit_id: str):
     return _unit_detail(doc)
 
 
+# Compatibility endpoints keep older frontend/tests working while the domain
+# language moves from whole chapters to finer reading units.
 @app.get("/api/chapters", response_model=list[ChapterMeta])
 async def list_chapters():
     return await list_units()

@@ -1,4 +1,9 @@
-"""WebSocket transport for guided reading sessions."""
+"""WebSocket transport for guided reading sessions.
+
+The transport understands protocol messages, request ids, and error envelopes.
+It does not decide reading flow or perform business side effects directly; those
+belong to the router and action dispatcher.
+"""
 
 from __future__ import annotations
 
@@ -19,11 +24,13 @@ from superhp_agent.runtime.action_dispatcher import (
     UnsupportedActionError,
 )
 from superhp_agent.runtime.action_router import ReadingFlowRouter
+from superhp_agent.runtime.events import BackendEvent, EventSink
 from superhp_agent.schemas import AgentAction
 from superhp_agent.storage import AppDB
 
 
 class ReadingSocketMessage(BaseModel):
+    """Validated client message for the reading.v1 protocol."""
     type: str
     request_id: str | None = None
     action: AgentAction | None = None
@@ -31,8 +38,22 @@ class ReadingSocketMessage(BaseModel):
     current_unit_id: str | None = None
 
 
+class ReadingSocketEventSink:
+    """Forward backend events to one WebSocket client."""
+
+    def __init__(self, websocket: WebSocket):
+        self.websocket = websocket
+
+    async def emit_event(self, event: BackendEvent) -> None:
+        await self.websocket.send_json(event.as_message())
+
+
 class ReadingSocketSession:
-    """Handle one guided-reading WebSocket connection."""
+    """Handle one guided-reading WebSocket connection.
+
+    A session tracks only connection-local state, such as the current unit id.
+    Durable progress is written through ReadingMemoryStore by action handlers.
+    """
 
     def __init__(
         self,
@@ -54,9 +75,11 @@ class ReadingSocketSession:
         self.annotated_dir = Path(annotated_dir) if annotated_dir is not None else None
         self.annotator_service = annotator_service
         self.db = db
+        self.event_sink: EventSink = ReadingSocketEventSink(websocket)
         self.current_unit_id: str | None = None
 
     async def run(self) -> None:
+        """Accept the socket, send initial cards, then process client messages."""
         await self.websocket.accept()
         self._log_event("session_started")
         await self.send_ready()
@@ -67,6 +90,7 @@ class ReadingSocketSession:
             await self.handle_raw_message(raw)
 
     async def handle_raw_message(self, raw: dict[str, Any]) -> None:
+        """Validate and route one raw JSON message from the frontend."""
         try:
             message = ReadingSocketMessage.model_validate(raw)
         except ValidationError as exc:
@@ -112,9 +136,11 @@ class ReadingSocketSession:
         *,
         request_id: str | None = None,
     ) -> None:
+        # ActionContext is the explicit capability bundle for handlers. This is
+        # the boundary that keeps transport concerns out of business logic.
         context = ActionContext(
             corpus=self.corpus,
-            emit=self.send_event,
+            event_sink=self.event_sink,
             memory_store=self.memory_store,
             annotated_dir=self.annotated_dir,
             annotator_service=self.annotator_service,
@@ -151,6 +177,14 @@ class ReadingSocketSession:
                 request_id=request_id,
             )
             return
+        except Exception as exc:
+            self._log_event("internal_error", error=str(exc), request_id=request_id)
+            await self.send_error(
+                code="internal_error",
+                message="后端执行 action 时发生未知错误。",
+                request_id=request_id,
+            )
+            return
 
         self.current_unit_id = context.current_unit_id
         await self.send_cards(request_id=request_id)
@@ -163,6 +197,7 @@ class ReadingSocketSession:
         )
 
     async def send_cards(self, request_id: str | None = None) -> None:
+        """Ask the deterministic router for fresh choices and push them down."""
         cards = self.flow_router.inspect(current_unit_id=self.current_unit_id)
         self._log_event("cards_shown", current_unit_id=self.current_unit_id, card_ids=[card.id for card in cards])
         await self.send_event(
@@ -197,10 +232,7 @@ class ReadingSocketSession:
         request_id: str | None = None,
         **payload: Any,
     ) -> None:
-        event = {"type": event_type, **payload}
-        if request_id is not None:
-            event["request_id"] = request_id
-        await self.websocket.send_json(event)
+        await self.event_sink.emit_event(BackendEvent(type=event_type, request_id=request_id, payload=payload))
 
     def _log_event(self, event_type: str, **payload: Any) -> None:
         if self.memory_store:

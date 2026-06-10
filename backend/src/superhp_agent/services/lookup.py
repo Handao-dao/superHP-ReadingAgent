@@ -10,6 +10,11 @@ from superhp_agent.utils import extract_json
 
 
 class WordLookupService:
+    """Explain a selected word in sentence context.
+
+    Lookup is modeled as an optional plugin-style service: the guided reading
+    router does not need it to decide the next card.
+    """
     def __init__(self, provider: LLMProvider):
         self.provider = provider
 
@@ -20,6 +25,7 @@ class WordLookupService:
             return 1
 
     async def lookup(self, word: str, sentence: str) -> dict:
+        """Return a compact JSON-compatible explanation for the frontend."""
         user_prompt = build_lookup_user_prompt(word=word, sentence=sentence)
         last_error: Exception | None = None
 

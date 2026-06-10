@@ -1,4 +1,9 @@
-"""File-backed reading memory and event log."""
+"""File-backed reading memory and append-only event log.
+
+Memory captures product state that is useful for choosing the next card: current
+unit, opened units, read units, and annotated units. The JSONL event log is kept
+separate so debugging/auditing events does not complicate the current state file.
+"""
 
 from __future__ import annotations
 
@@ -11,11 +16,13 @@ from typing import Any
 
 
 def utc_now() -> str:
+    """Use timezone-aware UTC timestamps for portable local files."""
     return datetime.now(UTC).isoformat()
 
 
 @dataclass
 class ReadingMemory:
+    """Small durable snapshot of the user's reading progress."""
     current_unit_id: str = ""
     opened_unit_ids: list[str] = field(default_factory=list)
     read_unit_ids: list[str] = field(default_factory=list)
@@ -53,6 +60,7 @@ class ReadingMemoryStore:
         self._lock = threading.RLock()
 
     def load(self) -> ReadingMemory:
+        """Load memory, treating a missing or empty file as a first-time user."""
         with self._lock:
             if not self.memory_path.exists() or self.memory_path.stat().st_size == 0:
                 return ReadingMemory()
@@ -65,6 +73,7 @@ class ReadingMemoryStore:
             return ReadingMemory.from_dict(data)
 
     def save(self, memory: ReadingMemory) -> None:
+        """Persist the whole snapshot atomically from the caller's perspective."""
         with self._lock:
             memory.updated_at = utc_now()
             self.memory_path.write_text(
@@ -73,6 +82,7 @@ class ReadingMemoryStore:
             )
 
     def mark_opened(self, unit_id: str) -> ReadingMemory:
+        """Record that a unit became the active reading target."""
         memory = self.load()
         memory.current_unit_id = unit_id
         memory.opened_unit_ids = _append_unique(memory.opened_unit_ids, unit_id)
@@ -81,6 +91,7 @@ class ReadingMemoryStore:
         return memory
 
     def mark_read(self, unit_id: str) -> ReadingMemory:
+        """Record completion while preserving opened/current state."""
         memory = self.load()
         memory.current_unit_id = unit_id
         memory.opened_unit_ids = _append_unique(memory.opened_unit_ids, unit_id)
@@ -90,6 +101,7 @@ class ReadingMemoryStore:
         return memory
 
     def mark_annotated(self, unit_id: str) -> ReadingMemory:
+        """Remember that an annotated Markdown copy exists for the unit."""
         memory = self.load()
         memory.annotated_unit_ids = _append_unique(memory.annotated_unit_ids, unit_id)
         self.save(memory)
@@ -97,6 +109,7 @@ class ReadingMemoryStore:
         return memory
 
     def log_event(self, event_type: str, **payload: Any) -> None:
+        """Append a JSONL event without changing the current memory snapshot."""
         event = {
             "type": event_type,
             "created_at": utc_now(),

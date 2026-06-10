@@ -9,6 +9,7 @@ from superhp_agent.tools.base import Tool
 
 
 class ListReadingUnitsTool(Tool):
+    """Expose the bounded corpus index as an agent tool."""
     name = "list_reading_units"
     description = "List reading units from the local corpus."
 
@@ -20,6 +21,7 @@ class ListReadingUnitsTool(Tool):
 
 
 class GetReadingUnitTool(Tool):
+    """Read exactly one unit by id; path selection stays inside CorpusStore."""
     name = "get_reading_unit"
     description = "Read one reading unit by id from the local corpus."
 

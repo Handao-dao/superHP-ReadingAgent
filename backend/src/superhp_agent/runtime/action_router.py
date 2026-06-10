@@ -12,6 +12,12 @@ from superhp_agent.schemas import AgentCard
 
 
 class ReadingFlowRouter:
+    """Choose the next guided cards from read-only state.
+
+    The router is deliberately deterministic in v1. It does not execute actions
+    or call an LLM; it simply decides which card templates best match the user's
+    current unit.
+    """
     def __init__(
         self,
         state_reader: ReadingStateReader,
@@ -21,6 +27,7 @@ class ReadingFlowRouter:
         self.card_builder = card_builder or ReadingCardBuilder()
 
     def inspect(self, current_chapter_id: str | None = None, current_unit_id: str | None = None) -> list[AgentCard]:
+        """Return the cards the frontend should offer next."""
         unit_id = current_unit_id or current_chapter_id
         if unit_id:
             current = self.state_reader.get_state(unit_id)

@@ -1,6 +1,9 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { listChapters } from './api/chapters'
+import { lookupWord } from './api/lookup'
+import { addVocabulary, setMasteredByWord } from './api/vocabulary'
+import VocabularyPanel from './components/VocabularyPanel.vue'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { renderReadingBlock, splitReadingBlocks } from './utils/renderReadingText'
 
@@ -13,12 +16,28 @@ const readingViewport = ref(null)
 const readingFlow = ref(null)
 const pageStride = ref(0)
 const totalReadingPages = ref(0)
+const sidebarOpen = ref(false)
+const activeView = ref('reader')
+const vocabularyRefreshKey = ref(0)
+const manualAnnotations = ref(new Map())
+const hiddenAnnotations = ref(new Set())
+const lookupVisible = ref(false)
+const lookupLoading = ref(false)
+const lookupSaving = ref(false)
+const lookupError = ref('')
+const lookupWordText = ref('')
+const lookupSentence = ref('')
+const lookupIsAnnotated = ref(false)
+const lookupTranslation = ref('')
+const lookupResult = ref(null)
+const lookupStyle = ref({})
 
 const {
   activeChapter,
   busy,
   canSend,
   cards,
+  cardsRevision,
   connected,
   currentChapterId,
   errorMessage,
@@ -38,12 +57,34 @@ const currentMeta = computed(() => {
   return chapters.value.find((unit) => unit.id === currentChapterId.value) || null
 })
 
+const chaptersByBook = computed(() => {
+  const groups = new Map()
+  for (const chapter of chapters.value) {
+    const key = chapter.book_id
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        title: chapter.book_title,
+        chapters: [],
+      })
+    }
+    groups.get(key).chapters.push(chapter)
+  }
+  return Array.from(groups.values()).map((group) => ({
+    ...group,
+    chapters: group.chapters.slice().sort((a, b) => a.chapter_no - b.chapter_no),
+  }))
+})
+
 const paragraphs = computed(() => {
   const body = activeChapter.value?.body || ''
   return splitReadingBlocks(body)
 })
 
-const renderedBlocks = computed(() => paragraphs.value.map((block) => renderReadingBlock(block)))
+const renderedBlocks = computed(() => paragraphs.value.map((block) => renderReadingBlock(block, {
+  manualAnnotations: manualAnnotations.value,
+  hiddenAnnotations: hiddenAnnotations.value,
+})))
 const hasActiveReading = computed(() => Boolean(activeChapter.value && renderedBlocks.value.length > 0))
 const isGuidancePage = computed(() => hasActiveReading.value && totalReadingPages.value > 0 && currentPage.value >= totalReadingPages.value)
 const flowTransform = computed(() => ({
@@ -81,6 +122,12 @@ const summaryText = computed(() => {
   return currentMeta.value?.summary || cards.value[0]?.body || '阅读助手正在准备下一步。'
 })
 
+const currentTitle = computed(() => {
+  const meta = currentMeta.value
+  if (!meta) return ''
+  return `${meta.chapter_no}. ${meta.chapter_title}`
+})
+
 const surfaceTone = computed(() => ({
   'is-guidance': readerMode.value === 'guidance',
   'is-generating': readerMode.value === 'generating',
@@ -103,6 +150,21 @@ function handleAction(action) {
   sendAction(action)
 }
 
+function handleSelectChapter(chapter) {
+  if (isGenerating.value) return
+  activeView.value = 'reader'
+  currentPage.value = 0
+  totalReadingPages.value = 0
+  completeCardsRequestedFor.value = ''
+  closeLookupBubble()
+  const sent = requestCards('start', chapter.id)
+  if (sent) sidebarOpen.value = false
+}
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
 function nextPage() {
   if (canGoNext.value) currentPage.value += 1
 }
@@ -112,6 +174,11 @@ function prevPage() {
 }
 
 function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    closeLookupBubble()
+    return
+  }
+  if (activeView.value !== 'reader') return
   if (isGenerating.value) return
   if (event.key === 'ArrowRight' || event.key === ' ') {
     event.preventDefault()
@@ -121,6 +188,150 @@ function handleKeydown(event) {
     event.preventDefault()
     prevPage()
   }
+}
+
+function normalizeWord(word = '') {
+  return String(word).trim().toLowerCase()
+}
+
+function cleanWord(word = '') {
+  return String(word).replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')
+}
+
+function stripAnnotationMarkers(text = '') {
+  return String(text).replace(/\[\[(.+?)\|.+?\]\]/g, '$1')
+}
+
+function calcLookupStyle(target) {
+  const rect = target.getBoundingClientRect()
+  const width = 320
+  const left = Math.min(window.innerWidth - width - 16, Math.max(16, rect.left + rect.width / 2 - width / 2))
+  const top = Math.min(window.innerHeight - 260, rect.bottom + 12)
+  return {
+    left: `${left}px`,
+    top: `${Math.max(16, top)}px`,
+    width: `${width}px`,
+  }
+}
+
+function extractSentence(target) {
+  const block = target.closest('.reading-block')
+  const text = stripAnnotationMarkers(block?.innerText || target.textContent || '')
+    .replace(/\([^()]{1,16}\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!text) return ''
+  const word = cleanWord(target.dataset.word || target.textContent || '').toLowerCase()
+  const parts = text.match(/[^.!?。！？]+[.!?。！？]?/g) || [text]
+  return (parts.find((part) => part.toLowerCase().includes(word)) || text).trim()
+}
+
+function closeLookupBubble() {
+  lookupVisible.value = false
+  lookupLoading.value = false
+  lookupSaving.value = false
+  lookupError.value = ''
+  lookupResult.value = null
+}
+
+async function handleReadingClick(event) {
+  const target = event.target.closest?.('[data-word]')
+  if (!target || !readingFlow.value?.contains(target)) {
+    closeLookupBubble()
+    return
+  }
+
+  const word = cleanWord(target.dataset.word || target.textContent || '')
+  if (!word) return
+
+  lookupVisible.value = true
+  lookupLoading.value = true
+  lookupSaving.value = false
+  lookupError.value = ''
+  lookupWordText.value = word
+  lookupSentence.value = extractSentence(target)
+  lookupIsAnnotated.value = target.classList.contains('vocab-word')
+  lookupTranslation.value = target.dataset.translation || ''
+  lookupResult.value = null
+  lookupStyle.value = calcLookupStyle(target)
+
+  try {
+    const result = await lookupWord(word, lookupSentence.value)
+    if (!result.word_cn && lookupTranslation.value) result.word_cn = lookupTranslation.value
+    lookupResult.value = result
+  } catch (error) {
+    lookupError.value = error.message || '查词失败'
+    if (lookupTranslation.value) {
+      lookupResult.value = {
+        word,
+        word_cn: lookupTranslation.value,
+        sentence_cn: '',
+      }
+    }
+  } finally {
+    lookupLoading.value = false
+  }
+}
+
+async function addLookupAnnotation() {
+  const translation = lookupResult.value?.word_cn || lookupTranslation.value
+  const unitId = activeChapter.value?.meta?.id || currentChapterId.value
+  if (!unitId || !lookupWordText.value || !translation) return
+  lookupSaving.value = true
+  lookupError.value = ''
+  try {
+    await addVocabulary({
+      word: lookupWordText.value,
+      translation,
+      context: lookupSentence.value,
+      unitId,
+    })
+    const key = normalizeWord(lookupWordText.value)
+    const nextManual = new Map(manualAnnotations.value)
+    const nextHidden = new Set(hiddenAnnotations.value)
+    nextManual.set(key, translation)
+    nextHidden.delete(key)
+    manualAnnotations.value = nextManual
+    hiddenAnnotations.value = nextHidden
+    lookupIsAnnotated.value = true
+    vocabularyRefreshKey.value += 1
+    loadChapterList()
+    await recalculatePages()
+  } catch (error) {
+    lookupError.value = error.message || '添加标注失败'
+  } finally {
+    lookupSaving.value = false
+  }
+}
+
+async function hideLookupAnnotation() {
+  if (!lookupWordText.value) return
+  lookupSaving.value = true
+  lookupError.value = ''
+  const key = normalizeWord(lookupWordText.value)
+  try {
+    await setMasteredByWord(lookupWordText.value, true)
+    const nextManual = new Map(manualAnnotations.value)
+    const nextHidden = new Set(hiddenAnnotations.value)
+    nextManual.delete(key)
+    nextHidden.add(key)
+    manualAnnotations.value = nextManual
+    hiddenAnnotations.value = nextHidden
+    lookupIsAnnotated.value = false
+    vocabularyRefreshKey.value += 1
+    loadChapterList()
+    closeLookupBubble()
+    await recalculatePages()
+  } catch (error) {
+    lookupError.value = error.message || '取消标注失败'
+  } finally {
+    lookupSaving.value = false
+  }
+}
+
+function handleVocabularyChanged() {
+  vocabularyRefreshKey.value += 1
+  loadChapterList()
 }
 
 async function recalculatePages() {
@@ -155,11 +366,19 @@ watch(
     currentPage.value = 0
     totalReadingPages.value = 0
     completeCardsRequestedFor.value = ''
+    manualAnnotations.value = new Map()
+    hiddenAnnotations.value = new Set()
+    closeLookupBubble()
     recalculatePages()
   }
 )
 
 watch(() => activeChapter.value?.body, recalculatePages)
+watch([manualAnnotations, hiddenAnnotations], recalculatePages)
+
+watch(cardsRevision, () => {
+  loadChapterList()
+})
 
 watch(isGuidancePage, (isGuidance) => {
   const unitId = activeChapter.value?.meta?.id
@@ -182,8 +401,51 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="reader-shell">
-    <header class="reader-topbar">
+  <main class="reader-layout" :class="{ 'is-sidebar-open': sidebarOpen }">
+    <aside class="chapter-sidebar" aria-label="章节目录">
+      <div class="sidebar-header">
+        <p class="eyebrow">Library</p>
+        <h2>目录</h2>
+      </div>
+
+      <div v-if="listErrorMessage" class="sidebar-error">{{ listErrorMessage }}</div>
+      <div v-else-if="listLoading" class="sidebar-loading">正在读取目录...</div>
+
+      <nav v-else class="book-list">
+        <section v-for="book in chaptersByBook" :key="book.id" class="book-group">
+          <h3>{{ book.title }}</h3>
+          <button
+            v-for="chapter in book.chapters"
+            :key="chapter.id"
+            type="button"
+            class="chapter-item"
+            :class="{ 'is-active': chapter.id === currentChapterId, 'is-read': chapter.status === 'read' }"
+            :disabled="isGenerating"
+            @click="handleSelectChapter(chapter)"
+          >
+            <span class="chapter-number">{{ chapter.chapter_no }}</span>
+            <span class="chapter-main">
+              <span class="chapter-title">{{ chapter.chapter_title }}</span>
+              <span class="chapter-badges">
+                <span v-if="chapter.status === 'read'">已读</span>
+                <span v-if="chapter.has_annotated_copy">译注</span>
+                <span v-if="chapter.vocab_count > 0">{{ chapter.vocab_count }} 词</span>
+              </span>
+            </span>
+          </button>
+        </section>
+      </nav>
+    </aside>
+
+    <button
+      type="button"
+      class="sidebar-scrim"
+      aria-label="关闭目录"
+      @click="sidebarOpen = false"
+    ></button>
+
+    <section class="reader-shell">
+      <header class="reader-topbar">
       <div class="title-block">
         <p class="eyebrow">SuperHP Agent</p>
         <h1>{{ currentMeta?.book_title || '章节阅读助手' }}</h1>
@@ -194,12 +456,17 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="session-cluster">
+        <div class="view-switch" aria-label="页面切换">
+          <button type="button" :class="{ 'is-active': activeView === 'reader' }" @click="activeView = 'reader'">阅读</button>
+          <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="activeView = 'vocabulary'">生词表</button>
+        </div>
+        <button type="button" class="catalog-toggle" @click="toggleSidebar">目录</button>
         <span class="status-pill" :class="{ 'is-online': connected }">{{ connected ? '在线' : '离线' }}</span>
         <span class="page-chip">{{ pageLabel }}</span>
       </div>
-    </header>
+      </header>
 
-    <section class="book-stage">
+      <section v-if="activeView === 'reader'" class="book-stage">
       <button
         type="button"
         class="page-turn page-turn-left"
@@ -230,7 +497,7 @@ onBeforeUnmount(() => {
         <template v-else-if="readerMode === 'reading'">
           <div class="reading-page" :class="{ 'is-annotated': activeChapter?.body_kind === 'annotated' }">
             <div ref="readingViewport" class="reading-viewport">
-              <div ref="readingFlow" class="reading-flow" :style="flowTransform">
+              <div ref="readingFlow" class="reading-flow" :style="flowTransform" @click="handleReadingClick">
                 <div
                   v-for="(html, index) in renderedBlocks"
                   :key="index"
@@ -283,6 +550,40 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
+        <aside v-if="lookupVisible" class="lookup-bubble" :style="lookupStyle">
+          <div class="lookup-head">
+            <div>
+              <p class="small-label">Lookup</p>
+              <h3>{{ lookupWordText }}</h3>
+            </div>
+            <button type="button" class="icon-button" aria-label="关闭查词" @click="closeLookupBubble">×</button>
+          </div>
+
+          <p v-if="lookupLoading" class="lookup-muted">正在查词...</p>
+          <p v-else-if="lookupError" class="lookup-error">{{ lookupError }}</p>
+
+          <template v-if="lookupResult">
+            <p class="lookup-translation">{{ lookupResult.word_cn || lookupTranslation || '暂无译文' }}</p>
+            <p v-if="lookupSentence" class="lookup-sentence">{{ lookupSentence }}</p>
+            <p v-if="lookupResult.sentence_cn" class="lookup-sentence-cn">{{ lookupResult.sentence_cn }}</p>
+          </template>
+
+          <div class="lookup-actions">
+            <button
+              v-if="!lookupIsAnnotated"
+              type="button"
+              :disabled="lookupLoading || lookupSaving || !(lookupResult?.word_cn || lookupTranslation)"
+              @click="addLookupAnnotation"
+            >添加标注</button>
+            <button
+              v-else
+              type="button"
+              :disabled="lookupSaving"
+              @click="hideLookupAnnotation"
+            >取消标注</button>
+          </div>
+        </aside>
+
         <footer class="paper-footer">
           <span>{{ activeChapter?.body_kind === 'annotated' ? '译注副本' : '原文阅读' }}</span>
           <span>{{ pageLabel }}</span>
@@ -296,6 +597,18 @@ onBeforeUnmount(() => {
         aria-label="下一页"
         @click="nextPage"
       >›</button>
+      </section>
+
+      <section v-else class="book-stage vocabulary-stage">
+        <article class="paper-surface vocabulary-surface">
+          <VocabularyPanel
+            :current-unit-id="currentChapterId"
+            :current-title="currentTitle"
+            :refresh-key="vocabularyRefreshKey"
+            @changed="handleVocabularyChanged"
+          />
+        </article>
+      </section>
     </section>
   </main>
 </template>

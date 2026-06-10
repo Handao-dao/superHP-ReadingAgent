@@ -7,12 +7,20 @@ relational side of the local backend state.
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import threading
 from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
+
+ANNOTATION_MARKER_RE = re.compile(r"\[\[(.+?)\|.+?\]\]")
+
+
+def strip_annotation_markers(text: str) -> str:
+    """Return source text with inline annotation markers removed."""
+    return ANNOTATION_MARKER_RE.sub(r"\1", text)
 
 
 class AppDB:
@@ -75,7 +83,7 @@ class AppDB:
             for item in items:
                 word = str(getattr(item, "word", "") or "").strip()
                 translation = str(getattr(item, "translation", "") or "").strip()
-                context = str(getattr(item, "context", "") or "").strip()
+                context = strip_annotation_markers(str(getattr(item, "context", "") or "")).strip()
                 if not word or not translation:
                     continue
                 self._conn.execute(
@@ -108,11 +116,107 @@ class AppDB:
             self._conn.commit()
         return inserted
 
+    def add_manual_vocabulary(
+        self,
+        unit: ReadingUnit,
+        *,
+        word: str,
+        translation: str,
+        context: str = "",
+    ) -> int:
+        """Store one user-selected lookup result and return its vocabulary id."""
+        word = word.strip()
+        translation = translation.strip()
+        context = strip_annotation_markers(context).strip()
+        if not word or not translation:
+            raise ValueError("word and translation are required")
+
+        with self._lock:
+            self.sync_unit(unit)
+            self._conn.execute(
+                """
+                INSERT INTO vocabulary (word, translation, mastered, mastered_at)
+                VALUES (?, ?, 0, NULL)
+                ON CONFLICT(word) DO UPDATE SET
+                    translation=excluded.translation,
+                    mastered=0,
+                    mastered_at=NULL,
+                    last_seen_at=datetime('now','localtime')
+                """,
+                (word, translation),
+            )
+            vocab_id = int(
+                self._conn.execute(
+                    "SELECT id FROM vocabulary WHERE word = ?",
+                    (word,),
+                ).fetchone()["id"]
+            )
+            self._conn.execute(
+                """
+                INSERT INTO unit_vocabulary (unit_id, chapter_id, vocab_id, translation, context)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(unit_id, vocab_id) DO UPDATE SET
+                    translation=excluded.translation,
+                    context=excluded.context,
+                    last_seen_at=datetime('now','localtime')
+                """,
+                (unit.id, unit.chapter_id, vocab_id, translation, context),
+            )
+            self._conn.commit()
+            return vocab_id
+
+    def set_mastered(self, vocab_id: int, mastered: bool) -> bool:
+        """Mark one vocabulary item mastered or active."""
+        with self._lock:
+            cursor = self._conn.execute(
+                """
+                UPDATE vocabulary
+                SET mastered = ?,
+                    mastered_at = CASE WHEN ? THEN datetime('now','localtime') ELSE NULL END,
+                    last_seen_at = datetime('now','localtime')
+                WHERE id = ?
+                """,
+                (1 if mastered else 0, 1 if mastered else 0, vocab_id),
+            )
+            self._conn.commit()
+            return cursor.rowcount > 0
+
+    def set_mastered_by_word(self, word: str, mastered: bool) -> bool:
+        """Mark vocabulary by word, used by inline reading actions."""
+        normalized = word.strip().lower()
+        if not normalized:
+            return False
+        with self._lock:
+            cursor = self._conn.execute(
+                """
+                UPDATE vocabulary
+                SET mastered = ?,
+                    mastered_at = CASE WHEN ? THEN datetime('now','localtime') ELSE NULL END,
+                    last_seen_at = datetime('now','localtime')
+                WHERE lower(word) = ?
+                """,
+                (1 if mastered else 0, 1 if mastered else 0, normalized),
+            )
+            self._conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_vocabulary(self, vocab_id: int) -> bool:
+        """Remove a vocabulary item and its unit links."""
+        with self._lock:
+            cursor = self._conn.execute("DELETE FROM vocabulary WHERE id = ?", (vocab_id,))
+            self._conn.commit()
+            return cursor.rowcount > 0
+
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         """Return the number shown on guided cards for one reading unit."""
         with self._lock:
             row = self._conn.execute(
-                "SELECT COUNT(*) AS count FROM unit_vocabulary WHERE unit_id = ?",
+                """
+                SELECT COUNT(*) AS count
+                FROM unit_vocabulary uv
+                JOIN vocabulary v ON v.id = uv.vocab_id
+                WHERE uv.unit_id = ? AND v.mastered = 0
+                """,
                 (unit_id,),
             ).fetchone()
             return int(row["count"] if row else 0)

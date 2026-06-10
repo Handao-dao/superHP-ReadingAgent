@@ -15,6 +15,7 @@ class ReadingUnitMeta(BaseModel):
     summary: str = ""
     has_annotated_copy: bool = False
     status: str = "unread"
+    vocab_count: int = 0
 
     @property
     def summary_zh(self) -> str:
@@ -43,6 +44,44 @@ class VocabularyEntry(BaseModel):
     chapter_id: str
     first_seen_at: str = ""
     last_seen_at: str = ""
+
+
+class WordLookupRequest(BaseModel):
+    word: str
+    sentence: str = ""
+
+
+class WordLookupResult(BaseModel):
+    word: str
+    word_cn: str
+    sentence_cn: str = ""
+
+
+class AddVocabularyRequest(BaseModel):
+    word: str
+    translation: str
+    context: str = ""
+    unit_id: str
+
+
+class AddVocabularyResponse(BaseModel):
+    id: int
+    word: str
+    translation: str
+    unit_id: str
+
+
+class SetMasteredRequest(BaseModel):
+    mastered: bool
+
+
+class MarkByWordRequest(BaseModel):
+    word: str
+    mastered: bool
+
+
+class MutationResponse(BaseModel):
+    ok: bool = True
 
 
 class AgentAction(BaseModel):

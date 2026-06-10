@@ -58,3 +58,50 @@ def test_add_vocabulary_is_idempotent_per_unit(tmp_path):
     assert len(rows) == 1
     assert rows[0]["encounter_count"] == 2
     assert rows[0]["context"] == "second"
+
+
+def test_manual_vocabulary_can_be_mastered_and_deleted(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("hp01-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    vocab_id = db.add_manual_vocabulary(
+        unit,
+        word="crutches",
+        translation="拐杖",
+        context="He had crutches.",
+    )
+
+    rows = db.list_vocabulary(unit_id="hp01-ch01")
+    assert rows[0]["id"] == vocab_id
+    assert rows[0]["word"] == "crutches"
+    assert rows[0]["mastered"] == 0
+
+    assert db.set_mastered_by_word("CRUTCHES", True)
+    assert db.list_vocabulary(unit_id="hp01-ch01")[0]["mastered"] == 1
+    assert db.count_vocabulary_for_unit("hp01-ch01") == 0
+
+    assert db.set_mastered(vocab_id, False)
+    assert db.list_vocabulary(unit_id="hp01-ch01")[0]["mastered"] == 0
+    assert db.count_vocabulary_for_unit("hp01-ch01") == 1
+
+    assert db.delete_vocabulary(vocab_id)
+    assert db.list_vocabulary(unit_id="hp01-ch01") == []
+
+
+def test_vocabulary_context_strips_annotation_markers(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("hp01-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    db.add_manual_vocabulary(
+        unit,
+        word="exasperated",
+        translation="恼怒的",
+        context="half-[[exasperated|恼怒的]], half-[[admiring|钦佩的]].",
+    )
+
+    rows = db.list_vocabulary(unit_id="hp01-ch01")
+    assert rows[0]["context"] == "half-exasperated, half-admiring."

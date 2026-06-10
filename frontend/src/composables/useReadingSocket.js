@@ -31,6 +31,7 @@ export function useReadingSocket() {
   const noticeMessage = ref('')
   const progressMessage = ref('')
   const errorMessage = ref('')
+  const cardsRevision = ref(0)
 
   let socket = null
   let intentionalClose = false
@@ -115,14 +116,21 @@ export function useReadingSocket() {
     if (!sent) busy.value = false
   }
 
-  function requestCards(phase = 'start') {
-    return send({
+  function requestCards(phase = 'start', unitId = currentChapterId.value) {
+    errorMessage.value = ''
+    const targetUnitId = unitId || currentChapterId.value
+    const sent = send({
       type: 'cards',
       request_id: makeRequestId(),
-      current_unit_id: currentChapterId.value,
-      current_chapter_id: currentChapterId.value,
+      current_unit_id: targetUnitId,
+      current_chapter_id: targetUnitId,
       phase,
     })
+    if (sent && targetUnitId) {
+      currentChapterId.value = targetUnitId
+      if (activeChapter.value?.meta?.id !== targetUnitId) activeChapter.value = null
+    }
+    return sent
   }
 
   function handleEvent(message) {
@@ -138,6 +146,7 @@ export function useReadingSocket() {
         }
         cards.value = message.cards || []
         currentChapterId.value = message.current_unit_id || message.current_chapter_id || currentChapterId.value
+        cardsRevision.value += 1
         busy.value = false
         if (!['failed', 'offline'].includes(loadStatus.value)) loadStatus.value = 'idle'
         return
@@ -216,6 +225,7 @@ export function useReadingSocket() {
     activeChapter,
     busy,
     canSend,
+    cardsRevision,
     cards,
     connected,
     currentChapterId,

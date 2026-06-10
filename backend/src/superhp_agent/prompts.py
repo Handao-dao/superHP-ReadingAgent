@@ -120,7 +120,7 @@ Sentence:
 {sentence}
 </text>
 
-Return only the annotated passage text.
+Return only valid JSON in the required format.
 """.strip()
 
 

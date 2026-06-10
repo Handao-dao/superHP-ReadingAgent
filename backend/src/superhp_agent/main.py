@@ -19,14 +19,22 @@ from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.providers.factory import make_provider
 from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
 from superhp_agent.schemas import (
+    AddVocabularyRequest,
+    AddVocabularyResponse,
     AgentCard,
     ChapterDetail,
     ChapterMeta,
+    MarkByWordRequest,
+    MutationResponse,
     ReadingUnitDetail,
     ReadingUnitMeta,
+    SetMasteredRequest,
     VocabularyEntry,
+    WordLookupRequest,
+    WordLookupResult,
 )
 from superhp_agent.services.annotator import LazyAnnotatorService
+from superhp_agent.services.lookup import WordLookupService
 from superhp_agent.storage import AppDB
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
@@ -43,6 +51,24 @@ annotator_service = LazyAnnotatorService(
     max_chunk_words=settings.annotation_max_chunk_words,
     max_concurrency=settings.annotation_max_concurrency,
 )
+
+
+class LazyLookupService:
+    """Build lookup only when the optional inline dictionary is used."""
+
+    def __init__(self):
+        self._service: WordLookupService | None = None
+
+    def _get_service(self) -> WordLookupService:
+        if self._service is None:
+            self._service = WordLookupService(make_provider(settings))
+        return self._service
+
+    async def lookup(self, word: str, sentence: str) -> dict:
+        return await self._get_service().lookup(word, sentence)
+
+
+lookup_service = LazyLookupService()
 state_reader = ReadingStateReader(corpus, settings.annotated_dir, memory_store, db)
 flow_router = ReadingFlowRouter(state_reader)
 
@@ -59,6 +85,8 @@ app.add_middleware(
 
 def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
     """Translate internal corpus metadata into the public API schema."""
+    memory = memory_store.load()
+    is_read = unit.id in set(memory.read_unit_ids)
     return ReadingUnitMeta(
         id=unit.id,
         chapter_id=unit.chapter_id,
@@ -70,6 +98,8 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         section_count=unit.section_count,
         summary=unit.summary,
         has_annotated_copy=(settings.annotated_dir / f"{unit.id}.annotated.md").exists(),
+        status="read" if is_read else "unread",
+        vocab_count=db.count_vocabulary_for_unit(unit.id),
     )
 
 
@@ -131,6 +161,59 @@ async def list_vocabulary(
     chapter_id: str | None = Query(default=None),
 ):
     return [_vocabulary_entry(row) for row in db.list_vocabulary(unit_id=unit_id, chapter_id=chapter_id)]
+
+
+@app.post("/api/word-lookup", response_model=WordLookupResult)
+async def lookup_word(payload: WordLookupRequest):
+    word = payload.word.strip()
+    if not word:
+        raise HTTPException(status_code=400, detail="word is required")
+    try:
+        return await lookup_service.lookup(word, payload.sentence.strip())
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/api/vocabulary", response_model=AddVocabularyResponse)
+async def add_vocabulary(payload: AddVocabularyRequest):
+    try:
+        unit = corpus.get_unit(payload.unit_id).meta
+        vocab_id = db.add_manual_vocabulary(
+            unit,
+            word=payload.word,
+            translation=payload.translation,
+            context=payload.context,
+        )
+    except CorpusError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AddVocabularyResponse(
+        id=vocab_id,
+        word=payload.word.strip(),
+        translation=payload.translation.strip(),
+        unit_id=unit.id,
+    )
+
+
+@app.patch("/api/vocabulary/{vocab_id}/master", response_model=MutationResponse)
+async def set_vocabulary_mastered(vocab_id: int, payload: SetMasteredRequest):
+    if not db.set_mastered(vocab_id, payload.mastered):
+        raise HTTPException(status_code=404, detail="vocabulary item not found")
+    return MutationResponse(ok=True)
+
+
+@app.delete("/api/vocabulary/{vocab_id}", response_model=MutationResponse)
+async def delete_vocabulary(vocab_id: int):
+    if not db.delete_vocabulary(vocab_id):
+        raise HTTPException(status_code=404, detail="vocabulary item not found")
+    return MutationResponse(ok=True)
+
+
+@app.post("/api/vocabulary/mark-by-word", response_model=MutationResponse)
+async def mark_vocabulary_by_word(payload: MarkByWordRequest):
+    db.set_mastered_by_word(payload.word, payload.mastered)
+    return MutationResponse(ok=True)
 
 
 @app.get("/api/agent-cards", response_model=list[AgentCard])

@@ -7,9 +7,9 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from superhp_agent.context import ContextBlock, ContextBundle
 from superhp_agent.prompts import (
-    BASE_ANNOTATOR_SYSTEM_PROMPT,
-    build_annotator_user_prompt,
+    build_annotator_base_context,
 )
 from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import EventSink, emit_backend_event
@@ -138,20 +138,19 @@ class AnnotatorService:
         chunks = self.chunker.split(text)
         if not chunks:
             raise ValueError("模型没有返回译注文本。")
+        base_context = build_annotator_base_context(mastered_words=mastered_words, level=level)
 
         if len(chunks) == 1:
             annotated_text = await self._annotate_chunk(
                 chunks[0],
-                mastered_words=mastered_words,
-                level=level,
+                base_context=base_context,
                 event_sink=event_sink,
                 request_id=request_id,
             )
         else:
             annotated_text = await self._annotate_chunks(
                 chunks,
-                mastered_words=mastered_words,
-                level=level,
+                base_context=base_context,
                 event_sink=event_sink,
                 request_id=request_id,
             )
@@ -168,8 +167,7 @@ class AnnotatorService:
         self,
         chunks: list[TextChunk],
         *,
-        mastered_words: list[str] | None,
-        level: str,
+        base_context: ContextBundle,
         event_sink: EventSink | None,
         request_id: str | None,
     ) -> str:
@@ -191,8 +189,7 @@ class AnnotatorService:
             async with semaphore:
                 return chunk.index, await self._annotate_chunk(
                     chunk,
-                    mastered_words=mastered_words,
-                    level=level,
+                    base_context=base_context,
                     event_sink=event_sink,
                     request_id=request_id,
                 )
@@ -222,21 +219,13 @@ class AnnotatorService:
         self,
         chunk: TextChunk,
         *,
-        mastered_words: list[str] | None,
-        level: str,
+        base_context: ContextBundle,
         event_sink: EventSink | None,
         request_id: str | None,
     ) -> str:
-        user_prompt = build_annotator_user_prompt(
-            text=chunk.text,
-            mastered_words=mastered_words,
-            level=level,
-        )
+        context = base_context.with_blocks(self._reader_text_block(chunk.text))
         response = await self.provider.chat_with_retry(
-            messages=[
-                {"role": "system", "content": BASE_ANNOTATOR_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
+            messages=context.to_messages(),
             on_retry_wait=(
                 self._retry_event_sink(event_sink, request_id=request_id)
                 if event_sink is not None
@@ -244,6 +233,10 @@ class AnnotatorService:
             ),
         )
         return self._text_from_response(response, chunk_index=chunk.index)
+
+    @staticmethod
+    def _reader_text_block(text: str) -> ContextBlock:
+        return ContextBlock("reader_text", text, role="user")
 
     @staticmethod
     def _text_from_response(response: LLMResponse, *, chunk_index: int | None = None) -> str:

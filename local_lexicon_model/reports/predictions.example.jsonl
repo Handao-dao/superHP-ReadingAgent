@@ -1,0 +1,6 @@
+{"id":"eval-0001","prediction":"{\"word\":\"charge\",\"word_cn\":\"负责\",\"pos\":\"phrase\",\"sentence_cn\":\"他负责整个探险队。\",\"sense\":\"be in charge of: 负责，掌管\"}"}
+{"id":"eval-0002","prediction":"{\"word\":\"issue\",\"word_cn\":\"发行\",\"pos\":\"verb\",\"sentence_cn\":\"出版商将在下个月发行新版。\",\"sense\":\"issue: 发行，发布\"}"}
+{"id":"eval-0003","prediction":"{\"word\":\"fine\",\"word_cn\":\"优质的\",\"pos\":\"adjective\",\"sentence_cn\":\"这根魔杖由优质紫杉木制成。\",\"sense\":\"fine: 高质量的，精良的\"}"}
+{"id":"eval-0004","prediction":"{\"word\":\"fair\",\"word_cn\":\"公平的\",\"pos\":\"adjective\",\"sentence_cn\":\"每个人都有机会才算公平。\",\"sense\":\"fair: 公正的，公平的\"}"}
+{"id":"eval-0005","prediction":"{\"word\":\"bound\",\"word_cn\":\"装订\",\"pos\":\"verb\",\"sentence_cn\":\"这本书用褪色的红色皮革装订。\",\"sense\":\"bound: bind 的过去分词，装订\"}"}
+

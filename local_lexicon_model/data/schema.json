@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local Lexicon Evaluation Row",
+  "type": "object",
+  "required": ["id", "word", "sentence", "gold"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "word": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sentence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gold": {
+      "type": "object",
+      "required": ["word_cn", "pos", "sentence_cn"],
+      "additionalProperties": false,
+      "properties": {
+        "word_cn": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "type": "string",
+          "enum": ["noun", "verb", "adjective", "adverb", "phrase", "other"]
+        },
+        "sentence_cn": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sense": {
+          "type": "string"
+        },
+        "phrase": {
+          "type": "string"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    }
+  }
+}
+

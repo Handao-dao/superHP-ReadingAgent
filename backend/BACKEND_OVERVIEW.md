@@ -4,12 +4,13 @@
 
 ## 总体分层
 
-后端可以理解为四层：
+后端可以理解为五层：
 
 1. 传输层：接收 HTTP/WebSocket 请求，返回前端需要的数据和事件。
 2. 运行时层：决定阅读流程中的选项，并执行用户选择的动作。
-3. 服务层：封装模型调用、译注生成、查词等业务能力。
-4. 数据层：读取 corpus，记录 memory，存储 vocabulary 和生成的译注副本。
+3. Context 层：用可复用 block 组织模型上下文。
+4. 服务层：封装模型调用、译注生成、查词等业务能力。
+5. 数据层：读取 corpus，记录 memory，存储 vocabulary 和生成的译注副本。
 
 核心原则是：Router 只决定“给用户什么选项”，Dispatcher 才执行“用户选择之后发生什么”。这样第一版可以保持确定性，也方便以后再引入 LLM 辅助决策。
 
@@ -191,6 +192,24 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - `factory.py`：根据配置创建 provider。
 
 这个设计参考了工程级 agent 项目常见做法：把模型供应商隔离在边界层，避免业务逻辑到处出现 SDK 细节。
+
+## Context 组织层
+
+### `src/superhp_agent/context.py`
+
+`ContextBlock` / `ContextBundle` 是可迁移的模型上下文组件抽象。
+
+当前用途是让标注服务从字符串模板拼接升级为“静态 block 定义 + 运行时 block 实例 + 统一 renderer”：
+
+- 静态 block：长期稳定的规则，例如 `system_policy`、`annotation_contract`、`annotation_examples`、`output_contract`。
+- 运行时 block：每次任务开始时由当前状态生成，例如 `density_profile`、`mastered_words`、`reader_text`。
+- `ContextBundle.to_messages()` 会把 system blocks 合并成一个 system message，把 user blocks 合并成一个 user message。
+- 标注任务会先构建 run-static context，包含 `density_profile`、`mastered_words` 和相关 policy；并发处理 chunk 时只追加最后的 `reader_text` block，以提高稳定前缀的缓存命中。
+- Context block 不做持久化；它们是模型调用前的临时上下文组装结果。
+
+后续 lookup、复习、生词训练等模型能力可以复用这层抽象。
+
+## 服务层
 
 ### `src/superhp_agent/services/annotator.py`
 

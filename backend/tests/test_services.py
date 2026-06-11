@@ -3,7 +3,11 @@ import asyncio
 import pytest
 
 from superhp_agent.providers.base import LLMProvider, LLMResponse
-from superhp_agent.prompts import BASE_ANNOTATOR_SYSTEM_PROMPT, build_annotator_user_prompt
+from superhp_agent.prompts import (
+    BASE_ANNOTATOR_SYSTEM_PROMPT,
+    build_annotator_base_context,
+    build_annotator_user_prompt,
+)
 from superhp_agent.runtime.events import BackendEvent
 from superhp_agent.services import (
     AnnotationChunker,
@@ -54,9 +58,16 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
             ("wand", "魔杖", "noun"),
             ("table", "桌子", "noun"),
         ]
+        assert [message["role"] for message in provider.messages[0]] == ["system", "user"]
+        system_prompt = provider.messages[0][0]["content"]
         user_prompt = provider.messages[0][1]["content"]
+        assert "<system_policy>" in system_prompt
+        assert "<annotation_contract>" in system_prompt
+        assert "<annotation_examples>" in system_prompt
+        assert "<output_contract>" in system_prompt
         assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
         assert "<mastered_words>" in user_prompt
+        assert "<mastered_words_policy>" in user_prompt
         assert '["owl"]' in user_prompt
         assert "<reader_text>" in user_prompt
         assert provider.kwargs[0]["extra_body"] is None
@@ -75,9 +86,20 @@ def test_annotator_prompt_uses_context_blocks():
     assert "Target density: about 2%-6% of meaningful content words" in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
-    assert "Return only the annotated passage text." in prompt
+    assert "Return only the annotated passage text." in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "[[word or expression|中文翻译|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
+
+
+def test_annotator_base_context_excludes_reader_text():
+    context = build_annotator_base_context(mastered_words=["wand"], level="intermediate")
+
+    user_prompt = context.render_role("user")
+
+    assert '<density_profile level="intermediate" ui="M" density="medium">' in user_prompt
+    assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
+    assert "<mastered_words_policy>" in user_prompt
+    assert "<reader_text>" not in user_prompt
 
 
 def test_annotator_service_deduplicates_vocabulary():
@@ -234,6 +256,12 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         assert progress_events[0]["total"] == 3
         assert progress_events[-1]["current"] == 3
         assert progress_events[-1]["message"] == "Annotating section 3 of 3..."
+        user_prompts = [messages[1]["content"] for messages in provider.messages]
+        stable_prefixes = [prompt.split("<reader_text>", 1)[0] for prompt in user_prompts]
+        assert len(set(stable_prefixes)) == 1
+        assert "first paragraph." in user_prompts[0]
+        assert "second paragraph." in user_prompts[1]
+        assert "third paragraph." in user_prompts[2]
 
     asyncio.run(run_case())
 

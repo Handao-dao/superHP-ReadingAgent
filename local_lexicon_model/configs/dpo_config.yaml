@@ -1,0 +1,16 @@
+# Placeholder for a later DPO run. DPO is intentionally separate from the MVP.
+
+stage: dpo
+model_name_or_path: Qwen/Qwen2.5-0.5B-Instruct
+adapter_name_or_path: local_lexicon_model/outputs/sft_adapter
+dataset: local_lexicon_dpo
+template: qwen
+finetuning_type: lora
+output_dir: local_lexicon_model/outputs/dpo_adapter
+
+learning_rate: 0.00005
+num_train_epochs: 1
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+cutoff_len: 1024
+

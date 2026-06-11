@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 
-BASE_ANNOTATOR_SYSTEM_PROMPT = """
-<system_policy>
+from superhp_agent.context import ContextBlock, ContextBundle
+
+SYSTEM_POLICY = """
 You are an expert English-Chinese reading assistant for the Harry Potter novels.
 Help Chinese readers understand real reading obstacles while preserving the original reading experience.
-</system_policy>
+""".strip()
 
-<annotation_contract>
+ANNOTATION_CONTRACT = """
 Input: one English passage from a Harry Potter chapter.
 Output: the same passage text with selected difficult words or expressions replaced by inline annotations.
 
@@ -33,9 +34,9 @@ Do not duplicate the original word before or after the marker.
 Correct: "a [[wand|魔杖|noun]]"
 Incorrect: "a wand[[wand|魔杖|noun]]"
 Incorrect: "a wand [[wand|魔杖|noun]]"
-</annotation_contract>
+""".strip()
 
-<annotation_examples>
+ANNOTATION_EXAMPLES = """
 Input:
 Harry picked up his wand and muttered a spell.
 
@@ -45,17 +46,32 @@ Harry [[picked up|拿起|phrase]] his [[wand|魔杖|noun]] and [[muttered|低声
 Bad output:
 Harry picked up [[picked up|拿起|phrase]] his wand [[wand|魔杖|noun]] and muttered [[muttered|低声说|verb]] a spell [[spell|咒语|noun]].
 Reason: duplicates original text instead of replacing the selected words or expression.
-</annotation_examples>
+""".strip()
 
-<output_contract>
+OUTPUT_CONTRACT = """
 Return only the annotated passage text.
 Do not output JSON.
 Do not output a vocabulary list.
 Do not wrap the answer in code fences.
 Do not add explanations before or after the passage.
 Do not add headings, summaries, or commentary unless they already exist in the input text.
-</output_contract>
 """.strip()
+
+MASTERED_WORDS_POLICY = """
+Do not annotate any word or expression listed in mastered_words.
+If mastered_words is an empty JSON array, ignore this block.
+""".strip()
+
+ANNOTATION_SYSTEM_BLOCKS = (
+    ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
+    ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
+    ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
+    ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),
+)
+
+BASE_ANNOTATOR_SYSTEM_PROMPT = ContextBundle(
+    system_blocks=ANNOTATION_SYSTEM_BLOCKS,
+).render_role("system")
 
 LEVEL_PROFILES = {
     "beginner": {
@@ -107,31 +123,81 @@ LEVEL_PROFILES = {
     },
 }
 
-ANNOTATOR_USER_PROMPT_TEMPLATE = """
-<annotation_context>
-<density_profile level="{level}" ui="{level_ui}" density="{density}">
-Target reader: {level_label}
-Target density: {density_target}
 
-{level_rules}
-</density_profile>
+def normalize_level(level: str | None) -> str:
+    if level in LEVEL_PROFILES:
+        return level
+    return "intermediate"
 
-<mastered_words>
-{mastered_words}
-</mastered_words>
 
-<mastered_words_policy>
-Do not annotate any word or expression listed in mastered_words.
-If mastered_words is an empty JSON array, ignore this block.
-</mastered_words_policy>
+def build_annotator_context(
+    text: str,
+    mastered_words: list[str] | None = None,
+    level: str = "intermediate",
+) -> ContextBundle:
+    return build_annotator_base_context(
+        mastered_words=mastered_words,
+        level=level,
+    ).with_blocks(_reader_text_block(text))
 
-<reader_text>
-{text}
-</reader_text>
-</annotation_context>
 
-Return only the annotated passage text.
-""".strip()
+def build_annotator_base_context(
+    mastered_words: list[str] | None = None,
+    level: str = "intermediate",
+) -> ContextBundle:
+    return ContextBundle(
+        system_blocks=ANNOTATION_SYSTEM_BLOCKS,
+        user_blocks=(
+            _density_profile_block(level),
+            _mastered_words_block(mastered_words),
+            _mastered_words_policy_block(),
+        ),
+    )
+
+
+def build_annotator_user_prompt(
+    text: str,
+    mastered_words: list[str] | None = None,
+    level: str = "intermediate",
+) -> str:
+    return build_annotator_context(text, mastered_words=mastered_words, level=level).render_role("user")
+
+
+def _density_profile_block(level: str) -> ContextBlock:
+    normalized_level = normalize_level(level)
+    level_profile = LEVEL_PROFILES[normalized_level]
+    content = (
+        f"Target reader: {level_profile['label']}\n"
+        f"Target density: {level_profile['target']}\n\n"
+        f"{level_profile['rules']}"
+    )
+    return ContextBlock(
+        "density_profile",
+        content,
+        role="user",
+        attrs={
+            "level": normalized_level,
+            "ui": level_profile["ui"],
+            "density": level_profile["density"],
+        },
+    )
+
+
+def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:
+    return ContextBlock(
+        "mastered_words",
+        json.dumps(mastered_words or [], ensure_ascii=False),
+        role="user",
+    )
+
+
+def _mastered_words_policy_block() -> ContextBlock:
+    return ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="user")
+
+
+def _reader_text_block(text: str) -> ContextBlock:
+    return ContextBlock("reader_text", text, role="user")
+
 
 LOOKUP_SYSTEM_PROMPT = """
 # Role
@@ -171,32 +237,6 @@ Sentence:
 
 Return only valid JSON in the required format.
 """.strip()
-
-
-def normalize_level(level: str | None) -> str:
-    if level in LEVEL_PROFILES:
-        return level
-    return "intermediate"
-
-
-def build_annotator_user_prompt(
-    text: str,
-    mastered_words: list[str] | None = None,
-    level: str = "intermediate",
-) -> str:
-    mastered_words = mastered_words or []
-    level_profile = LEVEL_PROFILES[normalize_level(level)]
-    normalized_level = normalize_level(level)
-    return ANNOTATOR_USER_PROMPT_TEMPLATE.format(
-        level=normalized_level,
-        level_ui=level_profile["ui"],
-        density=level_profile["density"],
-        level_label=level_profile["label"],
-        density_target=level_profile["target"],
-        level_rules=level_profile["rules"],
-        mastered_words=json.dumps(mastered_words, ensure_ascii=False),
-        text=text,
-    )
 
 
 def build_lookup_user_prompt(word: str, sentence: str) -> str:

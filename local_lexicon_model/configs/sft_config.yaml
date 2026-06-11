@@ -1,0 +1,20 @@
+# Placeholder for the first LLaMA-Factory or TRL+PEFT SFT run.
+# Keep concrete training paths and hardware-specific knobs out of backend code.
+
+stage: sft
+model_name_or_path: Qwen/Qwen2.5-0.5B-Instruct
+dataset: local_lexicon_sft
+template: qwen
+finetuning_type: lora
+output_dir: local_lexicon_model/outputs/sft_adapter
+
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+
+learning_rate: 0.0002
+num_train_epochs: 3
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+cutoff_len: 1024
+

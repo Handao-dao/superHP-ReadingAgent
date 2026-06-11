@@ -287,8 +287,10 @@ class GenerateAnnotationHandler:
             message="正在生成译注...",
         )
         try:
+            mastered_words = context.db.list_mastered_words() if context.db else []
             result = await context.annotator_service.annotate_text(
                 doc.body,
+                mastered_words=mastered_words,
                 level=level,
                 event_sink=context.event_sink,
                 request_id=request_id,
@@ -438,7 +440,7 @@ async def _emit_opened_unit(
 def _render_annotated_markdown(doc: ReadingUnitDocument, result: AnnotationResult, *, level: str) -> str:
     """Persist annotation output as Markdown with machine-readable metadata."""
     vocab_lines = "\n".join(
-        f"# - {item.word}: {item.translation}"
+        f"# - {item.word}: {item.translation} ({getattr(item, 'pos', 'other')})"
         for item in result.vocabulary
         if item.word or item.translation
     )

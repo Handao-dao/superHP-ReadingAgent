@@ -15,7 +15,7 @@ from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
 
-ANNOTATION_MARKER_RE = re.compile(r"\[\[(.+?)\|.+?\]\]")
+ANNOTATION_MARKER_RE = re.compile(r"\[\[([^|\]]+)\|[^|\]]+(?:\|[^|\]]+)?\]\]")
 VALID_POS = {"noun", "verb", "adjective", "adverb", "phrase", "other"}
 VALID_BODY_KINDS = {"source", "annotated"}
 
@@ -229,6 +229,19 @@ class AppDB:
             cursor = self._conn.execute("DELETE FROM vocabulary WHERE id = ?", (vocab_id,))
             self._conn.commit()
             return cursor.rowcount > 0
+
+    def list_mastered_words(self) -> list[str]:
+        """Return globally mastered words for prompt context."""
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT word
+                FROM vocabulary
+                WHERE mastered = 1
+                ORDER BY lower(word)
+                """
+            ).fetchall()
+            return [str(row["word"]) for row in rows]
 
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         """Return the number shown on guided cards for one reading unit."""

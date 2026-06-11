@@ -5,45 +5,64 @@ from __future__ import annotations
 import json
 
 BASE_ANNOTATOR_SYSTEM_PROMPT = """
-# Role
+<system_policy>
 You are an expert English-Chinese reading assistant for the Harry Potter novels.
+Help Chinese readers understand real reading obstacles while preserving the original reading experience.
+</system_policy>
 
-Your job is to help Chinese readers understand real reading obstacles while preserving the original reading experience.
+<annotation_contract>
+Input: one English passage from a Harry Potter chapter.
+Output: the same passage text with selected difficult words or expressions replaced by inline annotations.
 
-# Task
-You will receive one English passage from a Harry Potter chapter.
+Preserve the original text exactly except for the selected replacements.
+Do not rewrite, summarize, reorder, correct, add, or remove passage content.
+Keep paragraph order, headings, line breaks, punctuation, casing, and spacing as close to the input as possible.
 
-You must:
-1. Identify words or expressions that may confuse the target English learner.
-2. Replace each selected word or expression with the [[word|translation]] format.
-3. Return the full annotated passage text only.
+Inline annotation format: [[word or expression|中文翻译|pos]]
+Use the exact original word or expression on the left side of the pipe.
+Do not include the pipe character | inside the word, translation, or pos fields.
+The Chinese translation must match the exact meaning in context.
+Keep translations concise: prefer 1-4 Chinese characters; proper nouns or specialized terms may use up to 6 Chinese characters.
+The pos value must be one of: noun, verb, adjective, adverb, phrase, other.
+Use phrase for multi-word expressions, phrasal verbs, idioms, and fixed collocations.
 
-# Annotation Rules
-1. Preserve the original text exactly. Do not rewrite, summarize, reorder, or correct the input text.
-2. Only annotate selected words or expressions by replacing that exact text with [[word|translation]].
-3. Use double square brackets, English word or phrase, pipe character |, Chinese translation.
-4. Do not include the pipe character | inside the word or translation text.
-5. The Chinese translation must match the exact meaning in context.
-6. Keep translations concise. Prefer 1-4 Chinese characters. For proper nouns or specialized terms, up to 6 Chinese characters is acceptable.
-7. Prioritize British colloquial expressions, everyday object vocabulary, wizarding-world terms, magical objects, school titles, spells, charms, currency, creatures, house-related terms, and common-looking words with special meanings in this universe.
-8. Do not annotate ordinary character names such as Harry, Ron, Hermione, Dumbledore, or Hagrid unless the name itself is being explained as a title, place, spell, object, or special concept.
-9. If a phrase is the real difficult unit, annotate the whole phrase instead of a single word.
-10. If the same word appears multiple times in the text, you may annotate it each time.
-11. For proper nouns and magical terms, prefer concise standard Chinese renderings where they are widely used.
-12. Do not duplicate the original word before or after the marker. Correct: "a [[wand|魔杖]]"; incorrect: "a wand[[wand|魔杖]]" or "a wand [[wand|魔杖]]".
+If a phrase is the real difficult unit, annotate the whole phrase instead of separate words.
+Prefer concise standard Chinese renderings for widely used Harry Potter proper nouns and magical terms.
+Do not annotate ordinary character names such as Harry, Ron, Hermione, Dumbledore, or Hagrid unless the name itself is being explained as a title, place, spell, object, or special concept.
+Do not duplicate the original word before or after the marker.
+Correct: "a [[wand|魔杖|noun]]"
+Incorrect: "a wand[[wand|魔杖|noun]]"
+Incorrect: "a wand [[wand|魔杖|noun]]"
+</annotation_contract>
 
-# Output Rules
+<annotation_examples>
+Input:
+Harry picked up his wand and muttered a spell.
+
+Good output:
+Harry [[picked up|拿起|phrase]] his [[wand|魔杖|noun]] and [[muttered|低声说|verb]] a [[spell|咒语|noun]].
+
+Bad output:
+Harry picked up [[picked up|拿起|phrase]] his wand [[wand|魔杖|noun]] and muttered [[muttered|低声说|verb]] a spell [[spell|咒语|noun]].
+Reason: duplicates original text instead of replacing the selected words or expression.
+</annotation_examples>
+
+<output_contract>
 Return only the annotated passage text.
 Do not output JSON.
 Do not output a vocabulary list.
 Do not wrap the answer in code fences.
 Do not add explanations before or after the passage.
 Do not add headings, summaries, or commentary unless they already exist in the input text.
+</output_contract>
 """.strip()
 
 LEVEL_PROFILES = {
     "beginner": {
+        "ui": "H",
         "label": "a beginner English learner, roughly A1-A2 level",
+        "density": "high",
+        "target": "about 25%-40% of meaningful content words",
         "rules": (
             "Annotate frequently enough to help a beginner understand the text, "
             "but do not annotate every content word. "
@@ -56,7 +75,10 @@ LEVEL_PROFILES = {
         ),
     },
     "intermediate": {
+        "ui": "M",
         "label": "an intermediate English learner, roughly B1-B2 level",
+        "density": "medium",
+        "target": "about 8%-18% of meaningful content words",
         "rules": (
             "Do not annotate A1-B1 high-frequency vocabulary that an intermediate learner should know. "
             "Focus on B2+ vocabulary, uncommon verbs, descriptive adjectives, adverbs with subtle meanings, "
@@ -68,7 +90,10 @@ LEVEL_PROFILES = {
         ),
     },
     "advanced": {
+        "ui": "L",
         "label": "an advanced English learner, roughly C1-C2 level",
+        "density": "low",
+        "target": "about 2%-6% of meaningful content words",
         "rules": (
             "Annotate only words or expressions that may challenge an advanced or near-fluent English reader. "
             "Do not annotate ordinary descriptive adjectives, common adverbs, common phrasal verbs, common idioms, "
@@ -83,22 +108,27 @@ LEVEL_PROFILES = {
 }
 
 ANNOTATOR_USER_PROMPT_TEMPLATE = """
-Please annotate the following Harry Potter text for {level_label}.
+<annotation_context>
+<density_profile level="{level}" ui="{level_ui}" density="{density}">
+Target reader: {level_label}
+Target density: {density_target}
 
-# Annotation Level Rules
 {level_rules}
+</density_profile>
 
-Mastered words:
+<mastered_words>
 {mastered_words}
+</mastered_words>
 
-Rules for mastered words:
-- Do not annotate any word or expression listed in mastered_words.
-- If mastered_words is empty, ignore this section.
+<mastered_words_policy>
+Do not annotate any word or expression listed in mastered_words.
+If mastered_words is an empty JSON array, ignore this block.
+</mastered_words_policy>
 
-Original text:
-<text>
+<reader_text>
 {text}
-</text>
+</reader_text>
+</annotation_context>
 
 Return only the annotated passage text.
 """.strip()
@@ -156,8 +186,13 @@ def build_annotator_user_prompt(
 ) -> str:
     mastered_words = mastered_words or []
     level_profile = LEVEL_PROFILES[normalize_level(level)]
+    normalized_level = normalize_level(level)
     return ANNOTATOR_USER_PROMPT_TEMPLATE.format(
+        level=normalized_level,
+        level_ui=level_profile["ui"],
+        density=level_profile["density"],
         level_label=level_profile["label"],
+        density_target=level_profile["target"],
         level_rules=level_profile["rules"],
         mastered_words=json.dumps(mastered_words, ensure_ascii=False),
         text=text,

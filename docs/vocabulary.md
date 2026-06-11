@@ -31,13 +31,13 @@ backend/data/superhp.sqlite3
 3. 推送 `annotation.completed`，事件中包含 `stored_vocabulary_count`。
 4. Router 重新生成 cards 时会通过 DB 得到 `vocab_count`。
 
-注意：批量译注抽取的词性目前默认是 `other`，因为 annotator 还没有输出 `pos`。
+批量译注 marker 首选 `[[word|translation|pos]]`，因此可直接写入词性。旧 `[[word|translation]]` 仍可解析，词性回退为 `other`。
 
 用户点击查词并添加生词时：
 
 1. 前端调用 `POST /api/word-lookup` 获取 `word_cn/sentence_cn/pos`。
 2. 前端调用 `POST /api/vocabulary` 写入词条和当前 `unit_id` 关联。
-3. 后端清理 context 中的 `[[word|translation]]` 标记，保存原文上下文。
+3. 后端清理 context 中的 `[[word|translation|pos]]` 或旧 `[[word|translation]]` 标记，保存原文上下文。
 4. 前端把该词加入当前阅读页的手动标注覆盖层，并重新分页。
 
 ## Query API
@@ -73,7 +73,7 @@ POST /api/word-lookup
 
 ## Remaining Work
 
-- 自动译注词性：让 annotator 也输出 `pos`，或做后台补全。
+- 自动译注词性校验：继续优化三段 marker 的 `pos` 准确率，必要时做后台补全。
 - 生词复习模式：flashcard、quiz、spaced repetition。
 - 同一个词跨章节的来源聚合展示。
 - 用户维度：未来如果支持多用户，需要把 mastered/manual 状态从本地单用户数据拆出。

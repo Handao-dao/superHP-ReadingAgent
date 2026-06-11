@@ -25,6 +25,7 @@ from superhp_agent.storage import AppDB
 class FakeAnnotator:
     def __init__(self):
         self.levels = []
+        self.mastered_words = []
 
     async def annotate_text(
         self,
@@ -36,6 +37,7 @@ class FakeAnnotator:
         request_id=None,
     ):
         self.levels.append(level)
+        self.mastered_words.append(mastered_words or [])
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
@@ -192,9 +194,18 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         memory = memory_store(tmp_path)
         annotated_dir = tmp_path / "data" / "annotated"
         db = AppDB(tmp_path / "app.sqlite3")
+        corpus = CorpusStore(corpus_root)
+        unit = corpus.get_unit("hp01-ch01").meta
+        mastered_id = db.add_manual_vocabulary(
+            unit,
+            word="known",
+            translation="已知",
+            context="Known word.",
+        )
+        db.set_mastered(mastered_id, True)
         annotator = FakeAnnotator()
         context = ActionContext(
-            corpus=CorpusStore(corpus_root),
+            corpus=corpus,
             emit=emit,
             memory_store=memory,
             annotated_dir=annotated_dir,
@@ -219,6 +230,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert events[-1]["unit"]["body"] == "Body [[text|文本]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
         assert annotator.levels == ["advanced"]
+        assert annotator.mastered_words == [["known"]]
         annotated_file = annotated_dir / "hp01-ch01.advanced.annotated.md"
         assert annotated_file.exists()
         annotated_text = annotated_file.read_text(encoding="utf-8")
@@ -226,7 +238,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert "Body [[text|文本]]." in annotated_text
         assert memory.load().annotated_unit_ids == ["hp01-ch01"]
         assert db.count_vocabulary_for_unit("hp01-ch01") == 1
-        assert db.list_vocabulary(unit_id="hp01-ch01")[0]["word"] == "text"
+        assert "text" in [row["word"] for row in db.list_vocabulary(unit_id="hp01-ch01")]
 
     asyncio.run(run_case())
 

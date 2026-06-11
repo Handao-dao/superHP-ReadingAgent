@@ -90,10 +90,12 @@ def test_manual_vocabulary_can_be_mastered_and_deleted(tmp_path):
     assert db.set_mastered_by_word("CRUTCHES", True)
     assert db.list_vocabulary(unit_id="hp01-ch01")[0]["mastered"] == 1
     assert db.count_vocabulary_for_unit("hp01-ch01") == 0
+    assert db.list_mastered_words() == ["crutches"]
 
     assert db.set_mastered(vocab_id, False)
     assert db.list_vocabulary(unit_id="hp01-ch01")[0]["mastered"] == 0
     assert db.count_vocabulary_for_unit("hp01-ch01") == 1
+    assert db.list_mastered_words() == []
 
     assert db.delete_vocabulary(vocab_id)
     assert db.list_vocabulary(unit_id="hp01-ch01") == []
@@ -109,7 +111,7 @@ def test_vocabulary_context_strips_annotation_markers(tmp_path):
         unit,
         word="exasperated",
         translation="恼怒的",
-        context="half-[[exasperated|恼怒的]], half-[[admiring|钦佩的]].",
+        context="half-[[exasperated|恼怒的|adjective]], half-[[admiring|钦佩的]].",
     )
 
     rows = db.list_vocabulary(unit_id="hp01-ch01")

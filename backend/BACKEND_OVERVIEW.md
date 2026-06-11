@@ -205,8 +205,10 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - 每个 chunk 独立调用 provider，返回纯 annotated text。
 - 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。
 - 所有 chunk 成功后，后端按 `chunk.index` 排序合并完整译注。
-- 后端从合并后的 `[[word|翻译]]` 标记中提取 vocabulary，保持对外的 `AnnotationResult` 结构。
+- 后端从合并后的 `[[word|翻译|pos]]` 标记中提取 vocabulary 和词性；旧 `[[word|翻译]]` 标记仍兼容，词性回退为 `other`。
+- 译注 prompt 使用 block-based context：稳定 system policy 放在 system prompt；每次请求的 `density_profile`、`mastered_words`、`reader_text` 放在 user prompt。
 - 译注 prompt 支持 `beginner/intermediate/advanced` 三档密度；前端 UI 显示为 `H/M/L`。
+- 生成译注时会从 SQLite 读取已掌握词，注入 `mastered_words` block，避免模型再次标注这些词。
 
 `LazyAnnotatorService` 用于延迟创建真实 provider，让没有配置 API key 的情况下仍然可以启动后端、浏览 corpus、查看已生成数据。
 

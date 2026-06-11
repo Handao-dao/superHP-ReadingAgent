@@ -10,7 +10,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 
 - `CorpusStore` 已支持扫描 `corpus/` Markdown、解析 YAML frontmatter、按 `unit_id` 安全读取正文，并拒绝路径越界与重复 id。
 - Provider 抽象、OpenAI-compatible provider、模型重试与错误归一化已完成。
-- `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并从 `[[word|translation]]` 中提取生词。
+- `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并从 `[[word|translation|pos]]` 中提取生词和词性。
 - `WordLookupService` 已支持上下文查词，返回 `word_cn/sentence_cn/pos`。
 - WebSocket reading session 已支持 `ready/cards.updated/chapter.loading/chapter.opened/annotation.* /unit.marked_read/error`。
 - Guided cards 已支持 start/complete 两个阶段：生成译注、打开译注、阅读原文、读下一章、复习生词、回看正文。
@@ -55,7 +55,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 ## Remaining Extensions
 
 - 书签增强：选中文本锚点、书签备注、独立书签管理页或跨设备同步。
-- 自动译注词性：让 annotator 输出或二次补全 `pos`，避免批量译注生词默认 `other`。
+- 自动译注词性校验：继续优化三段 marker 的 `pos` 准确率，必要时做后台补全。
 - 生词复习模式：在生词表之外增加 quiz/flashcard/spaced repetition。
 - 前端英文化收尾：逐步英文化查词、生词表、状态栏或保留双语策略。
 - 更细的用户状态：后续可把 mastered/manual annotations/bookmarks 从本地单用户状态升级到用户维度。

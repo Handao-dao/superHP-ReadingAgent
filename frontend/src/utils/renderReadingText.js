@@ -31,21 +31,23 @@ function renderPlainText(text = '', options = {}) {
     .join('')
 }
 
-function renderAnnotatedWord(word, translation, options = {}) {
+function renderAnnotatedWord(word, translation, pos = '', options = {}) {
   const key = normalizeWord(word)
   if (options.hiddenAnnotations?.has(key)) return renderPlainText(word, options)
   const safeWord = escapeHtml(word)
   const safeTranslation = escapeHtml(translation)
-  return `<span class="vocab-word" data-word="${safeWord}" data-translation="${safeTranslation}">${safeWord}</span><span class="translation">(${safeTranslation})</span>`
+  const safePos = escapeHtml(pos)
+  const posAttr = safePos ? ` data-pos="${safePos}"` : ''
+  return `<span class="vocab-word" data-word="${safeWord}" data-translation="${safeTranslation}"${posAttr}>${safeWord}</span><span class="translation">(${safeTranslation})</span>`
 }
 
 function inlineMarkup(text = '', options = {}) {
-  const marker = /\[\[(.+?)\|(.+?)\]\]/g
+  const marker = /\[\[([^|\]]+)\|([^|\]]+)(?:\|([^|\]]+))?\]\]/g
   let html = ''
   let lastIndex = 0
   for (const match of String(text).matchAll(marker)) {
     html += renderPlainText(String(text).slice(lastIndex, match.index), options)
-    html += renderAnnotatedWord(match[1], match[2], options)
+    html += renderAnnotatedWord(match[1], match[2], match[3] || '', options)
     lastIndex = match.index + match[0].length
   }
   html += renderPlainText(String(text).slice(lastIndex), options)

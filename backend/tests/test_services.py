@@ -3,6 +3,7 @@ import asyncio
 import pytest
 
 from superhp_agent.providers.base import LLMProvider, LLMResponse
+from superhp_agent.prompts import BASE_ANNOTATOR_SYSTEM_PROMPT, build_annotator_user_prompt
 from superhp_agent.runtime.events import BackendEvent
 from superhp_agent.services import (
     AnnotationChunker,
@@ -42,21 +43,41 @@ class ScriptedProvider(LLMProvider):
 def test_annotator_service_returns_text_and_extracts_vocabulary():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content="a [[wand|魔杖]] on the [[table|桌子]].")
+            LLMResponse(content="a [[wand|魔杖|noun]] on the [[table|桌子|noun]].")
         ])
         service = AnnotatorService(provider)
 
         result = await service.annotate_text("a wand on the table", mastered_words=["owl"], level="beginner")
 
-        assert result.annotated_text == "a [[wand|魔杖]] on the [[table|桌子]]."
-        assert [(item.word, item.translation) for item in result.vocabulary] == [
-            ("wand", "魔杖"),
-            ("table", "桌子"),
+        assert result.annotated_text == "a [[wand|魔杖|noun]] on the [[table|桌子|noun]]."
+        assert [(item.word, item.translation, item.pos) for item in result.vocabulary] == [
+            ("wand", "魔杖", "noun"),
+            ("table", "桌子", "noun"),
         ]
-        assert "Mastered words" in provider.messages[0][1]["content"]
+        user_prompt = provider.messages[0][1]["content"]
+        assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
+        assert "<mastered_words>" in user_prompt
+        assert '["owl"]' in user_prompt
+        assert "<reader_text>" in user_prompt
         assert provider.kwargs[0]["extra_body"] is None
 
     asyncio.run(run_case())
+
+
+def test_annotator_prompt_uses_context_blocks():
+    prompt = build_annotator_user_prompt(
+        "a wand on the table",
+        mastered_words=["wand"],
+        level="advanced",
+    )
+
+    assert '<density_profile level="advanced" ui="L" density="low">' in prompt
+    assert "Target density: about 2%-6% of meaningful content words" in prompt
+    assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
+    assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
+    assert "Return only the annotated passage text." in prompt
+    assert "[[word or expression|中文翻译|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 
 
 def test_annotator_service_deduplicates_vocabulary():
@@ -69,6 +90,23 @@ def test_annotator_service_deduplicates_vocabulary():
         result = await service.annotate_text("a wand and another wand")
 
         assert [item.word for item in result.vocabulary] == ["wand"]
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_keeps_legacy_two_part_markers():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content="a [[wand|魔杖]] and a [[spell|咒语|noun]].")
+        ])
+        service = AnnotatorService(provider)
+
+        result = await service.annotate_text("a wand and a spell")
+
+        assert [(item.word, item.translation, item.pos) for item in result.vocabulary] == [
+            ("wand", "魔杖", "other"),
+            ("spell", "咒语", "noun"),
+        ]
 
     asyncio.run(run_case())
 

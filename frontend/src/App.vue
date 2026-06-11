@@ -150,7 +150,7 @@ const paperPageLabel = computed(() => {
 const chapterLabel = computed(() => {
   const meta = currentMeta.value
   if (!meta) return 'Waiting for unit'
-  return `Chapter ${meta.chapter_no}`
+  return `Chapter ${meta.chapter_no} ${meta.chapter_title}`
 })
 
 const summaryText = computed(() => {
@@ -676,8 +676,7 @@ onBeforeUnmount(() => {
         <p class="eyebrow">SuperHP Agent</p>
         <h1>{{ currentMeta?.book_title || 'Harry Potter Reading Assistant' }}</h1>
         <p class="chapter-line">
-          <span>{{ currentMeta ? `${currentMeta.chapter_no}. ${currentMeta.chapter_title}` : 'Choose a reading action to begin' }}</span>
-          <span v-if="currentMeta">{{ chapterLabel }}</span>
+          <span>{{ currentMeta ? chapterLabel : 'Choose a reading action to begin' }}</span>
         </p>
       </div>
 

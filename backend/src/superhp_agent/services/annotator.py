@@ -22,6 +22,7 @@ class VocabItem:
     word: str
     translation: str
     context: str
+    pos: str = "other"
 
 
 @dataclass(frozen=True)
@@ -304,9 +305,10 @@ class AnnotatorService:
     def _vocabulary_from_annotation(text: str) -> list[VocabItem]:
         seen: set[str] = set()
         items: list[VocabItem] = []
-        for match in re.finditer(r"\[\[(.+?)\|(.+?)\]\]", text):
+        for match in re.finditer(r"\[\[([^|\]]+)\|([^|\]]+)(?:\|([^|\]]+))?\]\]", text):
             word = match.group(1).strip()
             translation = match.group(2).strip()
+            pos = _normalize_marker_pos(match.group(3))
             key = word.lower()
             if not word or not translation or key in seen:
                 continue
@@ -316,6 +318,7 @@ class AnnotatorService:
                     word=word,
                     translation=translation,
                     context=_annotation_context(text, match.start()),
+                    pos=pos,
                 )
             )
         return items
@@ -404,3 +407,15 @@ def _annotation_context(text: str, index: int) -> str:
     right = min(right_candidates) if right_candidates else min(len(text), index + 120)
     start = left + 1 if left >= 0 else max(0, index - 60)
     return re.sub(r"\s+", " ", text[start : right + 1]).strip()[:240]
+
+
+def _normalize_marker_pos(pos: str | None) -> str:
+    value = str(pos or "").strip().lower()
+    aliases = {
+        "n": "noun",
+        "v": "verb",
+        "adj": "adjective",
+        "adv": "adverb",
+    }
+    value = aliases.get(value, value)
+    return value if value in {"noun", "verb", "adjective", "adverb", "phrase", "other"} else "other"

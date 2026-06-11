@@ -16,8 +16,9 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 - Guided cards 已支持 start/complete 两个阶段：生成译注、打开译注、阅读原文、读下一章、复习生词、回看正文。
 - 标注副本已按 Density level 保存为 `{unit_id}.{level}.annotated.md`，legacy `{unit_id}.annotated.md` 作为 intermediate fallback。
 - SQLite 已接入 `units/vocabulary/unit_vocabulary`，支持生词上下文、掌握状态、词性、章节关联和未掌握词计数。
+- SQLite 已接入 `bookmarks`，支持显式当前页书签、原文/译注模式、页码和比例定位。
 - Memory 已记录 current/opened/read/annotated unit ids 和 event log；WebSocket 初始 cards 会解析并回传真实 current unit id。
-- HTTP 已提供 units、unit detail、vocabulary CRUD/mark、word lookup、agent cards 等接口。
+- HTTP 已提供 units、unit detail、bookmarks、vocabulary CRUD/mark、word lookup、agent cards 等接口。
 
 ## Completed Frontend
 
@@ -27,6 +28,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 - 生成译注时展示 chapter summary 和进度状态；start/complete guidance 页已降级为 action panel，避免重复标题和说明。
 - 右上角 Density 下拉使用 `H/M/L`，持久化到 `localStorage` 并注入 generate/open annotated actions。
 - 当前章节 id 持久化到 `localStorage`，刷新后可恢复卡片页的章节上下文和 summary。
+- 阅读页支持保存显式书签；侧边栏在章节下展示书签，并可直接打开对应原文/译注位置。
 - 渲染层支持普通英文词和已标注词点击查词；手动添加标注会写入生词库并即时重排当前正文。
 - 生词表页面已支持全部/章节筛选、未掌握/已掌握、搜索、删除、重新学习、词性 badge。
 - `review_chapter_vocab` card action 已前端拦截，直接打开生词表并筛选当前章。
@@ -38,6 +40,9 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 - `GET /api/units`
 - `GET /api/units/{unit_id}`
 - `GET /api/chapters` / `GET /api/chapters/{chapter_id}`：兼容旧命名，当前仍以 unit 为核心。
+- `GET /api/bookmarks?unit_id=...`
+- `POST /api/bookmarks`
+- `DELETE /api/bookmarks/{bookmark_id}`
 - `GET /api/vocabulary?unit_id=...&chapter_id=...`
 - `POST /api/vocabulary`
 - `PATCH /api/vocabulary/{vocab_id}/master`
@@ -49,8 +54,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 
 ## Remaining Extensions
 
-- 书签系统：章节内锚点、继续阅读入口、侧边栏书签列表、动态词汇变化后的定位恢复。
-- 阅读位置保存：翻页后节流保存 `unit_id/body_kind/page_index/progress_ratio`，重新进入章节时恢复。
+- 书签增强：选中文本锚点、书签备注、独立书签管理页或跨设备同步。
 - 自动译注词性：让 annotator 输出或二次补全 `pos`，避免批量译注生词默认 `other`。
 - 生词复习模式：在生词表之外增加 quiz/flashcard/spaced repetition。
 - 前端英文化收尾：逐步英文化查词、生词表、状态栏或保留双语策略。

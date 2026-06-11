@@ -54,21 +54,24 @@ backend/data/memory/
 - `ActionDispatcher` 根据 `action.id` 找到对应 handler。
 - `ActionHandler` 执行副作用，例如打开阅读单元、标记已读、请求译注。
 - `ReadingSocketSession` 只负责 WebSocket 协议收发、错误转换和 action 后刷新 cards。
-## Future: Reading Position
+## Bookmarks vs. Reading Position
 
-后续可在 `reading_memory.json` 中增加阅读位置记录，用于恢复用户退出前的翻页位置。第一版建议存成按 `unit_id` 索引的轻量对象：
+当前不做自动阅读位置恢复；刷新后只恢复当前章节/card 上下文，不自动跳到上次翻页位置。章节内定位改为用户显式创建的书签，存放在 SQLite `bookmarks` 表中：
 
 ```json
 {
-  "positions": {
-    "hp01-ch01": {
+  "bookmarks": [
+    {
+      "unit_id": "hp01-ch01",
       "body_kind": "annotated",
       "page_index": 4,
       "progress_ratio": 0.36,
-      "updated_at": "2026-06-10T...Z"
+      "total_pages": 12,
+      "label": "Chapter 1 · Page 5",
+      "excerpt": "Mr and Mrs Dursley..."
     }
-  }
+  ]
 }
 ```
 
-`page_index` 适合直接恢复同一窗口下的位置；`progress_ratio` 更适合在窗口尺寸、字体或分页算法变化后按比例恢复。
+`page_index` 用于同一分页条件下直接跳转；`progress_ratio` 用于窗口尺寸、字体或分页算法变化后的兜底映射。

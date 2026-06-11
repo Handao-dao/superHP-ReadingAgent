@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { addBookmark, deleteBookmark, fetchBookmarks } from './api/bookmarks'
 import { listChapters } from './api/chapters'
 import { lookupWord } from './api/lookup'
 import { addVocabulary, setMasteredByWord } from './api/vocabulary'
@@ -20,6 +21,12 @@ const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
+const bookmarks = ref([])
+const bookmarksLoading = ref(false)
+const bookmarkError = ref('')
+const bookmarkSaving = ref(false)
+const deletingBookmarkId = ref(null)
+const pendingBookmarkJump = ref(null)
 const densityMenuOpen = ref(false)
 const densityMenu = ref(null)
 const densityOptions = [
@@ -86,6 +93,15 @@ const chaptersByBook = computed(() => {
     ...group,
     chapters: group.chapters.slice().sort((a, b) => a.chapter_no - b.chapter_no),
   }))
+})
+
+const bookmarksByUnit = computed(() => {
+  const groups = new Map()
+  for (const bookmark of bookmarks.value) {
+    if (!groups.has(bookmark.unit_id)) groups.set(bookmark.unit_id, [])
+    groups.get(bookmark.unit_id).push(bookmark)
+  }
+  return groups
 })
 
 const paragraphs = computed(() => {
@@ -177,6 +193,18 @@ async function loadChapterList() {
   }
 }
 
+async function loadBookmarks() {
+  bookmarksLoading.value = true
+  bookmarkError.value = ''
+  try {
+    bookmarks.value = await fetchBookmarks()
+  } catch (error) {
+    bookmarkError.value = error.message || '书签加载失败'
+  } finally {
+    bookmarksLoading.value = false
+  }
+}
+
 function handleAction(action) {
   if (action.id === 'review_chapter_vocab') {
     selectedVocabularyUnitId.value = action.payload?.unit_id || action.payload?.chapter_id || currentChapterId.value || ''
@@ -209,6 +237,91 @@ function handleSelectChapter(chapter) {
   if (sent) sidebarOpen.value = false
 }
 
+function cleanBookmarkExcerpt(text = '') {
+  return stripAnnotationMarkers(text)
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120)
+}
+
+function currentBookmarkExcerpt() {
+  const block = paragraphs.value[Math.min(currentPage.value, Math.max(0, paragraphs.value.length - 1))]
+  return cleanBookmarkExcerpt(block || activeChapter.value?.body || '')
+}
+
+async function saveCurrentBookmark() {
+  const meta = activeChapter.value?.meta
+  const bodyKind = activeChapter.value?.body_kind
+  if (!meta || !bodyKind || readerMode.value !== 'reading') return
+  bookmarkSaving.value = true
+  bookmarkError.value = ''
+  try {
+    const totalPages = Math.max(0, totalReadingPages.value)
+    const pageIndex = Math.max(0, currentPage.value)
+    const saved = await addBookmark({
+      unitId: meta.id,
+      bodyKind,
+      pageIndex,
+      progressRatio: totalPages > 0 ? pageIndex / totalPages : 0,
+      totalPages,
+      label: `Chapter ${meta.chapter_no} · Page ${pageIndex + 1}`,
+      excerpt: currentBookmarkExcerpt(),
+    })
+    bookmarks.value = [saved, ...bookmarks.value]
+  } catch (error) {
+    bookmarkError.value = error.message || '保存书签失败'
+  } finally {
+    bookmarkSaving.value = false
+  }
+}
+
+function handleOpenBookmark(bookmark) {
+  if (isGenerating.value) return
+  activeView.value = 'reader'
+  closeLookupBubble()
+  pendingBookmarkJump.value = bookmark
+  currentChapterId.value = bookmark.unit_id
+  const action = {
+    id: bookmark.body_kind === 'annotated' ? 'open_annotated_copy' : 'read_original',
+    label: bookmark.body_kind === 'annotated' ? 'Annotated' : 'Original',
+    payload: {
+      unit_id: bookmark.unit_id,
+      chapter_id: bookmark.unit_id,
+      ...(bookmark.body_kind === 'annotated' ? { level: selectedLevel.value } : {}),
+    },
+  }
+  sendAction(action)
+  sidebarOpen.value = false
+}
+
+async function handleDeleteBookmark(bookmark) {
+  deletingBookmarkId.value = bookmark.id
+  bookmarkError.value = ''
+  try {
+    await deleteBookmark(bookmark.id)
+    bookmarks.value = bookmarks.value.filter((item) => item.id !== bookmark.id)
+  } catch (error) {
+    bookmarkError.value = error.message || '删除书签失败'
+  } finally {
+    deletingBookmarkId.value = null
+  }
+}
+
+function applyPendingBookmarkJump() {
+  const bookmark = pendingBookmarkJump.value
+  if (!bookmark || !activeChapter.value || totalReadingPages.value <= 0) return
+  if (bookmark.unit_id !== activeChapter.value.meta?.id) return
+  if (bookmark.body_kind !== activeChapter.value.body_kind) return
+  const pages = totalReadingPages.value
+  const savedPage = Number(bookmark.page_index)
+  const ratio = Number(bookmark.progress_ratio)
+  const ratioPage = Number.isFinite(ratio) ? Math.round((pages - 1) * Math.min(1, Math.max(0, ratio))) : 0
+  const targetPage = Number.isInteger(savedPage) && savedPage >= 0 && savedPage < pages ? savedPage : ratioPage
+  currentPage.value = Math.min(pages - 1, Math.max(0, targetPage))
+  pendingBookmarkJump.value = null
+}
+
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
@@ -222,6 +335,14 @@ function selectDensity(key) {
   selectedDensity.value = densityOptions.some((option) => option.key === key) ? key : 'M'
   localStorage.setItem('superhp_annotation_density', selectedDensity.value)
   densityMenuOpen.value = false
+}
+
+function formatBookmarkTime(value = '') {
+  if (!value) return ''
+  const normalized = String(value).replace(' ', 'T')
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function nextPage() {
@@ -426,6 +547,7 @@ async function recalculatePages() {
   const pages = Math.max(1, Math.ceil((flow.scrollWidth + 1) / Math.max(1, pageStride.value)))
   totalReadingPages.value = pages
   if (currentPage.value >= pages) currentPage.value = wasGuidance ? pages : pages - 1
+  applyPendingBookmarkJump()
 }
 
 watch(
@@ -457,6 +579,7 @@ watch(isGuidancePage, (isGuidance) => {
 
 onMounted(() => {
   loadChapterList()
+  loadBookmarks()
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
@@ -480,29 +603,62 @@ onBeforeUnmount(() => {
 
       <div v-if="listErrorMessage" class="sidebar-error">{{ listErrorMessage }}</div>
       <div v-else-if="listLoading" class="sidebar-loading">正在读取目录...</div>
+      <div v-if="bookmarksLoading" class="sidebar-loading">正在读取书签...</div>
+      <div v-if="bookmarkError" class="sidebar-error">{{ bookmarkError }}</div>
 
-      <nav v-else class="book-list">
+      <nav v-if="!listErrorMessage && !listLoading" class="book-list">
         <section v-for="book in chaptersByBook" :key="book.id" class="book-group">
           <h3>{{ book.title }}</h3>
-          <button
+          <div
             v-for="chapter in book.chapters"
             :key="chapter.id"
-            type="button"
-            class="chapter-item"
-            :class="{ 'is-active': chapter.id === currentChapterId, 'is-read': chapter.status === 'read' }"
-            :disabled="isGenerating"
-            @click="handleSelectChapter(chapter)"
+            class="chapter-entry"
           >
-            <span class="chapter-number">{{ chapter.chapter_no }}</span>
-            <span class="chapter-main">
-              <span class="chapter-title">{{ chapter.chapter_title }}</span>
-              <span class="chapter-badges">
-                <span v-if="chapter.status === 'read'">已读</span>
-                <span v-if="chapter.has_annotated_copy">译注</span>
-                <span v-if="chapter.vocab_count > 0">{{ chapter.vocab_count }} 词</span>
+            <button
+              type="button"
+              class="chapter-item"
+              :class="{ 'is-active': chapter.id === currentChapterId, 'is-read': chapter.status === 'read' }"
+              :disabled="isGenerating"
+              @click="handleSelectChapter(chapter)"
+            >
+              <span class="chapter-number">{{ chapter.chapter_no }}</span>
+              <span class="chapter-main">
+                <span class="chapter-title">{{ chapter.chapter_title }}</span>
+                <span class="chapter-badges">
+                  <span v-if="chapter.status === 'read'">已读</span>
+                  <span v-if="chapter.has_annotated_copy">译注</span>
+                  <span v-if="chapter.vocab_count > 0">{{ chapter.vocab_count }} 词</span>
+                  <span v-if="bookmarksByUnit.get(chapter.id)?.length">{{ bookmarksByUnit.get(chapter.id).length }} bookmark</span>
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
+
+            <div v-if="bookmarksByUnit.get(chapter.id)?.length" class="bookmark-list">
+              <div
+                v-for="bookmark in bookmarksByUnit.get(chapter.id)"
+                :key="bookmark.id"
+                class="bookmark-item"
+              >
+                <button
+                  type="button"
+                  class="bookmark-open"
+                  :disabled="isGenerating"
+                  @click="handleOpenBookmark(bookmark)"
+                >
+                  <span>{{ bookmark.label || `Page ${bookmark.page_index + 1}` }}</span>
+                  <small>{{ bookmark.body_kind === 'annotated' ? 'Annotated' : 'Original' }} · {{ formatBookmarkTime(bookmark.created_at) }}</small>
+                  <em v-if="bookmark.excerpt">{{ bookmark.excerpt }}</em>
+                </button>
+                <button
+                  type="button"
+                  class="bookmark-delete"
+                  :disabled="deletingBookmarkId === bookmark.id"
+                  aria-label="删除书签"
+                  @click="handleDeleteBookmark(bookmark)"
+                >×</button>
+              </div>
+            </div>
+          </div>
         </section>
       </nav>
     </aside>
@@ -687,6 +843,13 @@ onBeforeUnmount(() => {
 
         <footer class="paper-footer">
           <span>{{ activeChapter?.body_kind === 'annotated' ? 'Annotated' : 'Original' }}</span>
+          <button
+            v-if="readerMode === 'reading'"
+            type="button"
+            class="bookmark-save"
+            :disabled="bookmarkSaving"
+            @click="saveCurrentBookmark"
+          >{{ bookmarkSaving ? 'Saving...' : 'Bookmark' }}</button>
           <span>{{ paperPageLabel }}</span>
         </footer>
       </article>

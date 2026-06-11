@@ -1,8 +1,15 @@
 from pathlib import Path
 
 from superhp_agent.corpus import CorpusStore
-from superhp_agent.services.annotator import VocabItem
 from superhp_agent.storage import AppDB
+
+
+class VocabItem:
+    def __init__(self, word: str, translation: str, context: str = "", pos: str = "other"):
+        self.word = word
+        self.translation = translation
+        self.context = context
+        self.pos = pos
 
 
 def write_unit(root: Path):
@@ -107,3 +114,51 @@ def test_vocabulary_context_strips_annotation_markers(tmp_path):
 
     rows = db.list_vocabulary(unit_id="hp01-ch01")
     assert rows[0]["context"] == "half-exasperated, half-admiring."
+
+
+def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("hp01-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    first_id = db.add_bookmark(
+        unit,
+        body_kind="source",
+        page_index=2,
+        progress_ratio=0.25,
+        total_pages=8,
+        label="Chapter 1 · Page 3",
+        excerpt="Mr and Mrs Dursley...",
+    )
+    second_id = db.add_bookmark(
+        unit,
+        body_kind="annotated",
+        page_index=4,
+        progress_ratio=0.5,
+        total_pages=8,
+        label="Annotated page",
+    )
+
+    rows = db.list_bookmarks(unit_id="hp01-ch01")
+    assert [row["id"] for row in rows] == [second_id, first_id]
+    assert rows[0]["body_kind"] == "annotated"
+    assert rows[1]["excerpt"] == "Mr and Mrs Dursley..."
+
+    assert db.delete_bookmark(first_id)
+    assert [row["id"] for row in db.list_bookmarks()] == [second_id]
+    assert not db.delete_bookmark(first_id)
+
+
+def test_bookmark_rejects_unknown_body_kind(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("hp01-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    try:
+        db.add_bookmark(unit, body_kind="notes", page_index=0)
+    except ValueError as exc:
+        assert "body_kind" in str(exc)
+    else:
+        raise AssertionError("expected invalid bookmark body_kind to fail")

@@ -84,6 +84,29 @@ class MarkByWordRequest(BaseModel):
     mastered: bool
 
 
+class BookmarkEntry(BaseModel):
+    id: int
+    unit_id: str
+    chapter_id: str
+    body_kind: str
+    page_index: int
+    progress_ratio: float = 0
+    total_pages: int = 0
+    label: str = ""
+    excerpt: str = ""
+    created_at: str = ""
+
+
+class AddBookmarkRequest(BaseModel):
+    unit_id: str
+    body_kind: str
+    page_index: int = 0
+    progress_ratio: float = 0
+    total_pages: int = 0
+    label: str = ""
+    excerpt: str = ""
+
+
 class MutationResponse(BaseModel):
     ok: bool = True
 

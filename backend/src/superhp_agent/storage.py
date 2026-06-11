@@ -17,6 +17,7 @@ from superhp_agent.corpus import ReadingUnit
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[(.+?)\|.+?\]\]")
 VALID_POS = {"noun", "verb", "adjective", "adverb", "phrase", "other"}
+VALID_BODY_KINDS = {"source", "annotated"}
 
 
 def strip_annotation_markers(text: str) -> str:
@@ -280,6 +281,82 @@ class AppDB:
         with self._lock:
             return [dict(row) for row in self._conn.execute(query, params).fetchall()]
 
+    def add_bookmark(
+        self,
+        unit: ReadingUnit,
+        *,
+        body_kind: str,
+        page_index: int,
+        progress_ratio: float = 0,
+        total_pages: int = 0,
+        label: str = "",
+        excerpt: str = "",
+    ) -> int:
+        """Store one explicit reading bookmark and return its id."""
+        body_kind = str(body_kind or "").strip()
+        if body_kind not in VALID_BODY_KINDS:
+            raise ValueError("body_kind must be source or annotated")
+        page_index = max(0, int(page_index))
+        total_pages = max(0, int(total_pages))
+        progress_ratio = min(1, max(0, float(progress_ratio)))
+        label = str(label or "").strip()
+        excerpt = str(excerpt or "").strip()
+        with self._lock:
+            self.sync_unit(unit)
+            cursor = self._conn.execute(
+                """
+                INSERT INTO bookmarks (
+                    unit_id, chapter_id, body_kind, page_index, progress_ratio,
+                    total_pages, label, excerpt
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    unit.id,
+                    unit.chapter_id,
+                    body_kind,
+                    page_index,
+                    progress_ratio,
+                    total_pages,
+                    label,
+                    excerpt,
+                ),
+            )
+            self._conn.commit()
+            return int(cursor.lastrowid)
+
+    def list_bookmarks(self, *, unit_id: str | None = None) -> list[dict[str, Any]]:
+        """Return explicit reading bookmarks, newest first."""
+        params: list[str] = []
+        where = ""
+        if unit_id:
+            where = "WHERE unit_id = ?"
+            params.append(unit_id)
+        query = f"""
+            SELECT
+                id,
+                unit_id,
+                chapter_id,
+                body_kind,
+                page_index,
+                progress_ratio,
+                total_pages,
+                label,
+                excerpt,
+                created_at
+            FROM bookmarks
+            {where}
+            ORDER BY datetime(created_at) DESC, id DESC
+        """
+        with self._lock:
+            return [dict(row) for row in self._conn.execute(query, params).fetchall()]
+
+    def delete_bookmark(self, bookmark_id: int) -> bool:
+        """Remove one explicit bookmark."""
+        with self._lock:
+            cursor = self._conn.execute("DELETE FROM bookmarks WHERE id = ?", (bookmark_id,))
+            self._conn.commit()
+            return cursor.rowcount > 0
+
     def _init_tables(self) -> None:
         """Create the local schema lazily so first run needs no setup command."""
         self._conn.executescript(
@@ -331,12 +408,26 @@ class AppDB:
                 FOREIGN KEY (vocab_id) REFERENCES vocabulary(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS bookmarks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                unit_id TEXT NOT NULL,
+                chapter_id TEXT NOT NULL,
+                body_kind TEXT NOT NULL,
+                page_index INTEGER NOT NULL DEFAULT 0,
+                progress_ratio REAL NOT NULL DEFAULT 0,
+                total_pages INTEGER NOT NULL DEFAULT 0,
+                label TEXT DEFAULT '',
+                excerpt TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now','localtime'))
+            );
+
             CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
                 ON units(book_id, chapter_no, section_no);
             CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
             CREATE INDEX IF NOT EXISTS idx_vocab_mastered ON vocabulary(mastered);
             CREATE INDEX IF NOT EXISTS idx_unit_vocab_unit ON unit_vocabulary(unit_id);
             CREATE INDEX IF NOT EXISTS idx_unit_vocab_chapter ON unit_vocabulary(chapter_id);
+            CREATE INDEX IF NOT EXISTS idx_bookmarks_unit ON bookmarks(unit_id);
             """
         )
         self._ensure_columns()

@@ -34,6 +34,7 @@
 - 进度、重试、JSON 修复、错误信息以小字显示在 summary 上方或纸张顶部。
 - 右上角 `Density: H/M/L` 下拉映射为 `beginner/intermediate/advanced`，生成或打开译注时写入 action payload。
 - 当前阅读单元 id 通过 `localStorage` 持久化，刷新后可恢复卡片页的章节上下文。
+- 书签是显式锚点：阅读页保存当前页，侧边栏章节下展示书签，点击后打开对应原文/译注并跳转到页。
 - 译注正文和普通英文词都可点击查词；添加标注会写入生词表并即时重排正文。
 
 当前页面模式可以理解为：
@@ -45,9 +46,9 @@ type ReaderMode = "empty" | "reading" | "guidance" | "generating" | "error"
 后续升级方向：
 
 1. 固定窗口保留不变。
-2. 后续建立书签系统，用于章节内精细定位、继续阅读和回看。
-3. 再考虑双页书本、翻页动画、阅读位置恢复。
-4. 阅读位置恢复暂定保存 `unit_id`、`body_kind`、`page_index`、`progress_ratio` 与可选书签锚点；由于分页受窗口尺寸和字体影响，恢复时优先按书签或比例映射到当前总页数。
+2. 书签后续可增强为选中文本锚点、备注或独立管理页。
+3. 再考虑双页书本、翻页动画等阅读表现升级。
+4. 不做自动阅读位置恢复；刷新后恢复章节/card 上下文，定位由用户显式书签负责。
 
 ## HTTP API
 
@@ -106,6 +107,39 @@ type ReaderMode = "empty" | "reading" | "guidance" | "generating" | "error"
 - 展示当前单元生词。
 - 展示章节生词。
 - 支持生词表页的章节筛选、搜索、掌握/重新学习、删除。
+
+### `GET /api/bookmarks`
+
+用途：获取显式阅读书签。
+
+可选查询：
+
+- `unit_id`
+
+返回类型：`BookmarkEntry[]`
+
+前端用途：
+
+- 在侧边栏章节下展示书签。
+- 过滤当前章节书签。
+
+### `POST /api/bookmarks`
+
+用途：保存当前阅读页为书签。
+
+请求字段：
+
+- `unit_id`
+- `body_kind`: `source` 或 `annotated`
+- `page_index`
+- `progress_ratio`
+- `total_pages`
+- `label`
+- `excerpt`
+
+### `DELETE /api/bookmarks/{bookmark_id}`
+
+用途：删除一个书签。
 
 ### `POST /api/vocabulary`
 
@@ -568,9 +602,8 @@ type ReadingLoadStatus =
 
 ## 后续前端任务拆分
 
-1. 阅读位置保存：翻页后节流保存当前位置，重新打开同一章节后恢复到最近页。
-2. 书签系统：支持章节内书签、继续阅读锚点、从侧边栏定位到书签。
-3. 断线重连体验：保留最后正文和 cards，并提供明确重连状态。
-4. 生词复习模式：在列表之外扩展 flashcard/quiz。
-5. 前端英文化收尾：查词、生词表、状态栏文案按产品风格逐步统一。
-6. 组件测试或 e2e：覆盖 density action payload、复习生词跳转、伪分页边界、刷新恢复。
+1. 书签增强：支持选中文本锚点、书签备注和独立书签管理视图。
+2. 断线重连体验：保留最后正文和 cards，并提供明确重连状态。
+3. 生词复习模式：在列表之外扩展 flashcard/quiz。
+4. 前端英文化收尾：查词、生词表、状态栏文案按产品风格逐步统一。
+5. 组件测试或 e2e：覆盖 density action payload、复习生词跳转、伪分页边界、显式书签跳转。

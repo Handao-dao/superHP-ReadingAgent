@@ -20,9 +20,11 @@ from superhp_agent.providers.factory import make_provider
 from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
 from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.schemas import (
+    AddBookmarkRequest,
     AddVocabularyRequest,
     AddVocabularyResponse,
     AgentCard,
+    BookmarkEntry,
     ChapterDetail,
     ChapterMeta,
     MarkByWordRequest,
@@ -126,6 +128,22 @@ def _vocabulary_entry(row: dict) -> VocabularyEntry:
     )
 
 
+def _bookmark_entry(row: dict) -> BookmarkEntry:
+    """Normalize bookmark rows before returning them to the frontend."""
+    return BookmarkEntry(
+        id=int(row["id"]),
+        unit_id=str(row["unit_id"]),
+        chapter_id=str(row["chapter_id"]),
+        body_kind=str(row["body_kind"]),
+        page_index=int(row["page_index"]),
+        progress_ratio=float(row["progress_ratio"]),
+        total_pages=int(row["total_pages"]),
+        label=str(row["label"] or ""),
+        excerpt=str(row["excerpt"] or ""),
+        created_at=str(row["created_at"] or ""),
+    )
+
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
@@ -163,6 +181,45 @@ async def list_vocabulary(
     chapter_id: str | None = Query(default=None),
 ):
     return [_vocabulary_entry(row) for row in db.list_vocabulary(unit_id=unit_id, chapter_id=chapter_id)]
+
+
+@app.get("/api/bookmarks", response_model=list[BookmarkEntry])
+async def list_bookmarks(unit_id: str | None = Query(default=None)):
+    return [_bookmark_entry(row) for row in db.list_bookmarks(unit_id=unit_id)]
+
+
+@app.post("/api/bookmarks", response_model=BookmarkEntry)
+async def add_bookmark(payload: AddBookmarkRequest):
+    if payload.body_kind not in {"source", "annotated"}:
+        raise HTTPException(status_code=400, detail="body_kind must be source or annotated")
+    try:
+        unit = corpus.get_unit(payload.unit_id).meta
+        bookmark_id = db.add_bookmark(
+            unit,
+            body_kind=payload.body_kind,
+            page_index=payload.page_index,
+            progress_ratio=payload.progress_ratio,
+            total_pages=payload.total_pages,
+            label=payload.label,
+            excerpt=payload.excerpt,
+        )
+    except CorpusError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    rows = db.list_bookmarks(unit_id=unit.id)
+    for row in rows:
+        if int(row["id"]) == bookmark_id:
+            return _bookmark_entry(row)
+    raise HTTPException(status_code=500, detail="bookmark was not saved")
+
+
+@app.delete("/api/bookmarks/{bookmark_id}", response_model=MutationResponse)
+async def delete_bookmark(bookmark_id: int):
+    if not db.delete_bookmark(bookmark_id):
+        raise HTTPException(status_code=404, detail="bookmark not found")
+    return MutationResponse(ok=True)
 
 
 @app.post("/api/word-lookup", response_model=WordLookupResult)

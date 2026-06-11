@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-ALLOWED_POS = {"noun", "verb", "adjective", "adverb", "phrase", "other"}
+ALLOWED_POS = {"noun", "verb", "adjective", "adverb", "other"}
 ALLOWED_DIFFICULTY = {"low", "medium", "high"}
 
 
@@ -104,4 +104,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

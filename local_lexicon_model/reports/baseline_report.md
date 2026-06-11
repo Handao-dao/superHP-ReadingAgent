@@ -18,10 +18,8 @@ Status: not run yet.
 | Extra text rate | TBD |
 | POS accuracy | TBD |
 | Word translation exact rate | TBD |
-| Sense accuracy | TBD |
 | Average latency | TBD |
 
 ## Main Error Types
 
 - TBD
-

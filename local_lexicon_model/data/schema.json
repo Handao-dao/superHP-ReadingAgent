@@ -28,17 +28,11 @@
         },
         "pos": {
           "type": "string",
-          "enum": ["noun", "verb", "adjective", "adverb", "phrase", "other"]
+          "enum": ["noun", "verb", "adjective", "adverb", "other"]
         },
         "sentence_cn": {
           "type": "string",
           "minLength": 1
-        },
-        "sense": {
-          "type": "string"
-        },
-        "phrase": {
-          "type": "string"
         },
         "difficulty": {
           "type": "string",
@@ -48,4 +42,3 @@
     }
   }
 }
-

@@ -25,9 +25,9 @@ lookup API:
 }
 ```
 
-Training and evaluation may include extra fields such as `sense`, `phrase`, or
-`difficulty`, but deployment adapters must be able to reduce model output back
-to the four API fields above.
+Training and evaluation should keep the same four output fields in the first
+iteration. Phrase lookup is out of scope for now, so local model datasets should
+not use `phrase` as a POS label.
 
 ## Directory Layout
 
@@ -57,13 +57,14 @@ local_lexicon_model/
 
 ## Phases
 
-1. Baseline: run a fixed prompt against a base model and measure format and
-   sense failures.
+1. Baseline: run a fixed prompt against a base model and measure format,
+   translation, and POS failures.
 2. Dataset: build SFT examples and a separately checked evaluation set.
 3. SFT: train a LoRA/QLoRA adapter and compare against the baseline.
 4. DPO: add chosen/rejected pairs for difficult polysemous cases.
-5. Deployment: expose local inference through Ollama or llama.cpp and add a
-   local-first, cloud-fallback provider for Reading Agent.
+5. Deployment: expose local inference through an `LLMProvider` implementation
+   or an OpenAI-compatible local endpoint, then configure lookup to use it with
+   cloud fallback.
 
 ## Data Contracts
 
@@ -73,12 +74,11 @@ Evaluation rows use this shape:
 {
   "id": "eval-0001",
   "word": "charge",
-  "sentence": "He was in charge of the whole expedition.",
+  "sentence": "The creature made a sudden charge across the room.",
   "gold": {
-    "word_cn": "负责",
-    "pos": "phrase",
-    "sentence_cn": "他负责整个探险队。",
-    "sense": "be in charge of: 负责，掌管"
+    "word_cn": "冲锋",
+    "pos": "noun",
+    "sentence_cn": "那个生物突然冲过房间。"
   }
 }
 ```
@@ -100,4 +100,3 @@ Score a JSONL prediction file against the seed set:
 ```powershell
 python local_lexicon_model/eval/run_eval.py --gold local_lexicon_model/data/eval_seed.jsonl --pred local_lexicon_model/reports/predictions.example.jsonl
 ```
-

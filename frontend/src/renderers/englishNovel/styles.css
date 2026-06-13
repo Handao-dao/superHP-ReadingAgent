@@ -1,0 +1,33 @@
+.vocab-word {
+  color: #B8860B;
+  font-family: "Bookerly-Bold", "Bookerly", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.vocab-word:hover {
+  color: #9F7928;
+  border-bottom-color: #9F7928;
+  border-bottom-style: dashed;
+}
+
+.text-word {
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+}
+
+.text-word:hover {
+  color: #3f6780;
+  border-bottom-color: rgba(63, 103, 128, 0.48);
+  border-bottom-style: dotted;
+}
+
+.translation {
+  margin-left: 4px;
+  color: #2C2825;
+  font-family: "Bookerly", Georgia, "Times New Roman", serif;
+  font-size: 0.9em;
+  opacity: 0.8;
+  vertical-align: baseline;
+}

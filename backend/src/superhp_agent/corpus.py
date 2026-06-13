@@ -28,6 +28,7 @@ class ReadingUnit:
     section_count: int
     summary: str
     path: Path
+    profile_id: str = "english_novel"
 
     @property
     def summary_zh(self) -> str:
@@ -55,8 +56,9 @@ class CorpusError(ValueError):
 class CorpusStore:
     """Read markdown reading units from a single, bounded corpus root."""
 
-    def __init__(self, corpus_dir: str | Path):
+    def __init__(self, corpus_dir: str | Path, *, default_profile_id: str = "english_novel"):
         self.corpus_dir = Path(corpus_dir).expanduser().resolve()
+        self.default_profile_id = default_profile_id
         self._units: dict[str, ReadingUnit] | None = None
 
     def list_units(self) -> list[ReadingUnit]:
@@ -103,7 +105,7 @@ class CorpusStore:
         for path in self._iter_markdown_files():
             raw = path.read_text(encoding="utf-8")
             frontmatter, _ = self._split_frontmatter(raw, path)
-            unit = self._unit_from_frontmatter(frontmatter, path)
+            unit = self._unit_from_frontmatter(frontmatter, path, default_profile_id=self.default_profile_id)
             if unit.id in units:
                 raise CorpusError(f"Duplicate reading unit id: {unit.id}")
             units[unit.id] = unit
@@ -134,7 +136,7 @@ class CorpusStore:
         return data, parts[2]
 
     @staticmethod
-    def _unit_from_frontmatter(data: dict, path: Path) -> ReadingUnit:
+    def _unit_from_frontmatter(data: dict, path: Path, *, default_profile_id: str = "english_novel") -> ReadingUnit:
         """Normalize frontmatter into the internal ReadingUnit model."""
         required = [
             "id",
@@ -152,6 +154,7 @@ class CorpusStore:
         section_no = int(data.get("section_no") or 1)
         section_count = int(data.get("section_count") or 1)
         summary = str(data.get("summary") or data.get("summary_zh") or "")
+        profile_id = str(data.get("profile_id") or default_profile_id)
 
         return ReadingUnit(
             id=unit_id,
@@ -164,6 +167,7 @@ class CorpusStore:
             section_count=section_count,
             summary=summary,
             path=path,
+            profile_id=profile_id,
         )
 
 

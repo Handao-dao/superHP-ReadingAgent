@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 8192
     annotation_max_chunk_words: int = 1000
     annotation_max_concurrency: int = 100
+    default_profile_id: str = "english_novel"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

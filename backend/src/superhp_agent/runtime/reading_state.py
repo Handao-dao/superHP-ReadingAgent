@@ -27,6 +27,7 @@ class ReadingUnitState:
     is_read: bool = False
     vocab_count: int = 0
     next_unit_id: str | None = None
+    profile_id: str = "english_novel"
 
     @property
     def summary_zh(self) -> str:
@@ -61,6 +62,7 @@ class ReadingUnitState:
             is_read=is_read,
             vocab_count=vocab_count,
             next_unit_id=next_unit_id,
+            profile_id=unit.profile_id,
         )
 
     @classmethod

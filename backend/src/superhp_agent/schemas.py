@@ -16,6 +16,7 @@ class ReadingUnitMeta(BaseModel):
     has_annotated_copy: bool = False
     status: str = "unread"
     vocab_count: int = 0
+    profile_id: str = "english_novel"
 
     @property
     def summary_zh(self) -> str:

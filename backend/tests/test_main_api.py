@@ -89,6 +89,7 @@ def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     assert meta.status == "read"
     assert meta.has_annotated_copy is True
     assert meta.vocab_count == 3
+    assert meta.profile_id == "english_novel"
 
 
 def test_bookmark_api_create_list_and_delete(tmp_path, monkeypatch):

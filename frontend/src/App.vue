@@ -6,7 +6,7 @@ import { lookupWord } from './api/lookup'
 import { addVocabulary, setMasteredByWord } from './api/vocabulary'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import { useReadingSocket } from './composables/useReadingSocket'
-import { renderReadingBlock, splitReadingBlocks } from './utils/renderReadingText'
+import { getReadingRenderer } from './renderers'
 
 const chapters = ref([])
 const listLoading = ref(false)
@@ -75,6 +75,7 @@ const currentMeta = computed(() => {
   if (!currentChapterId.value) return null
   return chapters.value.find((unit) => unit.id === currentChapterId.value) || null
 })
+const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.profile_id))
 
 const chaptersByBook = computed(() => {
   const groups = new Map()
@@ -106,10 +107,10 @@ const bookmarksByUnit = computed(() => {
 
 const paragraphs = computed(() => {
   const body = activeChapter.value?.body || ''
-  return splitReadingBlocks(body)
+  return currentRenderer.value.splitReadingBlocks(body)
 })
 
-const renderedBlocks = computed(() => paragraphs.value.map((block) => renderReadingBlock(block, {
+const renderedBlocks = computed(() => paragraphs.value.map((block) => currentRenderer.value.renderReadingBlock(block, {
   manualAnnotations: manualAnnotations.value,
   hiddenAnnotations: hiddenAnnotations.value,
 })))

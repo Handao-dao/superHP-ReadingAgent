@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from superhp_agent.profiles import CardCopy
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
     OPEN_ANNOTATED_COPY,
@@ -20,13 +21,16 @@ class ReadingCardBuilder:
     Keeping copy and action ids here makes it easier to refine the UX without
     touching WebSocket transport or action execution code.
     """
+    def __init__(self, card_copy: CardCopy | None = None):
+        self.copy = card_copy or CardCopy()
+
     def empty_corpus(self) -> list[AgentCard]:
         return [
             AgentCard(
                 id="empty-corpus",
                 type="setup",
-                title="No Reading Texts Yet",
-                body="Add chapter Markdown files to the corpus/ directory first.",
+                title=self.copy.empty_title,
+                body=self.copy.empty_body,
                 actions=[],
             )
         ]
@@ -48,8 +52,8 @@ class ReadingCardBuilder:
             AgentCard(
                 id=f"unit-{unit.id}-start",
                 type="reading",
-                title="Ready to Read",
-                body=self._unit_title(unit, "Next up"),
+                title=self.copy.start_title,
+                body=self._unit_title(unit, self.copy.start_prefix),
                 actions=actions,
             )
         ]
@@ -69,20 +73,20 @@ class ReadingCardBuilder:
             actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
         if unit.has_annotated_copy:
             back_action = action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id)
-            back_action.label = "Back to Annotated"
+            back_action.label = self.copy.back_to_annotated_label
             actions.append(back_action)
         else:
             back_action = action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id)
-            back_action.label = "Back to Original"
+            back_action.label = self.copy.back_to_source_label
             actions.append(back_action)
 
-        title = "Chapter Complete" if unit.next_unit_id else "Final Chapter Complete"
+        title = self.copy.complete_title if unit.next_unit_id else self.copy.final_complete_title
         return [
             AgentCard(
                 id=f"unit-{unit.id}-complete",
                 type="progress",
                 title=title,
-                body=self._vocab_body(unit, "You can move on."),
+                body=self._vocab_body(unit, self.copy.complete_prefix),
                 actions=actions,
             )
         ]
@@ -101,9 +105,8 @@ class ReadingCardBuilder:
             f"{unit.chapter_title}."
         )
 
-    @staticmethod
-    def _vocab_body(unit: ReadingUnitState, prefix: str) -> str:
+    def _vocab_body(self, unit: ReadingUnitState, prefix: str) -> str:
         if unit.vocab_count <= 0:
             return prefix
-        word_label = "word" if unit.vocab_count == 1 else "words"
-        return f"{prefix} This chapter currently has {unit.vocab_count} vocabulary {word_label}."
+        word_label = self.copy.learning_item_singular if unit.vocab_count == 1 else self.copy.learning_item_plural
+        return f"{prefix} This chapter currently has {unit.vocab_count} {self.copy.learning_item_scope} {word_label}."

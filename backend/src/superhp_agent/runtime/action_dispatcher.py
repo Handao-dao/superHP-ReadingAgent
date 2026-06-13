@@ -424,6 +424,7 @@ async def _emit_opened_unit(
             section_count=doc.meta.section_count,
             summary=doc.meta.summary,
             has_annotated_copy=body_kind == "annotated",
+            profile_id=doc.meta.profile_id,
         ),
         body=body,
         body_kind=body_kind,
@@ -451,6 +452,7 @@ def _render_annotated_markdown(doc: ReadingUnitDocument, result: AnnotationResul
         f"chapter_id: {doc.meta.chapter_id}\n"
         f"book_id: {doc.meta.book_id}\n"
         f"chapter_no: {doc.meta.chapter_no}\n"
+        f"profile_id: {doc.meta.profile_id}\n"
         f"level: {normalize_level(level)}\n"
         "body_kind: annotated\n"
         f"annotated_at: {annotated_at}\n"

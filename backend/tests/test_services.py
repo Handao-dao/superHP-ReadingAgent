@@ -2,12 +2,12 @@ import asyncio
 
 import pytest
 
-from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.prompts import (
     BASE_ANNOTATOR_SYSTEM_PROMPT,
     build_annotator_base_context,
     build_annotator_user_prompt,
 )
+from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import BackendEvent
 from superhp_agent.services import (
     AnnotationChunker,

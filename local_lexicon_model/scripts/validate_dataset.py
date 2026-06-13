@@ -7,7 +7,6 @@ from typing import Any
 
 
 ALLOWED_POS = {"noun", "verb", "adjective", "adverb", "other"}
-ALLOWED_DIFFICULTY = {"low", "medium", "high"}
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -29,6 +28,11 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def validate_row(row: dict[str, Any], *, row_no: int) -> list[str]:
     errors: list[str] = []
+    allowed_fields = {"id", "word", "sentence", "gold", "source"}
+    extra_fields = set(row) - allowed_fields
+    if extra_fields:
+        errors.append(f"row {row_no}: unexpected fields {sorted(extra_fields)!r}")
+
     for field in ("id", "word", "sentence", "gold"):
         if field not in row:
             errors.append(f"row {row_no}: missing {field}")
@@ -45,6 +49,11 @@ def validate_row(row: dict[str, Any], *, row_no: int) -> list[str]:
         errors.append(f"row {row_no}: gold must be an object")
         return errors
 
+    allowed_gold_fields = {"word_cn", "pos", "sentence_cn"}
+    extra_gold_fields = set(gold) - allowed_gold_fields
+    if extra_gold_fields:
+        errors.append(f"row {row_no}: unexpected gold fields {sorted(extra_gold_fields)!r}")
+
     for field in ("word_cn", "pos", "sentence_cn"):
         if not isinstance(gold.get(field), str) or not gold.get(field, "").strip():
             errors.append(f"row {row_no}: gold.{field} must be a non-empty string")
@@ -53,9 +62,19 @@ def validate_row(row: dict[str, Any], *, row_no: int) -> list[str]:
     if isinstance(pos, str) and pos not in ALLOWED_POS:
         errors.append(f"row {row_no}: gold.pos {pos!r} is not allowed")
 
-    difficulty = gold.get("difficulty")
-    if difficulty is not None and difficulty not in ALLOWED_DIFFICULTY:
-        errors.append(f"row {row_no}: gold.difficulty {difficulty!r} is not allowed")
+    source = row.get("source")
+    if source is not None:
+        if not isinstance(source, dict):
+            errors.append(f"row {row_no}: source must be an object")
+        else:
+            extra_source_fields = set(source) - {"path"}
+            if extra_source_fields:
+                errors.append(
+                    f"row {row_no}: unexpected source fields {sorted(extra_source_fields)!r}"
+                )
+            path = source.get("path")
+            if path is not None and not isinstance(path, str):
+                errors.append(f"row {row_no}: source.path must be a string")
 
     return errors
 

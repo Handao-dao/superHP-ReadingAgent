@@ -1,0 +1,500 @@
+{"id": "eval-0001", "word": "dripping", "sentence": "Dripping with Butterbeer and crouching out of sight, Harry clutched his empty tankard and watched the teachers' and Fudge's feet move towards the bar, pause, then turn and walk right towards him.", "gold": {"word_cn": "滴着", "pos": "verb", "sentence_cn": "哈利浑身滴着黄油啤酒，蹲在暗处，紧紧抓着他的空酒杯，看着老师们和福吉的脚朝吧台移动、停顿，然后转身径直朝他走来。"}}
+{"id": "eval-0002", "word": "crouching", "sentence": "Dripping with Butterbeer and crouching out of sight, Harry clutched his empty tankard and watched the teachers' and Fudge's feet move towards the bar, pause, then turn and walk right towards him.", "gold": {"word_cn": "蹲伏", "pos": "verb", "sentence_cn": "哈利浑身滴着黄油啤酒，蹲在暗处，紧紧抓着他的空酒杯，看着老师们和福吉的脚朝吧台移动、停顿，然后转身径直朝他走来。"}}
+{"id": "eval-0003", "word": "clutched", "sentence": "Dripping with Butterbeer and crouching out of sight, Harry clutched his empty tankard and watched the teachers' and Fudge's feet move towards the bar, pause, then turn and walk right towards him.", "gold": {"word_cn": "紧握", "pos": "verb", "sentence_cn": "哈利浑身滴着黄油啤酒，蹲在暗处，紧紧抓着他的空酒杯，看着老师们和福吉的脚朝吧台移动、停顿，然后转身径直朝他走来。"}}
+{"id": "eval-0004", "word": "convinced", "sentence": "Hermione looked convinced, but Ron didn't.", "gold": {"word_cn": "被说服的", "pos": "adjective", "sentence_cn": "赫敏看起来被说服了，但罗恩没有。"}}
+{"id": "eval-0005", "word": "flatly", "sentence": "'No,' said Harry flatly, 'we've done enough poking around.'", "gold": {"word_cn": "断然地", "pos": "adverb", "sentence_cn": "'不，'哈利断然说道，'我们已经打听得够多了。'"}}
+{"id": "eval-0006", "word": "poking", "sentence": "'No,' said Harry flatly, 'we've done enough poking around.'", "gold": {"word_cn": "打探", "pos": "verb", "sentence_cn": "'不，'哈利断然说道，'我们已经打听得够多了。'"}}
+{"id": "eval-0007", "word": "longing", "sentence": "Even Ravenclaws and Hufflepuffs turned on him, because everyone had been longing to see Slytherin lose the House Cup.", "gold": {"word_cn": "渴望", "pos": "verb", "sentence_cn": "就连拉文克劳和赫奇帕奇都转而反对他，因为每个人都渴望看到斯莱特林输掉学院杯。"}}
+{"id": "eval-0008", "word": "perplexed", "sentence": "Utterly perplexed, Harry got up.", "gold": {"word_cn": "困惑不解的", "pos": "adjective", "sentence_cn": "哈利满心困惑地站了起来。"}}
+{"id": "eval-0009", "word": "rustling", "sentence": "Over the rustling of the trees, he seemed to hear once more what Hagrid had told him on the night they had met.", "gold": {"word_cn": "沙沙声", "pos": "noun", "sentence_cn": "在树木的沙沙声中，他似乎又听到了海格在他们相遇那晚告诉他的话。"}}
+{"id": "eval-0010", "word": "comfort", "sentence": "Harry couldn't think of anything to say to comfort him.", "gold": {"word_cn": "安慰", "pos": "verb", "sentence_cn": "哈利想不出什么话来安慰他。"}}
+{"id": "eval-0011", "word": "foretold", "sentence": "Centaurs are concerned with what has been foretold!", "gold": {"word_cn": "预言", "pos": "verb", "sentence_cn": "马人在意的是被预言之事！"}}
+{"id": "eval-0012", "word": "dull", "sentence": "Only a dull, greenish tinge along the horizon to their right showed that daybreak was drawing closer.", "gold": {"word_cn": "暗淡的", "pos": "adjective", "sentence_cn": "只有右侧地平线上暗淡的浅绿色光晕表明黎明正在临近。"}}
+{"id": "eval-0013", "word": "tinge", "sentence": "Only a dull, greenish tinge along the horizon to their right showed that daybreak was drawing closer.", "gold": {"word_cn": "光晕", "pos": "noun", "sentence_cn": "只有右侧地平线上暗淡的浅绿色光晕表明黎明正在临近。"}}
+{"id": "eval-0014", "word": "approached", "sentence": "She turned her long, almond-shaped eyes upon Harry as he approached.", "gold": {"word_cn": "走近", "pos": "verb", "sentence_cn": "当哈利走近时，她那杏仁形状的长长眼睛转向了他。"}}
+{"id": "eval-0015", "word": "issued", "sentence": "The Skrewt issued a blast of fire from its end, and flew forwards towards him.", "gold": {"word_cn": "喷出", "pos": "verb", "sentence_cn": "炸尾螺从尾部喷出一股火焰，朝他飞冲过来。"}}
+{"id": "eval-0016", "word": "blast", "sentence": "The Skrewt issued a blast of fire from its end, and flew forwards towards him.", "gold": {"word_cn": "一股", "pos": "noun", "sentence_cn": "炸尾螺从尾部喷出一股火焰，朝他飞冲过来。"}}
+{"id": "eval-0017", "word": "revision", "sentence": "He half expected Hermione to complain that this was a whole night of revision lost, but she didn't say a word.", "gold": {"word_cn": "复习", "pos": "noun", "sentence_cn": "他本以为赫敏会抱怨浪费了一整晚复习时间，但她一个字也没说。"}}
+{"id": "eval-0018", "word": "impressed", "sentence": "'Wow!' said Ron, looking very impressed. 'You've learnt to Apparate!'", "gold": {"word_cn": "佩服的", "pos": "adjective", "sentence_cn": "'哇！'罗恩说，显得非常佩服，'你学会幻影显形了！'"}}
+{"id": "eval-0019", "word": "regard", "sentence": "A member of the Dark Force Defence League stated that he would regard any wizard who could speak Parseltongue as worthy of investigation.", "gold": {"word_cn": "认为", "pos": "verb", "sentence_cn": "黑魔法防御联盟的一位成员表示，他会认为任何会说蛇佬腔的巫师都值得调查。"}}
+{"id": "eval-0020", "word": "dangling", "sentence": "Harry was hanging from the ground, with his hair on end, his glasses dangling off his nose, threatening to fall into the bottomless sky.", "gold": {"word_cn": "悬垂", "pos": "verb", "sentence_cn": "哈利倒悬在地面上空，头发竖直，眼镜从鼻梁上垂下来，随时要掉进那无底的天空中。"}}
+{"id": "eval-0021", "word": "crater", "sentence": "A crater in the middle of the street, so deep it had cracked the sewer below.", "gold": {"word_cn": "坑", "pos": "noun", "sentence_cn": "街道中央一个坑，深得把下面的下水道都震裂了。"}}
+{"id": "eval-0022", "word": "hurtled", "sentence": "Harry had just broken into a run, when a dark figure hurtled out onto the path in front of him.", "gold": {"word_cn": "猛冲出来", "pos": "verb", "sentence_cn": "哈利刚跑起来，一个黑影就猛冲到面前的小路上。"}}
+{"id": "eval-0023", "word": "deflected", "sentence": "This was supposed to cast a temporary, invisible wall around himself that deflected minor curses.", "gold": {"word_cn": "偏转", "pos": "verb", "sentence_cn": "这个咒语本应在他周围形成一道临时的隐形墙壁，能够使小恶咒偏转。"}}
+{"id": "eval-0024", "word": "brilliance", "sentence": "'Thanks!' said Harry, and, amazed at his own brilliance, he dashed forwards.", "gold": {"word_cn": "机智", "pos": "noun", "sentence_cn": "'谢谢！'哈利说，对自己的机智感到惊讶，他向前冲去。"}}
+{"id": "eval-0025", "word": "slouch", "sentence": "Krum slouched off to join them shortly afterwards.", "gold": {"word_cn": "懒洋洋地走", "pos": "verb", "sentence_cn": "克鲁姆不久后就懒洋洋地走过去加入了他们。"}}
+{"id": "eval-0026", "word": "strode", "sentence": "He strode out of sight; Harry didn't think Quirrell had even noticed him.", "gold": {"word_cn": "大步走", "pos": "verb", "sentence_cn": "他大步走出了视线；哈利觉得奇洛甚至没注意到他。"}}
+{"id": "eval-0027", "word": "deserved", "sentence": "Like Harry, she felt they deserved what they'd got.", "gold": {"word_cn": "应得", "pos": "verb", "sentence_cn": "和哈利一样，她觉得他们落得这样的下场是活该。"}}
+{"id": "eval-0028", "word": "burst", "sentence": "He hesitated, and then the question he had to ask burst from him before he could stop himself.", "gold": {"word_cn": "脱口而出", "pos": "verb", "sentence_cn": "他迟疑了一下，接着那个非问不可的问题脱口而出，他来不及阻止自己。"}}
+{"id": "eval-0029", "word": "shifting", "sentence": "He heard the man shifting boxes against the wall opposite.", "gold": {"word_cn": "移动", "pos": "verb", "sentence_cn": "他听到对面墙边那个人在搬动箱子。"}}
+{"id": "eval-0030", "word": "gliding", "sentence": "Then, as he turned a corner, he saw — A Dementor was gliding towards him.", "gold": {"word_cn": "滑行", "pos": "verb", "sentence_cn": "接着，在他转过一个拐角时，他看到了——一个摄魂怪正向他滑行而来。"}}
+{"id": "eval-0031", "word": "significantly", "sentence": "Ron, however, cleared his throat significantly, and pointed to a notice pasted on the inside of the sweetshop door.", "gold": {"word_cn": "意味深长地", "pos": "adverb", "sentence_cn": "不过罗恩意味深长地清了清嗓子，指着贴在糖果店门内侧的一张告示。"}}
+{"id": "eval-0032", "word": "rescued", "sentence": "It was me what rescued Harry from Lily an' James's house after they was killed!", "gold": {"word_cn": "救出", "pos": "verb", "sentence_cn": "是俺把他们被杀后从莉莉和詹姆家把哈利救出来的！"}}
+{"id": "eval-0033", "word": "suppressed", "sentence": "He edged amongst them, looking around, and suppressed a laugh as he imagined the look that would spread over Dudley's piggy face if he could see where Harry was now.", "gold": {"word_cn": "忍住", "pos": "verb", "sentence_cn": "他侧身挤入人群，环顾四周，想象达力那张猪脸要是看到哈利现在在哪里会是什么表情，忍不住笑了笑。"}}
+{"id": "eval-0035", "word": "straightening", "sentence": "Next second, Quirrell came hurrying out of the classroom, straightening his turban.", "gold": {"word_cn": "整理", "pos": "verb", "sentence_cn": "下一秒，奇洛匆匆走出教室，一边整理着他的头巾。"}}
+{"id": "eval-0036", "word": "clearly", "sentence": "He looked up as the boys entered, and spread his arms so that they could see his clothes more clearly.", "gold": {"word_cn": "庄严地", "pos": "adverb", "sentence_cn": "他掏出魔杖，轻轻碰了碰羊皮纸，说道：'我庄严宣誓我不干好事。'"}}
+{"id": "eval-0037", "word": "clearly", "sentence": "He looked up as the boys entered, and spread his arms so that they could see his clothes more clearly.", "gold": {"word_cn": "清楚地", "pos": "adverb", "sentence_cn": "男孩们进来时他抬起头，张开双臂，好让他们能更清楚地看到他的衣服。"}}
+{"id": "eval-0038", "word": "galloping", "sentence": "There was suddenly a sound of more galloping from the other side of the clearing.", "gold": {"word_cn": "奔跑声", "pos": "noun", "sentence_cn": "空地另一边突然传来更多奔跑声。"}}
+{"id": "eval-0039", "word": "sneaking", "sentence": "He'd had it with sneaking around and spying.", "gold": {"word_cn": "鬼鬼祟祟", "pos": "verb", "sentence_cn": "他已经受够了鬼鬼祟祟地打探和偷听。"}}
+{"id": "eval-0040", "word": "solemnly", "sentence": "He took out his wand, touched the parchment lightly and said, 'I solemnly swear that I am up to no good.'", "gold": {"word_cn": "庄严地", "pos": "adverb", "sentence_cn": "他掏出魔杖，轻轻碰了碰羊皮纸，说道：'我庄严宣誓我不干好事。'"}}
+{"id": "eval-0041", "word": "blushing", "sentence": "Ginny Weasley, blushing furiously, turned up with a 'get well' card she had made herself.", "gold": {"word_cn": "脸红", "pos": "verb", "sentence_cn": "金妮·韦斯莱满脸绯红地出现了，手里拿着一张她自己做的慰问卡。"}}
+{"id": "eval-0042", "word": "rowdy", "sentence": "A curvy sort of woman with a pretty face was serving a bunch of rowdy warlocks up at the bar.", "gold": {"word_cn": "吵闹的", "pos": "adjective", "sentence_cn": "一个曲线优美、面容姣好的女人正在吧台为一群吵闹的男巫服务。"}}
+{"id": "eval-0043", "word": "glue", "sentence": "It felt as though his feet were glued to the grass, which had now become the ceiling.", "gold": {"word_cn": "粘住", "pos": "verb", "sentence_cn": "感觉他的双脚被粘在了草地上，而草地此时已经变成了天花板。"}}
+{"id": "eval-0044", "word": "sprint", "sentence": "Horrified, Harry began sprinting up his path, trying to find a way into Cedric's.", "gold": {"word_cn": "飞奔", "pos": "verb", "sentence_cn": "哈利惊恐万分，开始沿着小路飞奔，想找一条路进入塞德里克家。"}}
+{"id": "eval-0045", "word": "meddling", "sentence": "Harry was halfway towards it before he remembered what he’d promised himself about not meddling.", "gold": {"word_cn": "插手", "pos": "verb", "sentence_cn": "哈利对自己发誓，从现在起再也不插手与自己无关的事了。"}}
+{"id": "eval-0046", "word": "tagging", "sentence": "'Pettigrew … that fat little boy who was always tagging around after them at Hogwarts?' said Madam Rosmerta.", "gold": {"word_cn": "跟随", "pos": "verb", "sentence_cn": "'小矮星彼得……那个胖乎乎的小男孩，在霍格沃茨时总是跟在他们屁股后面？'罗斯默塔女士说。"}}
+{"id": "eval-0047", "word": "prowling", "sentence": "A labelled dot showed that the caretaker's cat, Mrs Norris, was prowling the second floor.", "gold": {"word_cn": "徘徊", "pos": "verb", "sentence_cn": "一个带标签的小点显示管理员的那只猫洛丽丝夫人正在二楼徘徊。"}}
+{"id": "eval-0048", "word": "sorrowful", "sentence": "He had a deep, sorrowful voice.", "gold": {"word_cn": "悲伤的", "pos": "adjective", "sentence_cn": "他声音低沉而悲伤。"}}
+{"id": "eval-0049", "word": "threatening", "sentence": "As he drew closer, he heard Quirrell's voice. 'No – no – not again, please –' It sounded as though someone was threatening him.", "gold": {"word_cn": "威胁", "pos": "verb", "sentence_cn": "走近时他听到了奇洛的声音。'不——不——求你了，别再来了——'听起来像是有人在威胁他。"}}
+{"id": "eval-0050", "word": "gloomy", "sentence": "'I'm sure Firenze thought he was acting for the best,' he said, in his gloomy voice.", "gold": {"word_cn": "阴郁的", "pos": "adjective", "sentence_cn": "'我相信费伦泽认为他是在做正确的事，'他用阴郁的声音说道。"}}
+{"id": "eval-0051", "word": "panting", "sentence": "'No,' Harry called back, panting.", "gold": {"word_cn": "喘着气", "pos": "verb", "sentence_cn": "'没事，'哈利喘着气回头喊道。"}}
+{"id": "eval-0052", "word": "leant", "sentence": "He leant against the hedge, gasping for breath, and looked around.", "gold": {"word_cn": "倚靠", "pos": "verb", "sentence_cn": "他倚靠树篱，喘着粗气，环顾四周。"}}
+{"id": "eval-0053", "word": "gasping", "sentence": "He leant against the hedge, gasping for breath, and looked around.", "gold": {"word_cn": "喘气", "pos": "verb", "sentence_cn": "他倚靠树篱，喘着粗气，环顾四周。"}}
+{"id": "eval-0054", "word": "aggravating", "sentence": "The spider was either so large, or so magical, that the spells were doing no more than aggravating it.", "gold": {"word_cn": "激怒", "pos": "verb", "sentence_cn": "那只蜘蛛不是太大就是太有魔力了，那些咒语仅仅是在激怒它。"}}
+{"id": "eval-0055", "word": "gleaming", "sentence": "When they had reached it, they both held out a hand over one of the Cup’s gleaming handles. ‘On three, right?’ said Harry. ‘One - two - three -‘ He and Cedric both grasped a handle.", "gold": {"word_cn": "闪耀的", "pos": "adjective", "sentence_cn": "哈利恐怖地瞥见了八只闪耀的黑色眼睛和剃刀般锋利的钳子，然后蜘蛛就扑到了他身上。"}}
+{"id": "eval-0056", "word": "scoff", "sentence": "He hadn't told anyone about the Grim, because he knew Ron would panic and Hermione would scoff.", "gold": {"word_cn": "嘲笑", "pos": "verb", "sentence_cn": "他没有告诉任何人关于那条不祥的消息，因为他知道罗恩会慌张而赫敏会嘲笑。"}}
+{"id": "eval-0058", "word": "beaming", "sentence": "George closed the door quietly and then turned, beaming, to look at Harry.", "gold": {"word_cn": "眉开眼笑", "pos": "verb", "sentence_cn": "乔治轻轻关上门，然后转过身来，眉开眼笑地看着哈利。"}}
+{"id": "eval-0059", "word": "terrified", "sentence": "He clutched them to the end of his nose and hung there, terrified.", "gold": {"word_cn": "吓坏了", "pos": "adjective", "sentence_cn": "他抓住下面的东西来到鼻尖处，悬挂在那里，吓坏了。"}}
+{"id": "eval-0060", "word": "paced", "sentence": "He paced up and down in front of the fire.", "gold": {"word_cn": "踱步", "pos": "verb", "sentence_cn": "他在炉火前踱来踱去。"}}
+{"id": "eval-0061", "word": "make", "sentence": "How could they ever make up for this?", "gold": {"word_cn": "弥补", "pos": "verb", "sentence_cn": "他们怎么可能弥补得了这个？"}}
+{"id": "eval-0062", "word": "embarrassed", "sentence": "Cedric looked slightly embarrassed.", "gold": {"word_cn": "尴尬的", "pos": "adjective", "sentence_cn": "塞德里克看起来有点尴尬。"}}
+{"id": "eval-0063", "word": "modest", "sentence": "'Always modest, our Ced, always the gentleman … but the best man won.'", "gold": {"word_cn": "谦虚的", "pos": "adjective", "sentence_cn": "'我们的塞德总是这么谦虚，总是这么有风度……不过胜者为王。'"}}
+{"id": "eval-0064", "word": "shivered", "sentence": "Harry shivered; unlike the other two, he didn't have his cloak.", "gold": {"word_cn": "冻得发抖", "pos": "verb", "sentence_cn": "哈利冷得发抖；不像另外两个人，他没有披风。"}}
+{"id": "eval-0065", "word": "stirring", "sentence": "Mrs Weasley was stirring the contents of a large pot on the stove.", "gold": {"word_cn": "搅拌", "pos": "verb", "sentence_cn": "韦斯莱夫人正在搅拌炉子上一个大锅里的东西。"}}
+{"id": "eval-0066", "word": "imprecise", "sentence": "Professor McGonagall says that's a very imprecise branch of magic.", "gold": {"word_cn": "不精确的", "pos": "adjective", "sentence_cn": "麦格教授说那是魔法中一个非常不精确的分支。"}}
+{"id": "eval-0067", "word": "fouls", "sentence": "He shouted something about Quidditch fouls when Harry roughly shook him awake.", "gold": {"word_cn": "犯规", "pos": "noun", "sentence_cn": "当哈利粗暴地把他摇醒时，他喊了几句关于魁地奇犯规的话。"}}
+{"id": "eval-0068", "word": "roughly", "sentence": "He shouted something about Quidditch fouls when Harry roughly shook him awake.", "gold": {"word_cn": "粗暴地", "pos": "adverb", "sentence_cn": "当哈利粗暴地把他摇醒时，他喊了几句关于魁地奇犯规的话。"}}
+{"id": "eval-0069", "word": "desperate", "sentence": "The murder of Pettigrew and all those Muggles was the action of a cornered and desperate man.", "gold": {"word_cn": "绝望的", "pos": "adjective", "sentence_cn": "杀死小矮星彼得和那些麻瓜是一个走投无路、绝望之人的行为。"}}
+{"id": "eval-0070", "word": "cornered", "sentence": "The murder of Pettigrew and all those Muggles was the action of a cornered and desperate man.", "gold": {"word_cn": "走投无路的", "pos": "adjective", "sentence_cn": "杀死小矮星彼得和那些麻瓜是一个走投无路、绝望之人的行为。"}}
+{"id": "eval-0071", "word": "cruel", "sentence": "The murder of Pettigrew and all those Muggles was the action of a cornered and desperate man – cruel … pointless.", "gold": {"word_cn": "残忍的", "pos": "adjective", "sentence_cn": "杀死小矮星彼得和那些麻瓜是一个走投无路、绝望之人的行为——残忍……毫无意义。"}}
+{"id": "eval-0072", "word": "whimpering", "sentence": "Walking back from the library on his own one afternoon, he heard somebody whimpering from a classroom up ahead.", "gold": {"word_cn": "啜泣", "pos": "verb", "sentence_cn": "一天下午独自从图书馆走回来时，他听到前面一间教室里有人在啜泣。"}}
+{"id": "eval-0073", "word": "caved", "sentence": "And the other three – one of them's caved in, so no one can get through it.", "gold": {"word_cn": "塌陷", "pos": "verb", "sentence_cn": "另外三个——其中一个已经塌了，没人能过得去。"}}
+{"id": "eval-0074", "word": "bitterly", "sentence": "'I should've done that.' 'I was the only one who was thick enough to take that song seriously!' said Harry bitterly.", "gold": {"word_cn": "苦涩地", "pos": "adverb", "sentence_cn": "'我早该那么做的。''我是唯一一个蠢到把那首歌当真的人！'哈利苦涩地说。"}}
+{"id": "eval-0075", "word": "thick", "sentence": "'I was the only one who was thick enough to take that song seriously!' said Harry bitterly.", "gold": {"word_cn": "迟钝的", "pos": "adjective", "sentence_cn": "'我是唯一一个蠢到把那首歌当真的人！'哈利苦涩地说。"}}
+{"id": "eval-0076", "word": "twitching", "sentence": "He struggled through it, tearing his robes and, looking to his right, saw Cedric jerking and twitching on the ground, Krum standing over him.", "gold": {"word_cn": "抽搐", "pos": "verb", "sentence_cn": "他挣扎着穿过树篱，撕破了袍子，向右看去，只见塞德里克在地上抽动和抽搐着，克鲁姆站在他身边。"}}
+{"id": "eval-0077", "word": "jerking", "sentence": "He struggled through it, tearing his robes and, looking to his right, saw Cedric jerking and twitching on the ground, Krum standing over him.", "gold": {"word_cn": "抽动", "pos": "verb", "sentence_cn": "他挣扎着穿过树篱，撕破了袍子，向右看去，只见塞德里克在地上抽动和抽搐着，克鲁姆站在他身边。"}}
+{"id": "eval-0078", "word": "presence", "sentence": "Even Muggles feel their presence, though they can't see them.", "gold": {"word_cn": "存在", "pos": "noun", "sentence_cn": "就连麻瓜也能感到它们的存在，虽然他们看不见它们。"}}
+{"id": "eval-0079", "word": "bolted", "sentence": "Malfoy let out a terrible scream and bolted – so did Fang.", "gold": {"word_cn": "狂奔", "pos": "verb", "sentence_cn": "马尔福发出一声恐怖的尖叫，拔腿狂奔——牙牙也跟着跑了。"}}
+{"id": "eval-0080", "word": "flicker", "sentence": "Harry started to jog along it, his wand-light waving, making his shadow flicker and distort on the hedge walls.", "gold": {"word_cn": "闪烁", "pos": "verb", "sentence_cn": "哈利开始沿着它慢跑，魔杖的光摇曳着，让他的影子在树篱墙上闪烁晃动。"}}
+{"id": "eval-0081", "word": "distort", "sentence": "Harry started to jog along it, his wand-light waving, making his shadow flicker and distort on the hedge walls.", "gold": {"word_cn": "扭曲", "pos": "verb", "sentence_cn": "哈利开始沿着它慢跑，魔杖的光摇曳着，让他的影子在树篱墙上闪烁扭曲。"}}
+{"id": "eval-0082", "word": "canter", "sentence": "He turned and cantered back into the depths of the Forest, leaving Harry shivering behind him.", "gold": {"word_cn": "慢跑而去", "pos": "verb", "sentence_cn": "他转身慢跑回森林深处，留下身后瑟瑟发抖的哈利。"}}
+{"id": "eval-0083", "word": "gap", "sentence": "Harry gaped after her.", "gold": {"word_cn": "目瞪口呆", "pos": "verb", "sentence_cn": "哈利目瞪口呆地看着她离去。"}}
+{"id": "eval-0084", "word": "blankly", "sentence": "'She doesn't expect the Dursleys to turn up, does she?' he asked Ron blankly.", "gold": {"word_cn": "茫然地", "pos": "adverb", "sentence_cn": "'她不会期望着德思礼一家来吧？'他茫然地问罗恩。"}}
+{"id": "eval-0085", "word": "dash", "sentence": "'Thanks!' said Harry, and, amazed at his own brilliance, he dashed forwards.", "gold": {"word_cn": "冲出", "pos": "verb", "sentence_cn": "'谢谢！'哈利说，对自己的机智感到惊讶，他向前冲去。"}}
+{"id": "eval-0086", "word": "spectacles", "sentence": "He was looking at her closely through his half-moon spectacles, his long fingers gently prodding and poking.", "gold": {"word_cn": "眼镜", "pos": "noun", "sentence_cn": "他透过半月形眼镜仔细端详着她，修长的手指轻轻地戳戳拨拨。"}}
+{"id": "eval-0087", "word": "tankard", "sentence": "Dripping with Butterbeer and crouching out of sight, Harry clutched his empty tankard.", "gold": {"word_cn": "酒杯", "pos": "noun", "sentence_cn": "哈利浑身滴着黄油啤酒，蹲在暗处，紧紧抓着他的空酒杯。"}}
+{"id": "eval-0089", "word": "precautions", "sentence": "We had to find a nice deserted moor, and set up as many anti-Muggle precautions as possible.", "gold": {"word_cn": "防范措施", "pos": "noun", "sentence_cn": "我们得找一块荒无人烟的旷野，布置尽可能多的反麻瓜防范措施。"}}
+{"id": "eval-0091", "word": "whiled", "sentence": "Harry, Bill and Mrs Weasley whiled away the afternoon with a long walk around the castle.", "gold": {"word_cn": "消磨", "pos": "verb", "sentence_cn": "哈利、比尔和韦斯莱夫人绕着城堡散步消磨了一个下午。"}}
+{"id": "eval-0092", "word": "lifted", "sentence": "This measure will be lifted upon the recapture of Sirius Black.", "gold": {"word_cn": "解除", "pos": "verb", "sentence_cn": "该项措施将在重新抓获小天狼星布莱克后解除。"}}
+{"id": "eval-0093", "word": "recapture", "sentence": "This measure will be lifted upon the recapture of Sirius Black.", "gold": {"word_cn": "重新抓获", "pos": "noun", "sentence_cn": "该项措施将在重新抓获小天狼星布莱克后解除。"}}
+{"id": "eval-0094", "word": "afford", "sentence": "Gryffindor were not out of the running after all, although they could not afford to lose another match.", "gold": {"word_cn": "承担", "pos": "verb", "sentence_cn": "格兰芬多终究没有被淘汰，尽管他们再也输不起另一场比赛了。"}}
+{"id": "eval-0095", "word": "hesitated", "sentence": "He hesitated, and then the question he had to ask burst from him before he could stop himself.", "gold": {"word_cn": "犹豫", "pos": "verb", "sentence_cn": "他犹豫了一下，接着那个非问不可的问题脱口而出，他来不及阻止自己。"}}
+{"id": "eval-0097", "word": "blast", "sentence": "He wondered whether he might be able to blast it out of the way.", "gold": {"word_cn": "炸开", "pos": "verb", "sentence_cn": "他想知道是否能用咒语把它炸开。"}}
+{"id": "eval-0098", "word": "patrolling", "sentence": "Dementors will be patrolling the streets of Hogsmeade every night after sundown.", "gold": {"word_cn": "巡逻", "pos": "verb", "sentence_cn": "摄魂怪将在日落后每晚在霍格莫德的街道上巡逻。"}}
+{"id": "eval-0099", "word": "sworn", "sentence": "We are sworn not to set ourselves against the heavens.", "gold": {"word_cn": "发誓", "pos": "verb", "sentence_cn": "我们发过誓不违抗天命。"}}
+{"id": "eval-0100", "word": "passageway", "sentence": "He held up his wand, muttered, 'Lumos!' and saw that he was in a very narrow, low, earthy passageway.", "gold": {"word_cn": "通道", "pos": "noun", "sentence_cn": "他举起魔杖，喃喃念道：'荧光闪烁！'然后发现自己身处一条非常狭窄低矮的泥土通道中。"}}
+{"id": "eval-0101", "word": "nasty", "sentence": "This left Black in a very nasty position indeed.", "gold": {"word_cn": "棘手的", "pos": "adjective", "sentence_cn": "这让布莱克确实陷入了非常棘手的境地。"}}
+{"id": "eval-0102", "word": "concerned", "sentence": "Like Hermione, he seemed to want to concentrate on getting Harry through the last task, before they concerned themselves with anything else.", "gold": {"word_cn": "关心", "pos": "verb", "sentence_cn": "和赫敏一样，他似乎想在操心其他事情之前，先集中精力帮哈利完成最后一项任务。"}}
+{"id": "eval-0103", "word": "labelled", "sentence": "A labelled dot in the top left corner showed that Professor Dumbledore was pacing his study.", "gold": {"word_cn": "标记的", "pos": "adjective", "sentence_cn": "左上角一个带标记的小点显示邓布利多教授正在书房里踱步。"}}
+{"id": "eval-0104", "word": "thought", "sentence": "I thought we’d be writing lines or something.", "gold": {"word_cn": "敲击", "pos": "verb", "sentence_cn": "哈利迅速拿出自己的真魔杖，敲了敲雕像。"}}
+{"id": "eval-0105", "word": "hated", "sentence": "From being one of the most popular and admired people at the school, Harry was suddenly the most hated.", "gold": {"word_cn": "被讨厌的", "pos": "adjective", "sentence_cn": "从学校里最受欢迎和钦佩的人之一，哈利突然变成了最招人恨的人。"}}
+{"id": "eval-0106", "word": "burst", "sentence": "He hesitated, and then the question he had to ask burst from him before he could stop himself. ‘Why?", "gold": {"word_cn": "仰起", "pos": "verb", "sentence_cn": "哈利仰起头，凝视着天空。"}}
+{"id": "eval-0107", "word": "astonishment", "sentence": "He pulled out the map again and saw, to his astonishment, that a new ink figure had appeared upon it, labelled 'Harry Potter'.", "gold": {"word_cn": "惊讶", "pos": "noun", "sentence_cn": "他再次拿出地图，惊讶地发现上面出现了一个新的墨水人形，标记着'哈利·波特'。"}}
+{"id": "eval-0108", "word": "spread", "sentence": "Thin ink lines began to spread like a spider's web from the point that George's wand had touched.", "gold": {"word_cn": "蔓延", "pos": "verb", "sentence_cn": "细细的墨水线从乔治魔杖碰过的地方开始像蜘蛛网一样蔓延开来。"}}
+{"id": "eval-0109", "word": "shrilly", "sentence": "Ginny Weasley turned up with a 'get well' card she had made herself, which sang shrilly unless Harry kept it shut under his bowl of fruit.", "gold": {"word_cn": "尖锐地", "pos": "adverb", "sentence_cn": "金妮·韦斯莱拿来一张她自己做的慰问卡，那张卡除非哈利把它压在水果碗下面，否则就会尖声唱歌。"}}
+{"id": "eval-0110", "word": "curvy", "sentence": "A curvy sort of woman with a pretty face was serving a bunch of rowdy warlocks up at the bar.", "gold": {"word_cn": "线条优美的", "pos": "adjective", "sentence_cn": "一个线条优美、面容姣好的女人正在吧台为一群吵闹的男巫服务。"}}
+{"id": "eval-0111", "word": "stern", "sentence": "Cornelius Fudge, who was sitting next to Madame Maxime, looked stern and was not talking.", "gold": {"word_cn": "神色严峻的", "pos": "adjective", "sentence_cn": "康奈利·福吉坐在马克西姆夫人旁边，神色严峻，一言不发。"}}
+{"id": "eval-0113", "word": "glimpse", "sentence": "Harry had one horrifying glimpse of eight shining black eyes, and razor-sharp pincers.", "gold": {"word_cn": "一瞥", "pos": "noun", "sentence_cn": "哈利恐怖地瞥见了八只闪耀的黑色眼睛和剃刀般锋利的钳子。"}}
+{"id": "eval-0115", "word": "evidently", "sentence": "The twins had evidently been trying to smuggle as many toffees out of the house as possible.", "gold": {"word_cn": "明显地", "pos": "adverb", "sentence_cn": "那对双胞胎显然一直在尽可能多地把太妃糖偷带出家。"}}
+{"id": "eval-0117", "word": "enchanted", "sentence": "He took a deep breath, and ran through the enchanted mist.", "gold": {"word_cn": "施了魔法的", "pos": "adjective", "sentence_cn": "他深吸一口气，跑进了那片施了魔法的迷雾中。"}}
+{"id": "eval-0118", "word": "genially", "sentence": "Amos roared genially, slapping his son on his back.", "gold": {"word_cn": "友好地", "pos": "adverb", "sentence_cn": "阿莫斯友好地大笑着，拍了拍儿子的背。"}}
+{"id": "eval-0119", "word": "sheaf", "sentence": "Mr Weasley was sitting at the table, checking a sheaf of large parchment tickets.", "gold": {"word_cn": "一叠", "pos": "noun", "sentence_cn": "韦斯莱先生坐在桌旁，查看着一叠大型羊皮纸门票。"}}
+{"id": "eval-0120", "word": "timidly", "sentence": "'A bit,' said Hermione timidly.", "gold": {"word_cn": "怯怯地", "pos": "adverb", "sentence_cn": "'一点点，'赫敏怯怯地说。"}}
+{"id": "eval-0121", "word": "conclusions", "sentence": "Look at Fudge, jumping to conclusions about her, just because she's part giant.", "gold": {"word_cn": "结论", "pos": "noun", "sentence_cn": "看看福吉，就因为她是混血巨人就对她妄下结论。"}}
+{"id": "eval-0122", "word": "winding", "sentence": "Holding his lamp up high he pointed down a narrow, winding earth track that disappeared into the thick black trees.", "gold": {"word_cn": "蜿蜒的", "pos": "adjective", "sentence_cn": "他把灯高高举起，指向一条消失在浓密黑树林中的狭窄蜿蜒泥土小径。"}}
+{"id": "eval-0123", "word": "trapdoor", "sentence": "Very slowly, he pushed the trapdoor open and peered over the edge.", "gold": {"word_cn": "活板门", "pos": "noun", "sentence_cn": "他非常缓慢地推开活板门，朝边缘外面窥视。"}}
+{"id": "eval-0124", "word": "muttering", "sentence": "You know, most of the prisoners in there sit muttering to themselves in the dark.", "gold": {"word_cn": "喃喃自语", "pos": "verb", "sentence_cn": "你知道，里面的大部分囚犯都坐在黑暗中喃喃自语。"}}
+{"id": "eval-0125", "word": "downfall", "sentence": "But, as we all know, You-Know-Who met his downfall in little Harry Potter.", "gold": {"word_cn": "垮台", "pos": "noun", "sentence_cn": "但是众所周知，神秘人在小哈利·波特那里栽了跟头。"}}
+{"id": "eval-0126", "word": "ill", "sentence": "It certainly looked as though he had been ill.", "gold": {"word_cn": "生病了", "pos": "adjective", "sentence_cn": "他的样子看起来确实像是生过病。"}}
+{"id": "eval-0127", "word": "mend", "sentence": "Next, tell me what's always the last thing to mend, The middle of middle and end of the end?", "gold": {"word_cn": "修复", "pos": "verb", "sentence_cn": "接下来，告诉我什么是最后才会修复的东西，中间中的中间，结尾的结尾？"}}
+{"id": "eval-0128", "word": "fleetingly", "sentence": "Fleetingly, and for the first time since he'd found himself champion, he saw again that image of himself, raising the Triwizard Cup.", "gold": {"word_cn": "短暂地", "pos": "adverb", "sentence_cn": "他短暂地——自从成为勇士以来第一次——再次看到了自己举起三强杯的画面。"}}
+{"id": "eval-0129", "word": "pounding", "sentence": "His heart was pounding uncomfortably in his throat.", "gold": {"word_cn": "狂跳", "pos": "verb", "sentence_cn": "他的心在喉咙里不舒服地狂跳。"}}
+{"id": "eval-0130", "word": "drain", "sentence": "Dementors are supposed to drain a wizard of his powers if he is left with them too long.", "gold": {"word_cn": "吸干", "pos": "verb", "sentence_cn": "如果和摄魂怪待在一起太久，它们会吸干一个巫师的魔力。"}}
+{"id": "eval-0131", "word": "winding", "sentence": "Holding his lamp up high he pointed down a narrow, winding earth track that disappeared into the thick black trees.", "gold": {"word_cn": "蜿蜒", "pos": "adjective", "sentence_cn": "通道弯弯曲曲，与其说像什么，不如说更像一只巨型兔子的洞穴。"}}
+{"id": "eval-0132", "word": "humiliated", "sentence": "Harry felt sick and humiliated every time he thought of them.", "gold": {"word_cn": "屈辱的", "pos": "adjective", "sentence_cn": "每次想起他们，哈利都觉得又恶心又屈辱。"}}
+{"id": "eval-0133", "word": "torment", "sentence": "You can imagine how the idea would torment him.", "gold": {"word_cn": "折磨", "pos": "verb", "sentence_cn": "你可以想象这个念头会如何折磨他。"}}
+{"id": "eval-0134", "word": "rumble", "sentence": "Fudge dropped his voice and proceeded in a sort of low rumble.", "gold": {"word_cn": "低沉的声音", "pos": "noun", "sentence_cn": "福吉压低嗓音，用低沉的声音继续说下去。"}}
+{"id": "eval-0135", "word": "aware", "sentence": "Not many people are aware that the Potters knew You-Know-Who was after them.", "gold": {"word_cn": "意识到", "pos": "adjective", "sentence_cn": "没有多少人知道波特夫妇知道神秘人在追杀他们。"}}
+{"id": "eval-0139", "word": "tagging", "sentence": "'Pettigrew … that fat little boy who was always tagging around after them at Hogwarts?'", "gold": {"word_cn": "跟随", "pos": "verb", "sentence_cn": "'小矮星彼得……那个胖乎乎的小男孩，在霍格沃茨时总是跟在他们屁股后面？'"}}
+{"id": "eval-0140", "word": "spying", "sentence": "He'd had it with sneaking around and spying.", "gold": {"word_cn": "打探", "pos": "verb", "sentence_cn": "他已经受够了鬼鬼祟祟地打探消息。"}}
+{"id": "eval-0141", "word": "support", "sentence": "Cedric looked around at Harry again, who was now holding onto the hedge to support himself.", "gold": {"word_cn": "支撑", "pos": "verb", "sentence_cn": "他倚靠着树篱，喘着粗气，环顾四周。"}}
+{"id": "eval-0143", "word": "cracked", "sentence": "A crater in the middle of the street, so deep it had cracked the sewer below.", "gold": {"word_cn": "震裂", "pos": "verb", "sentence_cn": "街道中央一个坑，深得把下面的下水道都震裂了。"}}
+{"id": "eval-0145", "word": "wrapped", "sentence": "Harry bid goodbye to Ron and Hermione, who were wrapped in cloaks and scarves.", "gold": {"word_cn": "裹着", "pos": "verb", "sentence_cn": "哈利向罗恩和赫敏道别，他们裹着斗篷和围巾。"}}
+{"id": "eval-0146", "word": "bid", "sentence": "Harry bid goodbye to Ron and Hermione, who were wrapped in cloaks and scarves.", "gold": {"word_cn": "道", "pos": "verb", "sentence_cn": "哈利向罗恩和赫敏道别，他们裹着斗篷和围巾。"}}
+{"id": "eval-0147", "word": "count", "sentence": "A hundred steps, two hundred steps, he lost count as he climbed, watching his feet.", "gold": {"word_cn": "数", "pos": "noun", "sentence_cn": "一百级、两百级台阶，他往上爬时盯着自己的脚，已经数不清了。"}}
+{"id": "eval-0148", "word": "grasped", "sentence": "He and Cedric both grasped a handle.", "gold": {"word_cn": "抓住", "pos": "verb", "sentence_cn": "他和塞德里克都抓住了一个手柄。"}}
+{"id": "eval-0149", "word": "nervously", "sentence": "Ronan pawed the ground nervously.", "gold": {"word_cn": "紧张地", "pos": "adverb", "sentence_cn": "罗南紧张地用蹄子刨着地面。"}}
+{"id": "eval-0151", "word": "hedge", "sentence": "He leant against the hedge, gasping for breath.", "gold": {"word_cn": "树篱", "pos": "noun", "sentence_cn": "他倚靠着树篱，喘着粗气。"}}
+{"id": "eval-0153", "word": "grasp", "sentence": "He and Cedric both grasped a handle.", "gold": {"word_cn": "握住", "pos": "verb", "sentence_cn": "他和塞德里克都握住了一个手柄。"}}
+{"id": "eval-0154", "word": "staggered", "sentence": "Harry staggered to his feet.", "gold": {"word_cn": "摇摇晃晃地站", "pos": "verb", "sentence_cn": "哈利摇摇晃晃地站了起来。"}}
+{"id": "eval-0155", "word": "blinked", "sentence": "He blinked and stared into the darkness.", "gold": {"word_cn": "眨眼", "pos": "verb", "sentence_cn": "他眨了眨眼，凝视着黑暗。"}}
+{"id": "eval-0156", "word": "gripped", "sentence": "Harry gripped his wand tightly.", "gold": {"word_cn": "握紧", "pos": "verb", "sentence_cn": "哈利紧紧握住魔杖。"}}
+{"id": "eval-0157", "word": "braced", "sentence": "Harry braced himself for the impact.", "gold": {"word_cn": "做好准备", "pos": "verb", "sentence_cn": "哈利做好了迎接冲击的准备。"}}
+{"id": "eval-0158", "word": "swaying", "sentence": "The trees were swaying in the wind.", "gold": {"word_cn": "摇晃", "pos": "verb", "sentence_cn": "树木在风中摇晃。"}}
+{"id": "eval-0159", "word": "wrath", "sentence": "He flinched, expecting a burst of wrath from his uncle.", "gold": {"word_cn": "暴怒", "pos": "noun", "sentence_cn": "他退缩了一下，以为姨父会暴怒发作。"}}
+{"id": "eval-0160", "word": "burst", "sentence": "He flinched, expecting a burst of wrath from his uncle.", "gold": {"word_cn": "一阵", "pos": "noun", "sentence_cn": "他退缩了一下，以为姨父会暴怒发作。"}}
+{"id": "eval-0161", "word": "irritable", "sentence": "Harry was feeling tired and irritable.", "gold": {"word_cn": "烦躁的", "pos": "adjective", "sentence_cn": "哈利感到又累又烦躁。"}}
+{"id": "eval-0163", "word": "shrinking", "sentence": "Neville seemed to be shrinking in his seat.", "gold": {"word_cn": "缩着", "pos": "verb", "sentence_cn": "纳威似乎缩在座位上。"}}
+{"id": "eval-0164", "word": "impatiently", "sentence": "'This can't be right,' said Ron impatiently.", "gold": {"word_cn": "不耐烦地", "pos": "adverb", "sentence_cn": "'这不可能是对的，'罗恩不耐烦地说。"}}
+{"id": "eval-0165", "word": "reassuring", "sentence": "Hermione gave him a reassuring smile.", "gold": {"word_cn": "安慰的", "pos": "adjective", "sentence_cn": "赫敏给了他一个安慰的微笑。"}}
+{"id": "eval-0166", "word": "dim", "sentence": "The room was dim and dusty.", "gold": {"word_cn": "昏暗的", "pos": "adjective", "sentence_cn": "房间里昏暗且布满灰尘。"}}
+{"id": "eval-0167", "word": "clumsily", "sentence": "He climbed onto his broom clumsily.", "gold": {"word_cn": "笨拙地", "pos": "adverb", "sentence_cn": "他笨拙地爬上扫帚。"}}
+{"id": "eval-0168", "word": "eerie", "sentence": "An eerie silence fell over the hall.", "gold": {"word_cn": "怪异的", "pos": "adjective", "sentence_cn": "一种怪异的沉默笼罩了大厅。"}}
+{"id": "eval-0169", "word": "clenched", "sentence": "He clenched his fists.", "gold": {"word_cn": "握紧", "pos": "verb", "sentence_cn": "他握紧了拳头。"}}
+{"id": "eval-0170", "word": "disgust", "sentence": "She looked at him with disgust.", "gold": {"word_cn": "厌恶", "pos": "noun", "sentence_cn": "她厌恶地看着他。"}}
+{"id": "eval-0171", "word": "muttering", "sentence": "Madam Pomfrey was muttering to herself as she worked.", "gold": {"word_cn": "嘀咕", "pos": "verb", "sentence_cn": "庞弗雷夫人一边忙活一边自言自语地嘀咕着。"}}
+{"id": "eval-0172", "word": "shoved", "sentence": "Malfoy shoved past him.", "gold": {"word_cn": "推开", "pos": "verb", "sentence_cn": "马尔福从他身边挤了过去。"}}
+{"id": "eval-0173", "word": "sternly", "sentence": "'That's enough,' said Professor McGonagall sternly.", "gold": {"word_cn": "严厉地", "pos": "adverb", "sentence_cn": "'够了，'麦格教授严厉地说。"}}
+{"id": "eval-0174", "word": "crept", "sentence": "He crept along the corridor.", "gold": {"word_cn": "蹑手蹑脚", "pos": "verb", "sentence_cn": "他蹑手蹑脚地沿着走廊前进。"}}
+{"id": "eval-0175", "word": "reluctantly", "sentence": "'All right,' said Harry reluctantly.", "gold": {"word_cn": "不情愿地", "pos": "adverb", "sentence_cn": "'好吧，'哈利不情愿地说。"}}
+{"id": "eval-0176", "word": "edged", "sentence": "He edged his way along the narrow ledge.", "gold": {"word_cn": "小心翼翼地移动", "pos": "verb", "sentence_cn": "他沿着狭窄的岩壁小心翼翼地移动。"}}
+{"id": "eval-0177", "word": "poking", "sentence": "We've done enough poking around.", "gold": {"word_cn": "打探", "pos": "verb", "sentence_cn": "我们已经打听得够多了。"}}
+{"id": "eval-0178", "word": "painfully", "sentence": "He landed painfully on his shoulder.", "gold": {"word_cn": "疼痛地", "pos": "adverb", "sentence_cn": "他肩膀着地，摔得很疼。"}}
+{"id": "eval-0180", "word": "hastily", "sentence": "'I didn't mean it,' said Ron hastily.", "gold": {"word_cn": "连忙", "pos": "adverb", "sentence_cn": "'我不是那个意思，'罗恩连忙说。"}}
+{"id": "eval-0181", "word": "slid", "sentence": "He slid a considerable way down what felt like a stone slide.", "gold": {"word_cn": "滑下", "pos": "verb", "sentence_cn": "他在一个像石头滑梯一样的东西上滑了一大段距离。"}}
+{"id": "eval-0182", "word": "withdraw", "sentence": "I think we should withdraw and reconsider our strategy.", "gold": {"word_cn": "撤回", "pos": "verb", "sentence_cn": "我觉得我们应该撤回并重新考虑策略。"}}
+{"id": "eval-0183", "word": "reconsider", "sentence": "I think we should withdraw and reconsider our strategy.", "gold": {"word_cn": "重新考虑", "pos": "verb", "sentence_cn": "我觉得我们应该撤回并重新考虑策略。"}}
+{"id": "eval-0184", "word": "sprinting", "sentence": "Horrified, Harry began sprinting up his path.", "gold": {"word_cn": "飞奔", "pos": "verb", "sentence_cn": "哈利惊恐万分，开始沿着小路飞奔。"}}
+{"id": "eval-0185", "word": "muffled", "sentence": "He could hear muffled voices from behind the door.", "gold": {"word_cn": "模糊的", "pos": "adjective", "sentence_cn": "他听到门后传来模糊的声音。"}}
+{"id": "eval-0186", "word": "hysterical", "sentence": "She let out a hysterical laugh.", "gold": {"word_cn": "歇斯底里的", "pos": "adjective", "sentence_cn": "她发出一声歇斯底里的笑声。"}}
+{"id": "eval-0187", "word": "glowering", "sentence": "Snape stood glowering at them.", "gold": {"word_cn": "怒视着", "pos": "verb", "sentence_cn": "斯内普站在那儿怒视着他们。"}}
+{"id": "eval-0188", "word": "warily", "sentence": "He watched them warily.", "gold": {"word_cn": "警惕地", "pos": "adverb", "sentence_cn": "他警惕地看着他们。"}}
+{"id": "eval-0189", "word": "distracted", "sentence": "Harry felt too distracted to concentrate on his homework.", "gold": {"word_cn": "心不在焉", "pos": "adjective", "sentence_cn": "哈利心不在焉，无法集中精力做作业。"}}
+{"id": "eval-0190", "word": "grinned", "sentence": "Ron grinned at him.", "gold": {"word_cn": "咧嘴笑", "pos": "verb", "sentence_cn": "罗恩对他咧嘴笑了笑。"}}
+{"id": "eval-0191", "word": "shrinking", "sentence": "Neville seemed to be shrinking in his seat.", "gold": {"word_cn": "缩着", "pos": "verb", "sentence_cn": "纳威似乎缩在座位上。"}}
+{"id": "eval-0192", "word": "impatiently", "sentence": "'This can't be right,' said Ron impatiently.", "gold": {"word_cn": "不耐烦地", "pos": "adverb", "sentence_cn": "'这不可能是对的，'罗恩不耐烦地说。"}}
+{"id": "eval-0193", "word": "prevent", "sentence": "She could not prevent herself from laughing.", "gold": {"word_cn": "阻止", "pos": "verb", "sentence_cn": "她忍不住笑了出来。"}}
+{"id": "eval-0194", "word": "limping", "sentence": "The old dog came limping towards them.", "gold": {"word_cn": "一瘸一拐地走", "pos": "verb", "sentence_cn": "那条老狗一瘸一拐地向他们走来。"}}
+{"id": "eval-0195", "word": "swaying", "sentence": "The trees were swaying in the wind.", "gold": {"word_cn": "摇晃", "pos": "verb", "sentence_cn": "树木在风中摇晃。"}}
+{"id": "eval-0196", "word": "wrath", "sentence": "He flinched, expecting a burst of wrath from his uncle.", "gold": {"word_cn": "暴怒", "pos": "noun", "sentence_cn": "他退缩了一下，以为姨父会暴怒发作。"}}
+{"id": "eval-0197", "word": "relieved", "sentence": "Harry felt immensely relieved.", "gold": {"word_cn": "如释重负", "pos": "adjective", "sentence_cn": "哈利感到如释重负。"}}
+{"id": "eval-0198", "word": "frantically", "sentence": "He waved his wand frantically.", "gold": {"word_cn": "疯狂地", "pos": "adverb", "sentence_cn": "他疯狂地挥动魔杖。"}}
+{"id": "eval-0199", "word": "groaning", "sentence": "Ron was groaning with pain.", "gold": {"word_cn": "呻吟", "pos": "verb", "sentence_cn": "罗恩痛苦地呻吟着。"}}
+{"id": "eval-0200", "word": "gathered", "sentence": "The students gathered in the common room.", "gold": {"word_cn": "聚集", "pos": "verb", "sentence_cn": "学生们聚集在公共休息室。"}}
+{"id": "eval-0201", "word": "grunted", "sentence": "'Fine,' grunted Ron.", "gold": {"word_cn": "咕哝", "pos": "verb", "sentence_cn": "'好吧，'罗恩咕哝道。"}}
+{"id": "eval-0202", "word": "irritable", "sentence": "Harry was feeling tired and irritable.", "gold": {"word_cn": "烦躁的", "pos": "adjective", "sentence_cn": "哈利感到又累又烦躁。"}}
+{"id": "eval-0204", "word": "ventured", "sentence": "'Maybe it's a trap,' Ron ventured.", "gold": {"word_cn": "试探地说", "pos": "verb", "sentence_cn": "'也许是陷阱，'罗恩试探地说。"}}
+{"id": "eval-0205", "word": "bitterly", "sentence": "'I should've done that,' said Harry bitterly.", "gold": {"word_cn": "苦涩地", "pos": "adverb", "sentence_cn": "'我早该那么做的，'哈利苦涩地说。"}}
+{"id": "eval-0206", "word": "obvious", "sentence": "The answer was obvious.", "gold": {"word_cn": "明显的", "pos": "adjective", "sentence_cn": "答案是显而易见的。"}}
+{"id": "eval-0207", "word": "lurking", "sentence": "He had a feeling something was lurking in the shadows.", "gold": {"word_cn": "潜伏", "pos": "verb", "sentence_cn": "他感觉有什么东西潜伏在暗处。"}}
+{"id": "eval-0208", "word": "stalking", "sentence": "The cat was stalking a bird.", "gold": {"word_cn": "悄悄接近", "pos": "verb", "sentence_cn": "那只猫在悄悄接近一只鸟。"}}
+{"id": "eval-0209", "word": "gaze", "sentence": "He met her gaze.", "gold": {"word_cn": "目光", "pos": "noun", "sentence_cn": "他迎上她的目光。"}}
+{"id": "eval-0210", "word": "gesture", "sentence": "He made a gesture towards the door.", "gold": {"word_cn": "手势", "pos": "noun", "sentence_cn": "他朝门的方向做了个手势。"}}
+{"id": "eval-0211", "word": "reluctantly", "sentence": "'All right,' said Harry reluctantly.", "gold": {"word_cn": "不情愿地", "pos": "adverb", "sentence_cn": "'好吧，'哈利不情愿地说。"}}
+{"id": "eval-0212", "word": "edged", "sentence": "He edged his way along the narrow ledge.", "gold": {"word_cn": "小心翼翼移动", "pos": "verb", "sentence_cn": "他沿着狭窄的岩壁小心翼翼地移动。"}}
+{"id": "eval-0213", "word": "scrambled", "sentence": "Harry scrambled to his feet.", "gold": {"word_cn": "爬起来", "pos": "verb", "sentence_cn": "哈利爬了起来。"}}
+{"id": "eval-0214", "word": "frowned", "sentence": "Hermione frowned at the book.", "gold": {"word_cn": "皱眉", "pos": "verb", "sentence_cn": "赫敏对着书皱起了眉头。"}}
+{"id": "eval-0215", "word": "grinned", "sentence": "Ron grinned at him.", "gold": {"word_cn": "咧嘴笑", "pos": "verb", "sentence_cn": "罗恩对他咧嘴笑了笑。"}}
+{"id": "eval-0216", "word": "snapped", "sentence": "'What?' snapped Snape.", "gold": {"word_cn": "厉声说", "pos": "verb", "sentence_cn": "'什么？'斯内普厉声说道。"}}
+{"id": "eval-0217", "word": "slamming", "sentence": "He stormed out, slamming the door behind him.", "gold": {"word_cn": "摔门", "pos": "verb", "sentence_cn": "他冲了出去，把身后的门砰地关上。"}}
+{"id": "eval-0218", "word": "strode", "sentence": "He strode across the room.", "gold": {"word_cn": "大步", "pos": "verb", "sentence_cn": "他大步穿过房间。"}}
+{"id": "eval-0219", "word": "trembling", "sentence": "Her hand was trembling slightly.", "gold": {"word_cn": "颤抖", "pos": "verb", "sentence_cn": "她的手在微微颤抖。"}}
+{"id": "eval-0220", "word": "sighed", "sentence": "'I suppose so,' sighed Hermione.", "gold": {"word_cn": "叹气", "pos": "verb", "sentence_cn": "'我想是吧，'赫敏叹了口气。"}}
+{"id": "eval-0221", "word": "yanking", "sentence": "He grabbed her hand, yanking her to her feet.", "gold": {"word_cn": "猛地拉", "pos": "verb", "sentence_cn": "他抓住她的手，猛地把她拉起来。"}}
+{"id": "eval-0222", "word": "craned", "sentence": "He craned his neck to see over the crowd.", "gold": {"word_cn": "伸长", "pos": "verb", "sentence_cn": "他伸长脖子想越过人群看到前面。"}}
+{"id": "eval-0223", "word": "pounding", "sentence": "His heart was pounding.", "gold": {"word_cn": "怦怦跳", "pos": "verb", "sentence_cn": "他的心怦怦直跳。"}}
+{"id": "eval-0224", "word": "mockingly", "sentence": "'Afraid, are you?' said Malfoy mockingly.", "gold": {"word_cn": "嘲弄地", "pos": "adverb", "sentence_cn": "'害怕了？'马尔福嘲弄地说。"}}
+{"id": "eval-0225", "word": "stumbling", "sentence": "He went stumbling down the dark corridor.", "gold": {"word_cn": "跌跌撞撞", "pos": "verb", "sentence_cn": "他在黑暗的走廊里跌跌撞撞地走着。"}}
+{"id": "eval-0226", "word": "pleading", "sentence": "Her eyes were pleading.", "gold": {"word_cn": "恳求的", "pos": "adjective", "sentence_cn": "她的眼睛露出恳求的神色。"}}
+{"id": "eval-0227", "word": "slammed", "sentence": "Ron slammed his book shut.", "gold": {"word_cn": "砰地合上", "pos": "verb", "sentence_cn": "罗恩砰地合上书。"}}
+{"id": "eval-0228", "word": "lurched", "sentence": "The bus lurched to a halt.", "gold": {"word_cn": "猛地停下", "pos": "verb", "sentence_cn": "公交车猛地停了下来。"}}
+{"id": "eval-0229", "word": "staggered", "sentence": "Harry staggered back.", "gold": {"word_cn": "踉跄后退", "pos": "verb", "sentence_cn": "哈利踉跄着后退了几步。"}}
+{"id": "eval-0230", "word": "tightly", "sentence": "He gripped his wand tightly.", "gold": {"word_cn": "紧紧地", "pos": "adverb", "sentence_cn": "他紧紧地握着魔杖。"}}
+{"id": "eval-0231", "word": "gravely", "sentence": "Dumbledore nodded gravely.", "gold": {"word_cn": "严肃地", "pos": "adverb", "sentence_cn": "邓布利多严肃地点了点头。"}}
+{"id": "eval-0232", "word": "trudged", "sentence": "They trudged up the stairs.", "gold": {"word_cn": "步履沉重地走", "pos": "verb", "sentence_cn": "他们步履沉重地走上楼梯。"}}
+{"id": "eval-0233", "word": "hissed", "sentence": "'Quiet,' Snape hissed.", "gold": {"word_cn": "嘶声说", "pos": "verb", "sentence_cn": "'安静，'斯内普嘶声说道。"}}
+{"id": "eval-0234", "word": "wriggling", "sentence": "The worm was wriggling in his hand.", "gold": {"word_cn": "扭动", "pos": "verb", "sentence_cn": "那条虫在他手里扭动着。"}}
+{"id": "eval-0235", "word": "muttering", "sentence": "The old man was muttering to himself.", "gold": {"word_cn": "自言自语", "pos": "verb", "sentence_cn": "那老人在自言自语。"}}
+{"id": "eval-0236", "word": "glanced", "sentence": "She glanced over her shoulder.", "gold": {"word_cn": "瞥了一眼", "pos": "verb", "sentence_cn": "她回头瞥了一眼。"}}
+{"id": "eval-0237", "word": "nudging", "sentence": "Ron kept nudging him.", "gold": {"word_cn": "用肘轻推", "pos": "verb", "sentence_cn": "罗恩不停地用肘轻推他。"}}
+{"id": "eval-0238", "word": "snarled", "sentence": "'Get out of my way,' snarled Malfoy.", "gold": {"word_cn": "吼道", "pos": "verb", "sentence_cn": "'滚开，'马尔福吼道。"}}
+{"id": "eval-0239", "word": "wailing", "sentence": "The baby was wailing loudly.", "gold": {"word_cn": "嚎啕大哭", "pos": "verb", "sentence_cn": "那个婴儿在嚎啕大哭。"}}
+{"id": "eval-0240", "word": "flailed", "sentence": "He flailed his arms wildly.", "gold": {"word_cn": "胡乱挥舞", "pos": "verb", "sentence_cn": "他胡乱挥舞着双臂。"}}
+{"id": "eval-0241", "word": "grabbed", "sentence": "Harry grabbed his arm.", "gold": {"word_cn": "抓住", "pos": "verb", "sentence_cn": "哈利抓住他的胳膊。"}}
+{"id": "eval-0242", "word": "gnawing", "sentence": "He could feel something gnawing at his insides.", "gold": {"word_cn": "啃噬", "pos": "verb", "sentence_cn": "他感到有什么东西在啃噬他的内心。"}}
+{"id": "eval-0243", "word": "squirmed", "sentence": "Ron squirmed in his seat.", "gold": {"word_cn": "坐立不安", "pos": "verb", "sentence_cn": "罗恩在座位上坐立不安。"}}
+{"id": "eval-0244", "word": "groping", "sentence": "He went groping along the wall in the dark.", "gold": {"word_cn": "摸索", "pos": "verb", "sentence_cn": "他在黑暗中顺着墙摸索着前进。"}}
+{"id": "eval-0246", "word": "gazing", "sentence": "Harry stood there, gazing at the map.", "gold": {"word_cn": "凝视", "pos": "verb", "sentence_cn": "哈利站在那里，凝视着地图。"}}
+{"id": "eval-0247", "word": "poked", "sentence": "She poked him in the ribs.", "gold": {"word_cn": "戳", "pos": "verb", "sentence_cn": "她戳了戳他的肋骨。"}}
+{"id": "eval-0249", "word": "yelled", "sentence": "'Impedimenta!' Harry yelled.", "gold": {"word_cn": "大喊", "pos": "verb", "sentence_cn": "'障碍重重！'哈利大喊道。"}}
+{"id": "eval-0250", "word": "thumping", "sentence": "His heart was thumping wildly.", "gold": {"word_cn": "怦怦直跳", "pos": "verb", "sentence_cn": "他的心疯狂地怦怦直跳。"}}
+{"id": "eval-0251", "word": "drooped", "sentence": "Fred Weasley's head drooped onto Alicia Spinnet's shoulder.", "gold": {"word_cn": "垂落", "pos": "verb", "sentence_cn": "弗雷德·韦斯莱的头垂落在艾丽娅·斯平内特的肩膀上。"}}
+{"id": "eval-0252", "word": "slammed", "sentence": "Ron slammed the book shut.", "gold": {"word_cn": "砰地合上", "pos": "verb", "sentence_cn": "罗恩砰地合上书。"}}
+{"id": "eval-0253", "word": "trembling", "sentence": "Ron stuffed the trembling rat back into his pocket.", "gold": {"word_cn": "颤抖的", "pos": "adjective", "sentence_cn": "罗恩把那只颤抖的老鼠塞回口袋。"}}
+{"id": "eval-0254", "word": "straightened", "sentence": "Ron stuffed the trembling rat back into his pocket and straightened up.", "gold": {"word_cn": "直起身", "pos": "verb", "sentence_cn": "罗恩把那只颤抖的老鼠塞回口袋，直起身来。"}}
+{"id": "eval-0255", "word": "massaging", "sentence": "Ron stuffed the trembling rat back into his pocket and straightened up, massaging his head.", "gold": {"word_cn": "揉着", "pos": "verb", "sentence_cn": "罗恩把那只颤抖的老鼠塞回口袋，直起身来揉着头。"}}
+{"id": "eval-0256", "word": "sank", "sentence": "Harry sank down to sit on the floor in front of the mirror.", "gold": {"word_cn": "瘫坐", "pos": "verb", "sentence_cn": "哈利瘫坐到镜子前的地板上。"}}
+{"id": "eval-0257", "word": "seized", "sentence": "Harry seized the Basilisk fang on the floor next to him and plunged it straight into the heart of the book.", "gold": {"word_cn": "抓起", "pos": "verb", "sentence_cn": "哈利抓起身边地上的蛇怪毒牙，径直刺入了那本书的心脏。"}}
+{"id": "eval-0258", "word": "plunged", "sentence": "Harry seized the Basilisk fang on the floor next to him and plunged it straight into the heart of the book.", "gold": {"word_cn": "刺入", "pos": "verb", "sentence_cn": "哈利抓起身边地上的蛇怪毒牙，径直刺入了那本书的心脏。"}}
+{"id": "eval-0259", "word": "fuming", "sentence": "Fuming almost as much as his homework, Ron slammed The Standard Book of Spells, Grade 2 shut.", "gold": {"word_cn": "怒气冲冲", "pos": "verb", "sentence_cn": "罗恩跟他的作业一样怒火中烧，砰地合上了《标准咒语·二级》。"}}
+{"id": "eval-0260", "word": "gasped", "sentence": "Harry gasped for air.", "gold": {"word_cn": "喘气", "pos": "verb", "sentence_cn": "哈利大口喘气。"}}
+{"id": "eval-0261", "word": "glared", "sentence": "Snape glared at him.", "gold": {"word_cn": "瞪", "pos": "verb", "sentence_cn": "斯内普瞪了他一眼。"}}
+{"id": "eval-0262", "word": "stammered", "sentence": "'I – I didn't,' stammered Neville.", "gold": {"word_cn": "结结巴巴地说", "pos": "verb", "sentence_cn": "'我——我没有，'纳威结结巴巴地说。"}}
+{"id": "eval-0263", "word": "stuffy", "sentence": "The room was hot and stuffy.", "gold": {"word_cn": "闷热的", "pos": "adjective", "sentence_cn": "房间里又热又闷。"}}
+{"id": "eval-0264", "word": "clutching", "sentence": "Harry stood clutching his wand.", "gold": {"word_cn": "紧握", "pos": "verb", "sentence_cn": "哈利站在那儿，紧紧握着魔杖。"}}
+{"id": "eval-0265", "word": "shoved", "sentence": "Malfoy shoved past him.", "gold": {"word_cn": "推开", "pos": "verb", "sentence_cn": "马尔福挤过他身边。"}}
+{"id": "eval-0266", "word": "crept", "sentence": "He crept along the corridor.", "gold": {"word_cn": "蹑手蹑脚地走", "pos": "verb", "sentence_cn": "他蹑手蹑脚地沿着走廊走。"}}
+{"id": "eval-0267", "word": "crouched", "sentence": "Harry crouched behind the wall.", "gold": {"word_cn": "蹲", "pos": "verb", "sentence_cn": "哈利蹲在墙后面。"}}
+{"id": "eval-0268", "word": "whispered", "sentence": "'What is it?' whispered Ron.", "gold": {"word_cn": "低声说", "pos": "verb", "sentence_cn": "'什么东西？'罗恩低声说。"}}
+{"id": "eval-0269", "word": "staggered", "sentence": "Harry staggered to his feet.", "gold": {"word_cn": "摇摇晃晃地站", "pos": "verb", "sentence_cn": "哈利摇摇晃晃地站了起来。"}}
+{"id": "eval-0270", "word": "blinked", "sentence": "He blinked and stared into the darkness.", "gold": {"word_cn": "眨眼", "pos": "verb", "sentence_cn": "他眨了眨眼，凝视着黑暗。"}}
+{"id": "eval-0271", "word": "gripped", "sentence": "Harry gripped his wand tightly.", "gold": {"word_cn": "握紧", "pos": "verb", "sentence_cn": "哈利紧紧握住魔杖。"}}
+{"id": "eval-0272", "word": "sturdy", "sentence": "The table looked solid and sturdy.", "gold": {"word_cn": "结实的", "pos": "adjective", "sentence_cn": "那张桌子看起来又结实又牢固。"}}
+{"id": "eval-0273", "word": "peered", "sentence": "He peered through the darkness.", "gold": {"word_cn": "凝视", "pos": "verb", "sentence_cn": "他透过黑暗努力凝视。"}}
+{"id": "eval-0274", "word": "flattened", "sentence": "He flattened himself against the wall.", "gold": {"word_cn": "贴", "pos": "verb", "sentence_cn": "他紧贴着墙站好。"}}
+{"id": "eval-0275", "word": "muttered", "sentence": "'Lumos,' Harry muttered.", "gold": {"word_cn": "喃喃地说", "pos": "verb", "sentence_cn": "'荧光闪烁，'哈利喃喃地说。"}}
+{"id": "eval-0276", "word": "snatched", "sentence": "Ron snatched the letter from him.", "gold": {"word_cn": "一把夺过", "pos": "verb", "sentence_cn": "罗恩一把夺过他手中的信。"}}
+{"id": "eval-0277", "word": "tugging", "sentence": "Harry was tugging at his sleeve.", "gold": {"word_cn": "拉", "pos": "verb", "sentence_cn": "哈利在拉他的袖子。"}}
+{"id": "eval-0278", "word": "squeezed", "sentence": "He squeezed through the narrow gap.", "gold": {"word_cn": "挤过", "pos": "verb", "sentence_cn": "他挤过那条狭窄的缝隙。"}}
+{"id": "eval-0279", "word": "swaying", "sentence": "The trees were swaying in the wind.", "gold": {"word_cn": "摇晃", "pos": "verb", "sentence_cn": "树木在风中摇晃。"}}
+{"id": "eval-0280", "word": "wrath", "sentence": "He flinched, expecting a burst of wrath from his uncle.", "gold": {"word_cn": "暴怒", "pos": "noun", "sentence_cn": "他退缩了一下，以为姨父会暴怒发作。"}}
+{"id": "eval-0281", "word": "protested", "sentence": "'But that's not fair!' Ron protested.", "gold": {"word_cn": "抗议", "pos": "verb", "sentence_cn": "'但那不公平！'罗恩抗议道。"}}
+{"id": "eval-0282", "word": "relieved", "sentence": "Harry felt immensely relieved.", "gold": {"word_cn": "如释重负", "pos": "adjective", "sentence_cn": "哈利感到如释重负。"}}
+{"id": "eval-0283", "word": "frantically", "sentence": "He waved his wand frantically.", "gold": {"word_cn": "疯狂地", "pos": "adverb", "sentence_cn": "他疯狂地挥动魔杖。"}}
+{"id": "eval-0284", "word": "groaning", "sentence": "Ron was groaning with pain.", "gold": {"word_cn": "呻吟", "pos": "verb", "sentence_cn": "罗恩痛苦地呻吟着。"}}
+{"id": "eval-0285", "word": "gathered", "sentence": "The students gathered in the common room.", "gold": {"word_cn": "聚集", "pos": "verb", "sentence_cn": "学生们聚集在公共休息室。"}}
+{"id": "eval-0286", "word": "grunted", "sentence": "'Fine,' grunted Ron.", "gold": {"word_cn": "咕哝", "pos": "verb", "sentence_cn": "'好吧，'罗恩咕哝道。"}}
+{"id": "eval-0287", "word": "jealously", "sentence": "Malfoy looked at him jealously.", "gold": {"word_cn": "嫉妒地", "pos": "adverb", "sentence_cn": "马尔福嫉妒地看着他。"}}
+{"id": "eval-0288", "word": "darted", "sentence": "Harry darted behind a pillar.", "gold": {"word_cn": "闪身", "pos": "verb", "sentence_cn": "哈利闪身躲到一根柱子后面。"}}
+{"id": "eval-0289", "word": "wretched", "sentence": "He felt utterly wretched.", "gold": {"word_cn": "悲惨的", "pos": "adjective", "sentence_cn": "他感到极其悲惨。"}}
+{"id": "eval-0291", "word": "growled", "sentence": "Hagrid growled angrily.", "gold": {"word_cn": "咆哮", "pos": "verb", "sentence_cn": "海格愤怒地咆哮道。"}}
+{"id": "eval-0292", "word": "thrust", "sentence": "He thrust the letter into Harry's hands.", "gold": {"word_cn": "塞", "pos": "verb", "sentence_cn": "他把信塞到哈利手里。"}}
+{"id": "eval-0293", "word": "scrambling", "sentence": "They were scrambling up the bank.", "gold": {"word_cn": "爬", "pos": "verb", "sentence_cn": "他们正往岸上爬。"}}
+{"id": "eval-0294", "word": "stared", "sentence": "Harry stared at him, open-mouthed.", "gold": {"word_cn": "盯着", "pos": "verb", "sentence_cn": "哈利张大了嘴，盯着他。"}}
+{"id": "eval-0295", "word": "faint", "sentence": "A faint smell of fried fish lingered about the place.", "gold": {"word_cn": "淡淡的", "pos": "adjective", "sentence_cn": "一股淡淡的炸鱼味在那个地方萦绕不散。"}}
+{"id": "eval-0296", "word": "lingered", "sentence": "A faint smell of fried fish lingered about the place.", "gold": {"word_cn": "萦绕不散", "pos": "verb", "sentence_cn": "一股淡淡的炸鱼味在那个地方萦绕不散。"}}
+{"id": "eval-0297", "word": "trembling", "sentence": "Her voice was trembling.", "gold": {"word_cn": "颤抖的", "pos": "adjective", "sentence_cn": "她的声音在颤抖。"}}
+{"id": "eval-0298", "word": "darting", "sentence": "His eyes were darting around the room.", "gold": {"word_cn": "扫视", "pos": "verb", "sentence_cn": "他的眼睛在房间里来回扫视。"}}
+{"id": "eval-0299", "word": "flailed", "sentence": "He flailed his arms wildly.", "gold": {"word_cn": "挥舞", "pos": "verb", "sentence_cn": "他疯狂地挥舞着手臂。"}}
+{"id": "eval-0300", "word": "snatched", "sentence": "Ron snatched the paper from him.", "gold": {"word_cn": "一把拿过", "pos": "verb", "sentence_cn": "罗恩一把从他手中拿过报纸。"}}
+{"id": "eval-0301", "word": "clung", "sentence": "She clung to his arm.", "gold": {"word_cn": "紧紧抓住", "pos": "verb", "sentence_cn": "她紧紧抓住他的胳膊。"}}
+{"id": "eval-0302", "word": "stumbled", "sentence": "He stumbled over a root.", "gold": {"word_cn": "绊倒", "pos": "verb", "sentence_cn": "他被树根绊了一下。"}}
+{"id": "eval-0303", "word": "hiss", "sentence": "He heard a soft hiss behind him.", "gold": {"word_cn": "嘶嘶声", "pos": "noun", "sentence_cn": "他听到身后传来轻轻的嘶嘶声。"}}
+{"id": "eval-0304", "word": "lumbering", "sentence": "The giant was lumbering towards them.", "gold": {"word_cn": "笨重地走", "pos": "verb", "sentence_cn": "巨人正笨重地向他们走来。"}}
+{"id": "eval-0305", "word": "screeched", "sentence": "The owl screeched and flew away.", "gold": {"word_cn": "尖叫", "pos": "verb", "sentence_cn": "猫头鹰尖叫一声飞走了。"}}
+{"id": "eval-0306", "word": "annoyance", "sentence": "He tried to hide his annoyance.", "gold": {"word_cn": "恼怒", "pos": "noun", "sentence_cn": "他试图掩饰自己的恼怒。"}}
+{"id": "eval-0307", "word": "grasp", "sentence": "He reached out to grasp the handle.", "gold": {"word_cn": "抓", "pos": "verb", "sentence_cn": "他伸手去抓把手。"}}
+{"id": "eval-0308", "word": "whimper", "sentence": "The dog let out a whimper.", "gold": {"word_cn": "呜咽", "pos": "noun", "sentence_cn": "那条狗发出一声呜咽。"}}
+{"id": "eval-0309", "word": "folded", "sentence": "He folded the letter carefully.", "gold": {"word_cn": "折叠", "pos": "verb", "sentence_cn": "他仔细地把信折好。"}}
+{"id": "eval-0310", "word": "clatter", "sentence": "There was a loud clatter behind him.", "gold": {"word_cn": "哐当声", "pos": "noun", "sentence_cn": "他身后传来一声响亮的哐当声。"}}
+{"id": "eval-0311", "word": "shoved", "sentence": "Harry shoved the parchment into his bag.", "gold": {"word_cn": "塞进", "pos": "verb", "sentence_cn": "哈利把羊皮纸塞进包里。"}}
+{"id": "eval-0312", "word": "narrowly", "sentence": "He narrowly missed being hit.", "gold": {"word_cn": "差一点", "pos": "adverb", "sentence_cn": "他差一点就被击中了。"}}
+{"id": "eval-0313", "word": "gripped", "sentence": "Harry gripped the edge of the table.", "gold": {"word_cn": "抓住", "pos": "verb", "sentence_cn": "哈利抓住桌沿。"}}
+{"id": "eval-0314", "word": "tugged", "sentence": "She tugged at his sleeve.", "gold": {"word_cn": "拉扯", "pos": "verb", "sentence_cn": "她扯了扯他的袖子。"}}
+{"id": "eval-0315", "word": "lunged", "sentence": "The creature lunged at him.", "gold": {"word_cn": "猛扑", "pos": "verb", "sentence_cn": "那生物向他猛扑过来。"}}
+{"id": "eval-0316", "word": "peeking", "sentence": "He was peeking through the curtains.", "gold": {"word_cn": "偷看", "pos": "verb", "sentence_cn": "他正透过窗帘偷看。"}}
+{"id": "eval-0317", "word": "plunged", "sentence": "The knight plunged his sword into the dragon.", "gold": {"word_cn": "刺入", "pos": "verb", "sentence_cn": "骑士将剑刺入龙的身体。"}}
+{"id": "eval-0318", "word": "glancing", "sentence": "Hagrid kept glancing along the table at her.", "gold": {"word_cn": "瞥", "pos": "verb", "sentence_cn": "海格一直沿着桌子向她瞥去。"}}
+{"id": "eval-0320", "word": "clasped", "sentence": "He clasped his hands together.", "gold": {"word_cn": "交握", "pos": "verb", "sentence_cn": "他双手交握在一起。"}}
+{"id": "eval-0321", "word": "clenched", "sentence": "He clenched his fists.", "gold": {"word_cn": "握紧", "pos": "verb", "sentence_cn": "他握紧了拳头。"}}
+{"id": "eval-0322", "word": "disgust", "sentence": "She looked at him with disgust.", "gold": {"word_cn": "厌恶", "pos": "noun", "sentence_cn": "她厌恶地看着他。"}}
+{"id": "eval-0323", "word": "reluctant", "sentence": "He was reluctant to leave.", "gold": {"word_cn": "不情愿的", "pos": "adjective", "sentence_cn": "他不情愿离开。"}}
+{"id": "eval-0324", "word": "glimpse", "sentence": "He caught a glimpse of something moving.", "gold": {"word_cn": "一瞥", "pos": "noun", "sentence_cn": "他瞥见有什么东西在动。"}}
+{"id": "eval-0325", "word": "crept", "sentence": "He crept up the stairs.", "gold": {"word_cn": "悄悄爬", "pos": "verb", "sentence_cn": "他悄悄爬上楼梯。"}}
+{"id": "eval-0326", "word": "despair", "sentence": "He felt a wave of despair.", "gold": {"word_cn": "绝望", "pos": "noun", "sentence_cn": "他感到一阵绝望。"}}
+{"id": "eval-0327", "word": "stained", "sentence": "His robes were stained and torn.", "gold": {"word_cn": "沾满污渍的", "pos": "adjective", "sentence_cn": "他的袍子沾满污渍，还破了。"}}
+{"id": "eval-0328", "word": "croaked", "sentence": "'Water,' he croaked.", "gold": {"word_cn": "嘶哑地说", "pos": "verb", "sentence_cn": "'水，'他嘶哑地说。"}}
+{"id": "eval-0329", "word": "collapsed", "sentence": "He collapsed onto the bed.", "gold": {"word_cn": "瘫倒", "pos": "verb", "sentence_cn": "他瘫倒在床上。"}}
+{"id": "eval-0330", "word": "dread", "sentence": "A feeling of dread washed over him.", "gold": {"word_cn": "恐惧", "pos": "noun", "sentence_cn": "一股恐惧感涌上他的心头。"}}
+{"id": "eval-0331", "word": "gloom", "sentence": "The room was filled with gloom.", "gold": {"word_cn": "阴暗", "pos": "noun", "sentence_cn": "房间里充满了阴暗。"}}
+{"id": "eval-0332", "word": "grumbled", "sentence": "'Fine then,' Ron grumbled.", "gold": {"word_cn": "抱怨", "pos": "verb", "sentence_cn": "'那好吧，'罗恩抱怨道。"}}
+{"id": "eval-0333", "word": "persuade", "sentence": "She tried to persuade him to stay.", "gold": {"word_cn": "说服", "pos": "verb", "sentence_cn": "她试图说服他留下。"}}
+{"id": "eval-0334", "word": "retreated", "sentence": "He retreated a few steps.", "gold": {"word_cn": "后退", "pos": "verb", "sentence_cn": "他后退了几步。"}}
+{"id": "eval-0335", "word": "silvery", "sentence": "A silvery light filled the room.", "gold": {"word_cn": "银白色的", "pos": "adjective", "sentence_cn": "一道银白色的光芒充满了房间。"}}
+{"id": "eval-0336", "word": "shrieked", "sentence": "The girl shrieked and ran away.", "gold": {"word_cn": "尖叫", "pos": "verb", "sentence_cn": "那个女孩尖叫着跑开了。"}}
+{"id": "eval-0337", "word": "slid", "sentence": "The door slid open.", "gold": {"word_cn": "滑开", "pos": "verb", "sentence_cn": "门滑开了。"}}
+{"id": "eval-0338", "word": "smashed", "sentence": "The window smashed into a thousand pieces.", "gold": {"word_cn": "碎裂", "pos": "verb", "sentence_cn": "窗户碎裂成了千百片。"}}
+{"id": "eval-0339", "word": "sobbing", "sentence": "She was sobbing quietly in the corner.", "gold": {"word_cn": "抽泣", "pos": "verb", "sentence_cn": "她在角落里轻声抽泣。"}}
+{"id": "eval-0340", "word": "staggered", "sentence": "Harry staggered backwards.", "gold": {"word_cn": "踉跄", "pos": "verb", "sentence_cn": "哈利踉跄着后退。"}}
+{"id": "eval-0341", "word": "startled", "sentence": "The noise startled him.", "gold": {"word_cn": "吓了一跳", "pos": "verb", "sentence_cn": "那声音吓了他一跳。"}}
+{"id": "eval-0342", "word": "sticky", "sentence": "The floor was sticky with spilled drink.", "gold": {"word_cn": "黏糊糊的", "pos": "adjective", "sentence_cn": "地板被洒出的饮料弄得黏糊糊的。"}}
+{"id": "eval-0343", "word": "sturdy", "sentence": "He grabbed a sturdy branch.", "gold": {"word_cn": "结实的", "pos": "adjective", "sentence_cn": "他抓住一根结实的树枝。"}}
+{"id": "eval-0344", "word": "surge", "sentence": "He felt a surge of anger.", "gold": {"word_cn": "一阵", "pos": "noun", "sentence_cn": "他感到一阵愤怒涌上心头。"}}
+{"id": "eval-0345", "word": "swiftly", "sentence": "She moved swiftly.", "gold": {"word_cn": "迅速", "pos": "adverb", "sentence_cn": "她迅速地移动。"}}
+{"id": "eval-0346", "word": "tangled", "sentence": "His hair was tangled and messy.", "gold": {"word_cn": "缠结的", "pos": "adjective", "sentence_cn": "他的头发缠结在一起，乱蓬蓬的。"}}
+{"id": "eval-0347", "word": "tenderly", "sentence": "She touched his face tenderly.", "gold": {"word_cn": "温柔地", "pos": "adverb", "sentence_cn": "她温柔地抚摸着他的脸。"}}
+{"id": "eval-0348", "word": "terrified", "sentence": "He was too terrified to move.", "gold": {"word_cn": "吓坏", "pos": "adjective", "sentence_cn": "他吓坏了，动弹不得。"}}
+{"id": "eval-0349", "word": "trembling", "sentence": "Her hands were trembling.", "gold": {"word_cn": "颤抖", "pos": "verb", "sentence_cn": "她的手在颤抖。"}}
+{"id": "eval-0350", "word": "triumphant", "sentence": "He let out a triumphant shout.", "gold": {"word_cn": "胜利的", "pos": "adjective", "sentence_cn": "他发出一声胜利的呼喊。"}}
+{"id": "eval-0351", "word": "trot", "sentence": "The dog trotted after him.", "gold": {"word_cn": "小跑", "pos": "verb", "sentence_cn": "那条狗小跑着跟在他后面。"}}
+{"id": "eval-0352", "word": "tugged", "sentence": "She tugged at his sleeve.", "gold": {"word_cn": "扯", "pos": "verb", "sentence_cn": "她扯了扯他的袖子。"}}
+{"id": "eval-0353", "word": "tumbled", "sentence": "He tumbled down the stairs.", "gold": {"word_cn": "滚落", "pos": "verb", "sentence_cn": "他从楼梯上滚了下来。"}}
+{"id": "eval-0354", "word": "twinge", "sentence": "He felt a twinge of guilt.", "gold": {"word_cn": "一阵", "pos": "noun", "sentence_cn": "他感到一阵内疚。"}}
+{"id": "eval-0355", "word": "ugly", "sentence": "The creature was ugly and misshapen.", "gold": {"word_cn": "丑陋的", "pos": "adjective", "sentence_cn": "那个生物丑陋而畸形。"}}
+{"id": "eval-0356", "word": "unbearable", "sentence": "The pain was unbearable.", "gold": {"word_cn": "难以忍受的", "pos": "adjective", "sentence_cn": "疼痛难以忍受。"}}
+{"id": "eval-0357", "word": "uneven", "sentence": "The floor was uneven and dangerous.", "gold": {"word_cn": "不平的", "pos": "adjective", "sentence_cn": "地板不平，很危险。"}}
+{"id": "eval-0358", "word": "ungrateful", "sentence": "How could you be so ungrateful?", "gold": {"word_cn": "忘恩负义的", "pos": "adjective", "sentence_cn": "你怎么能这么忘恩负义？"}}
+{"id": "eval-0359", "word": "unlock", "sentence": "He fumbled to unlock the door.", "gold": {"word_cn": "开锁", "pos": "verb", "sentence_cn": "他摸索着打开门锁。"}}
+{"id": "eval-0360", "word": "unwilling", "sentence": "He was unwilling to give up.", "gold": {"word_cn": "不愿", "pos": "adjective", "sentence_cn": "他不愿放弃。"}}
+{"id": "eval-0361", "word": "urge", "sentence": "He resisted the urge to look back.", "gold": {"word_cn": "冲动", "pos": "noun", "sentence_cn": "他忍住了回头的冲动。"}}
+{"id": "eval-0362", "word": "utterly", "sentence": "He was utterly confused.", "gold": {"word_cn": "完全", "pos": "adverb", "sentence_cn": "他完全困惑了。"}}
+{"id": "eval-0363", "word": "valiant", "sentence": "It was a valiant effort.", "gold": {"word_cn": "勇敢的", "pos": "adjective", "sentence_cn": "那是一次勇敢的尝试。"}}
+{"id": "eval-0364", "word": "vanish", "sentence": "The figure vanished into thin air.", "gold": {"word_cn": "消失", "pos": "verb", "sentence_cn": "那个人影凭空消失了。"}}
+{"id": "eval-0365", "word": "vehemently", "sentence": "She shook her head vehemently.", "gold": {"word_cn": "激烈地", "pos": "adverb", "sentence_cn": "她激烈地摇了摇头。"}}
+{"id": "eval-0366", "word": "vengeance", "sentence": "He swore vengeance.", "gold": {"word_cn": "复仇", "pos": "noun", "sentence_cn": "他发誓要复仇。"}}
+{"id": "eval-0367", "word": "ventured", "sentence": "He ventured into the dark forest.", "gold": {"word_cn": "冒险进入", "pos": "verb", "sentence_cn": "他冒险进入黑暗的森林。"}}
+{"id": "eval-0368", "word": "violent", "sentence": "The reaction was violent and immediate.", "gold": {"word_cn": "剧烈的", "pos": "adjective", "sentence_cn": "反应剧烈而迅速。"}}
+{"id": "eval-0369", "word": "vivid", "sentence": "He had a vivid imagination.", "gold": {"word_cn": "生动的", "pos": "adjective", "sentence_cn": "他想象力生动。"}}
+{"id": "eval-0370", "word": "volunteered", "sentence": "'I'll do it,' Hermione volunteered.", "gold": {"word_cn": "自告奋勇", "pos": "verb", "sentence_cn": "'我来做，'赫敏自告奋勇地说。"}}
+{"id": "eval-0371", "word": "wandered", "sentence": "He wandered aimlessly through the castle.", "gold": {"word_cn": "闲逛", "pos": "verb", "sentence_cn": "他在城堡里漫无目的地闲逛。"}}
+{"id": "eval-0372", "word": "warily", "sentence": "He watched them warily.", "gold": {"word_cn": "警惕地", "pos": "adverb", "sentence_cn": "他警惕地看着他们。"}}
+{"id": "eval-0373", "word": "weary", "sentence": "He was weary and hungry.", "gold": {"word_cn": "疲惫的", "pos": "adjective", "sentence_cn": "他又累又饿。"}}
+{"id": "eval-0374", "word": "weaving", "sentence": "He was weaving through the crowd.", "gold": {"word_cn": "穿梭", "pos": "verb", "sentence_cn": "他在人群中穿梭。"}}
+{"id": "eval-0375", "word": "whirled", "sentence": "He whirled around.", "gold": {"word_cn": "猛地转身", "pos": "verb", "sentence_cn": "他猛地转过身来。"}}
+{"id": "eval-0376", "word": "wicked", "sentence": "A wicked grin spread across his face.", "gold": {"word_cn": "坏坏的", "pos": "adjective", "sentence_cn": "他脸上露出一个坏笑。"}}
+{"id": "eval-0377", "word": "withered", "sentence": "The plant withered and died.", "gold": {"word_cn": "枯萎", "pos": "verb", "sentence_cn": "那株植物枯萎死去了。"}}
+{"id": "eval-0378", "word": "wobbled", "sentence": "The table wobbled.", "gold": {"word_cn": "摇晃", "pos": "verb", "sentence_cn": "桌子摇晃了一下。"}}
+{"id": "eval-0379", "word": "yearned", "sentence": "He yearned for home.", "gold": {"word_cn": "思念", "pos": "verb", "sentence_cn": "他思念着家。"}}
+{"id": "eval-0380", "word": "yield", "sentence": "He would not yield.", "gold": {"word_cn": "屈服", "pos": "verb", "sentence_cn": "他不肯屈服。"}}
+{"id": "eval-0381", "word": "zeal", "sentence": "She set to work with zeal.", "gold": {"word_cn": "热情", "pos": "noun", "sentence_cn": "她满腔热情地投入了工作。"}}
+{"id": "eval-0382", "word": "gaze", "sentence": "He met her gaze.", "gold": {"word_cn": "目光", "pos": "noun", "sentence_cn": "他迎上她的目光。"}}
+{"id": "eval-0383", "word": "gesture", "sentence": "He made a gesture towards the door.", "gold": {"word_cn": "手势", "pos": "noun", "sentence_cn": "他朝门的方向做了个手势。"}}
+{"id": "eval-0384", "word": "glow", "sentence": "A warm glow filled the room.", "gold": {"word_cn": "光芒", "pos": "noun", "sentence_cn": "温暖的光芒充满了房间。"}}
+{"id": "eval-0385", "word": "groan", "sentence": "He let out a groan of frustration.", "gold": {"word_cn": "呻吟", "pos": "noun", "sentence_cn": "他发出一声沮丧的呻吟。"}}
+{"id": "eval-0386", "word": "hammering", "sentence": "His heart was hammering.", "gold": {"word_cn": "狂跳", "pos": "verb", "sentence_cn": "他的心在狂跳。"}}
+{"id": "eval-0387", "word": "motion", "sentence": "He motioned for them to follow.", "gold": {"word_cn": "示意", "pos": "verb", "sentence_cn": "他示意他们跟上。"}}
+{"id": "eval-0388", "word": "nudge", "sentence": "Ron gave him a nudge.", "gold": {"word_cn": "轻推", "pos": "noun", "sentence_cn": "罗恩轻推了他一下。"}}
+{"id": "eval-0389", "word": "plead", "sentence": "'Please,' she pleaded.", "gold": {"word_cn": "恳求", "pos": "verb", "sentence_cn": "'求你了，'她恳求道。"}}
+{"id": "eval-0390", "word": "prickly", "sentence": "He had a prickly feeling that something was wrong.", "gold": {"word_cn": "针刺般的", "pos": "adjective", "sentence_cn": "他有一种针刺般的感觉，觉得有什么不对劲。"}}
+{"id": "eval-0391", "word": "relentless", "sentence": "The rain was relentless.", "gold": {"word_cn": "不止的", "pos": "adjective", "sentence_cn": "雨下个不停。"}}
+{"id": "eval-0392", "word": "roared", "sentence": "The crowd roared.", "gold": {"word_cn": "怒吼", "pos": "verb", "sentence_cn": "人群怒吼起来。"}}
+{"id": "eval-0393", "word": "roughly", "sentence": "He pushed him roughly aside.", "gold": {"word_cn": "粗暴地", "pos": "adverb", "sentence_cn": "他粗暴地把他推到一边。"}}
+{"id": "eval-0394", "word": "rumble", "sentence": "A low rumble echoed through the cave.", "gold": {"word_cn": "隆隆声", "pos": "noun", "sentence_cn": "低沉的隆隆声在洞穴中回响。"}}
+{"id": "eval-0395", "word": "savagely", "sentence": "He attacked the cake savagely.", "gold": {"word_cn": "猛烈地", "pos": "adverb", "sentence_cn": "他猛烈地攻击那块蛋糕。"}}
+{"id": "eval-0396", "word": "scrambled", "sentence": "Harry scrambled to his feet.", "gold": {"word_cn": "爬起来", "pos": "verb", "sentence_cn": "哈利爬了起来。"}}
+{"id": "eval-0397", "word": "shoving", "sentence": "People were pushing and shoving.", "gold": {"word_cn": "推搡", "pos": "verb", "sentence_cn": "人们互相推搡着。"}}
+{"id": "eval-0398", "word": "silently", "sentence": "They crept silently down the corridor.", "gold": {"word_cn": "悄悄地", "pos": "adverb", "sentence_cn": "他们悄悄地沿着走廊前进。"}}
+{"id": "eval-0399", "word": "skidded", "sentence": "He skidded to a halt.", "gold": {"word_cn": "刹住", "pos": "verb", "sentence_cn": "他刹住了脚步。"}}
+{"id": "eval-0400", "word": "slammed", "sentence": "He slammed the door behind him.", "gold": {"word_cn": "砰地关上", "pos": "verb", "sentence_cn": "他砰地关上了身后的门。"}}
+{"id": "eval-0401", "word": "sneering", "sentence": "'Well, well,' he said, sneering.", "gold": {"word_cn": "讥讽", "pos": "verb", "sentence_cn": "'哎呀呀，'他讥讽地说。"}}
+{"id": "eval-0402", "word": "sniggering", "sentence": "Crabbe and Goyle were sniggering.", "gold": {"word_cn": "窃笑", "pos": "verb", "sentence_cn": "克拉布和高尔在窃笑。"}}
+{"id": "eval-0403", "word": "soar", "sentence": "The bird soared into the sky.", "gold": {"word_cn": "翱翔", "pos": "verb", "sentence_cn": "那只鸟翱翔着飞入天空。"}}
+{"id": "eval-0404", "word": "sparkling", "sentence": "The trees were sparkling with tiny icicles.", "gold": {"word_cn": "闪闪发光", "pos": "verb", "sentence_cn": "树上挂着小冰柱，闪闪发光。"}}
+{"id": "eval-0405", "word": "specks", "sentence": "There were specks of dust in the sunlight.", "gold": {"word_cn": "微粒", "pos": "noun", "sentence_cn": "阳光中有灰尘的微粒。"}}
+{"id": "eval-0406", "word": "spite", "sentence": "He said it out of pure spite.", "gold": {"word_cn": "恶意", "pos": "noun", "sentence_cn": "他说那话纯粹出于恶意。"}}
+{"id": "eval-0407", "word": "splashed", "sentence": "Water splashed onto the floor.", "gold": {"word_cn": "溅", "pos": "verb", "sentence_cn": "水溅到了地板上。"}}
+{"id": "eval-0408", "word": "spluttered", "sentence": "'But I don't understand!' Ron spluttered.", "gold": {"word_cn": "结结巴巴地说", "pos": "verb", "sentence_cn": "'但我不明白！'罗恩结结巴巴地说。"}}
+{"id": "eval-0409", "word": "sprawled", "sentence": "He was sprawled on the floor.", "gold": {"word_cn": "摊开四肢躺着", "pos": "verb", "sentence_cn": "他四肢摊开躺在地板上。"}}
+{"id": "eval-0410", "word": "sprang", "sentence": "He sprang to his feet.", "gold": {"word_cn": "一跃而起", "pos": "verb", "sentence_cn": "他一跃而起。"}}
+{"id": "eval-0411", "word": "squeaked", "sentence": "'I didn't do it!' squeaked Dobby.", "gold": {"word_cn": "尖声说", "pos": "verb", "sentence_cn": "'不是我干的！'多比尖声说道。"}}
+{"id": "eval-0412", "word": "stammered", "sentence": "'I – I didn't,' stammered Neville.", "gold": {"word_cn": "结巴", "pos": "verb", "sentence_cn": "'我——我没有，'纳威结结巴巴地说。"}}
+{"id": "eval-0413", "word": "stared", "sentence": "Harry stared at him, open-mouthed.", "gold": {"word_cn": "盯着", "pos": "verb", "sentence_cn": "哈利张大了嘴，盯着他。"}}
+{"id": "eval-0414", "word": "startled", "sentence": "The noise startled him.", "gold": {"word_cn": "惊吓", "pos": "verb", "sentence_cn": "那声音惊吓了他。"}}
+{"id": "eval-0415", "word": "stepped", "sentence": "He stepped forward.", "gold": {"word_cn": "迈步", "pos": "verb", "sentence_cn": "他向前迈了一步。"}}
+{"id": "eval-0416", "word": "stifled", "sentence": "He stifled a yawn.", "gold": {"word_cn": "忍住", "pos": "verb", "sentence_cn": "他忍住了一个哈欠。"}}
+{"id": "eval-0417", "word": "stinging", "sentence": "The cold air was stinging his face.", "gold": {"word_cn": "刺痛", "pos": "verb", "sentence_cn": "冷空气刺痛他的脸。"}}
+{"id": "eval-0418", "word": "stomped", "sentence": "She stomped her foot angrily.", "gold": {"word_cn": "跺", "pos": "verb", "sentence_cn": "她生气地跺了跺脚。"}}
+{"id": "eval-0420", "word": "strained", "sentence": "He strained to hear what they were saying.", "gold": {"word_cn": "费力", "pos": "verb", "sentence_cn": "他费力地听他们在说什么。"}}
+{"id": "eval-0421", "word": "strangled", "sentence": "He let out a strangled cry.", "gold": {"word_cn": "窒息的", "pos": "adjective", "sentence_cn": "他发出一声被卡住似的叫喊。"}}
+{"id": "eval-0422", "word": "stretched", "sentence": "The road stretched ahead of them.", "gold": {"word_cn": "延伸", "pos": "verb", "sentence_cn": "道路在他们面前延伸。"}}
+{"id": "eval-0423", "word": "striding", "sentence": "He came striding towards them.", "gold": {"word_cn": "大步走来", "pos": "verb", "sentence_cn": "他大步朝他们走来。"}}
+{"id": "eval-0424", "word": "strolled", "sentence": "They strolled through the grounds.", "gold": {"word_cn": "漫步", "pos": "verb", "sentence_cn": "他们在场地上漫步。"}}
+{"id": "eval-0425", "word": "stubborn", "sentence": "He was too stubborn to admit he was wrong.", "gold": {"word_cn": "固执的", "pos": "adjective", "sentence_cn": "他太固执了，不肯承认自己错了。"}}
+{"id": "eval-0426", "word": "stuffed", "sentence": "Ron stuffed the rat into his pocket.", "gold": {"word_cn": "塞", "pos": "verb", "sentence_cn": "罗恩把老鼠塞进口袋。"}}
+{"id": "eval-0427", "word": "stunned", "sentence": "He stood there, stunned.", "gold": {"word_cn": "惊呆了", "pos": "adjective", "sentence_cn": "他站在那儿，呆住了。"}}
+{"id": "eval-0428", "word": "sturdy", "sentence": "The table was sturdy.", "gold": {"word_cn": "结实的", "pos": "adjective", "sentence_cn": "那张桌子很结实。"}}
+{"id": "eval-0429", "word": "subdued", "sentence": "The atmosphere was subdued.", "gold": {"word_cn": "沉闷的", "pos": "adjective", "sentence_cn": "气氛很沉闷。"}}
+{"id": "eval-0430", "word": "sulk", "sentence": "Ron was sulking.", "gold": {"word_cn": "生闷气", "pos": "verb", "sentence_cn": "罗恩在生闷气。"}}
+{"id": "eval-0431", "word": "sullen", "sentence": "He gave a sullen reply.", "gold": {"word_cn": "闷闷不乐的", "pos": "adjective", "sentence_cn": "他闷闷不乐地回答。"}}
+{"id": "eval-0432", "word": "summoned", "sentence": "She was summoned to the office.", "gold": {"word_cn": "召唤", "pos": "verb", "sentence_cn": "她被叫到办公室。"}}
+{"id": "eval-0433", "word": "sunken", "sentence": "His eyes were sunken and dark.", "gold": {"word_cn": "凹陷的", "pos": "adjective", "sentence_cn": "他的眼睛凹陷而黑暗。"}}
+{"id": "eval-0434", "word": "surged", "sentence": "Anger surged through him.", "gold": {"word_cn": "涌起", "pos": "verb", "sentence_cn": "愤怒涌遍他的全身。"}}
+{"id": "eval-0435", "word": "surrounding", "sentence": "The surrounding countryside was beautiful.", "gold": {"word_cn": "周围的", "pos": "adjective", "sentence_cn": "周围的乡村很美。"}}
+{"id": "eval-0436", "word": "suspicious", "sentence": "He gave her a suspicious look.", "gold": {"word_cn": "怀疑的", "pos": "adjective", "sentence_cn": "他怀疑地看了她一眼。"}}
+{"id": "eval-0437", "word": "swallowed", "sentence": "He swallowed nervously.", "gold": {"word_cn": "咽了口唾沫", "pos": "verb", "sentence_cn": "他紧张地咽了口唾沫。"}}
+{"id": "eval-0438", "word": "swaying", "sentence": "The trees were swaying.", "gold": {"word_cn": "摇曳", "pos": "verb", "sentence_cn": "树木摇曳着。"}}
+{"id": "eval-0439", "word": "sweeping", "sentence": "He made a sweeping gesture.", "gold": {"word_cn": "大的", "pos": "adjective", "sentence_cn": "他做了一个大弧度的动作。"}}
+{"id": "eval-0440", "word": "swiftly", "sentence": "She moved swiftly across the room.", "gold": {"word_cn": "迅速地", "pos": "adverb", "sentence_cn": "她迅速地穿过房间。"}}
+{"id": "eval-0441", "word": "swollen", "sentence": "His ankle was swollen.", "gold": {"word_cn": "肿胀的", "pos": "adjective", "sentence_cn": "他的脚踝肿了。"}}
+{"id": "eval-0442", "word": "swooped", "sentence": "The owl swooped down.", "gold": {"word_cn": "俯冲", "pos": "verb", "sentence_cn": "猫头鹰俯冲下来。"}}
+{"id": "eval-0443", "word": "tackle", "sentence": "He didn't know how to tackle the problem.", "gold": {"word_cn": "应对", "pos": "verb", "sentence_cn": "他不知道如何应对这个问题。"}}
+{"id": "eval-0444", "word": "tangled", "sentence": "His hair was tangled.", "gold": {"word_cn": "凌乱", "pos": "adjective", "sentence_cn": "他的头发凌乱不堪。"}}
+{"id": "eval-0446", "word": "tenderly", "sentence": "He kissed her tenderly.", "gold": {"word_cn": "温柔地", "pos": "adverb", "sentence_cn": "他温柔地吻了她。"}}
+{"id": "eval-0447", "word": "tensed", "sentence": "He tensed, ready to run.", "gold": {"word_cn": "绷紧", "pos": "verb", "sentence_cn": "他绷紧了身体，准备逃跑。"}}
+{"id": "eval-0448", "word": "terrified", "sentence": "He was terrified.", "gold": {"word_cn": "吓坏", "pos": "adjective", "sentence_cn": "他吓坏了。"}}
+{"id": "eval-0449", "word": "thankfully", "sentence": "Thankfully, nobody was hurt.", "gold": {"word_cn": "幸好", "pos": "adverb", "sentence_cn": "幸好没有人受伤。"}}
+{"id": "eval-0450", "word": "thoroughly", "sentence": "He was thoroughly confused.", "gold": {"word_cn": "完全", "pos": "adverb", "sentence_cn": "他完全糊涂了。"}}
+{"id": "eval-0451", "word": "thrashed", "sentence": "The creature thrashed about in pain.", "gold": {"word_cn": "打滚", "pos": "verb", "sentence_cn": "那生物痛苦地翻滚着。"}}
+{"id": "eval-0452", "word": "threateningly", "sentence": "He stepped towards him threateningly.", "gold": {"word_cn": "威胁地", "pos": "adverb", "sentence_cn": "他威胁地向他走来。"}}
+{"id": "eval-0453", "word": "thrilled", "sentence": "She was thrilled with her gift.", "gold": {"word_cn": "兴奋的", "pos": "adjective", "sentence_cn": "她对礼物感到兴奋不已。"}}
+{"id": "eval-0454", "word": "throbbing", "sentence": "His head was throbbing.", "gold": {"word_cn": "阵阵作痛", "pos": "verb", "sentence_cn": "他的头阵阵作痛。"}}
+{"id": "eval-0455", "word": "thud", "sentence": "There was a loud thud.", "gold": {"word_cn": "闷响", "pos": "noun", "sentence_cn": "传来一声响亮的闷响。"}}
+{"id": "eval-0456", "word": "tilted", "sentence": "He tilted his head.", "gold": {"word_cn": "歪着", "pos": "verb", "sentence_cn": "他歪着头。"}}
+{"id": "eval-0457", "word": "tousled", "sentence": "He sat up, looking tousled.", "gold": {"word_cn": "头发凌乱的", "pos": "adjective", "sentence_cn": "他坐起来，头发乱蓬蓬的。"}}
+{"id": "eval-0458", "word": "trampled", "sentence": "The flowers had been trampled.", "gold": {"word_cn": "踩踏", "pos": "verb", "sentence_cn": "花被踩坏了。"}}
+{"id": "eval-0459", "word": "trembling", "sentence": "Her voice was trembling.", "gold": {"word_cn": "颤抖", "pos": "verb", "sentence_cn": "她的声音在颤抖。"}}
+{"id": "eval-0460", "word": "triumphantly", "sentence": "She smiled triumphantly.", "gold": {"word_cn": "得意洋洋地", "pos": "adverb", "sentence_cn": "她得意洋洋地笑了。"}}
+{"id": "eval-0461", "word": "trudged", "sentence": "They trudged wearily up the hill.", "gold": {"word_cn": "艰难地走", "pos": "verb", "sentence_cn": "他们疲惫地艰难爬上山坡。"}}
+{"id": "eval-0462", "word": "trusted", "sentence": "He trusted her completely.", "gold": {"word_cn": "信任", "pos": "verb", "sentence_cn": "他完全信任她。"}}
+{"id": "eval-0463", "word": "tucked", "sentence": "She tucked the letter into her pocket.", "gold": {"word_cn": "塞", "pos": "verb", "sentence_cn": "她把信塞进口袋。"}}
+{"id": "eval-0464", "word": "tugged", "sentence": "He tugged at the rope.", "gold": {"word_cn": "拉", "pos": "verb", "sentence_cn": "他拉了拉绳子。"}}
+{"id": "eval-0465", "word": "tumbling", "sentence": "Water came tumbling down the rocks.", "gold": {"word_cn": "倾泻而下", "pos": "verb", "sentence_cn": "水从岩石上倾泻而下。"}}
+{"id": "eval-0466", "word": "turbulent", "sentence": "The sky was dark and turbulent.", "gold": {"word_cn": "汹涌的", "pos": "adjective", "sentence_cn": "天空黑暗而汹涌。"}}
+{"id": "eval-0467", "word": "turning", "sentence": "He kept turning the problem over in his mind.", "gold": {"word_cn": "反复思考", "pos": "verb", "sentence_cn": "他反复在脑中思考这个问题。"}}
+{"id": "eval-0468", "word": "twisted", "sentence": "His ankle twisted beneath him.", "gold": {"word_cn": "扭伤", "pos": "verb", "sentence_cn": "他的脚踝扭伤了。"}}
+{"id": "eval-0469", "word": "uneasily", "sentence": "He shifted uneasily.", "gold": {"word_cn": "不安地", "pos": "adverb", "sentence_cn": "他不安地挪动了一下。"}}
+{"id": "eval-0470", "word": "unexpected", "sentence": "An unexpected visitor arrived.", "gold": {"word_cn": "意外的", "pos": "adjective", "sentence_cn": "一位意外的访客到来了。"}}
+{"id": "eval-0471", "word": "unnoticed", "sentence": "He slipped out unnoticed.", "gold": {"word_cn": "未被注意地", "pos": "adverb", "sentence_cn": "他悄悄地溜了出去，没有人注意到。"}}
+{"id": "eval-0472", "word": "unpacking", "sentence": "He was unpacking his trunk.", "gold": {"word_cn": "整理", "pos": "verb", "sentence_cn": "他正在整理行李箱。"}}
+{"id": "eval-0473", "word": "unsteady", "sentence": "He was unsteady on his feet.", "gold": {"word_cn": "站不稳的", "pos": "adjective", "sentence_cn": "他站不稳。"}}
+{"id": "eval-0474", "word": "unwilling", "sentence": "He was unwilling to cooperate.", "gold": {"word_cn": "不愿意的", "pos": "adjective", "sentence_cn": "他不愿意合作。"}}
+{"id": "eval-0475", "word": "upset", "sentence": "She was clearly upset.", "gold": {"word_cn": "难过的", "pos": "adjective", "sentence_cn": "她显然很难过。"}}
+{"id": "eval-0476", "word": "urgent", "sentence": "There was an urgent message for him.", "gold": {"word_cn": "紧急的", "pos": "adjective", "sentence_cn": "有给他的紧急消息。"}}
+{"id": "eval-0477", "word": "vanished", "sentence": "The pain vanished instantly.", "gold": {"word_cn": "消失", "pos": "verb", "sentence_cn": "疼痛瞬间消失了。"}}
+{"id": "eval-0478", "word": "vengeful", "sentence": "He gave her a vengeful look.", "gold": {"word_cn": "复仇的", "pos": "adjective", "sentence_cn": "他用复仇的眼神看着她。"}}
+{"id": "eval-0479", "word": "violently", "sentence": "He was shaking violently.", "gold": {"word_cn": "剧烈地", "pos": "adverb", "sentence_cn": "他剧烈地颤抖着。"}}
+{"id": "eval-0480", "word": "wailing", "sentence": "The siren was wailing.", "gold": {"word_cn": "轰鸣", "pos": "verb", "sentence_cn": "警报在轰鸣。"}}
+{"id": "eval-0481", "word": "wandered", "sentence": "He wandered the corridors.", "gold": {"word_cn": "游荡", "pos": "verb", "sentence_cn": "他在走廊里游荡。"}}
+{"id": "eval-0482", "word": "warningly", "sentence": "He raised a hand warningly.", "gold": {"word_cn": "警告地", "pos": "adverb", "sentence_cn": "他警告地举起一只手。"}}
+{"id": "eval-0483", "word": "wary", "sentence": "He was wary of strangers.", "gold": {"word_cn": "警惕的", "pos": "adjective", "sentence_cn": "他对陌生人很警惕。"}}
+{"id": "eval-0484", "word": "wearily", "sentence": "She sighed wearily.", "gold": {"word_cn": "疲惫地", "pos": "adverb", "sentence_cn": "她疲惫地叹了口气。"}}
+{"id": "eval-0485", "word": "whimper", "sentence": "He let out a whimper of pain.", "gold": {"word_cn": "呜咽", "pos": "noun", "sentence_cn": "他发出一声痛苦的呜咽。"}}
+{"id": "eval-0486", "word": "whirled", "sentence": "Harry whirled around, clutching his wand.", "gold": {"word_cn": "急转", "pos": "verb", "sentence_cn": "哈利猛地转过身来，紧握着魔杖。"}}
+{"id": "eval-0487", "word": "whisper", "sentence": "She spoke in a whisper.", "gold": {"word_cn": "低语", "pos": "noun", "sentence_cn": "她低声说话。"}}
+{"id": "eval-0488", "word": "wilted", "sentence": "The flowers had wilted in the heat.", "gold": {"word_cn": "枯萎", "pos": "verb", "sentence_cn": "花在高温下枯萎了。"}}
+{"id": "eval-0489", "word": "wiry", "sentence": "The man was small and wiry.", "gold": {"word_cn": "精瘦的", "pos": "adjective", "sentence_cn": "那人个头矮小，精瘦结实。"}}
+{"id": "eval-0490", "word": "withdraw", "sentence": "He decided to withdraw.", "gold": {"word_cn": "退出", "pos": "verb", "sentence_cn": "他决定退出。"}}
+{"id": "eval-0491", "word": "withering", "sentence": "She gave him a withering look.", "gold": {"word_cn": "尖刻的", "pos": "adjective", "sentence_cn": "她给了他一个尖刻的眼神。"}}
+{"id": "eval-0492", "word": "wobbling", "sentence": "The stack of books was wobbling dangerously.", "gold": {"word_cn": "摇晃", "pos": "verb", "sentence_cn": "那摞书危险地摇晃着。"}}
+{"id": "eval-0493", "word": "worriedly", "sentence": "She glanced at him worriedly.", "gold": {"word_cn": "担忧地", "pos": "adverb", "sentence_cn": "她担忧地瞥了他一眼。"}}
+{"id": "eval-0494", "word": "wrenched", "sentence": "He wrenched the door open.", "gold": {"word_cn": "猛地拉开", "pos": "verb", "sentence_cn": "他猛地拉开门。"}}
+{"id": "eval-0495", "word": "wriggled", "sentence": "The worm wriggled in his hand.", "gold": {"word_cn": "蠕动", "pos": "verb", "sentence_cn": "那条虫在他手里蠕动着。"}}
+{"id": "eval-0496", "word": "wrinkled", "sentence": "His face was wrinkled and old.", "gold": {"word_cn": "布满皱纹的", "pos": "adjective", "sentence_cn": "他的脸布满皱纹，苍老了。"}}
+{"id": "eval-0497", "word": "yearning", "sentence": "He felt a deep yearning.", "gold": {"word_cn": "渴望", "pos": "noun", "sentence_cn": "他感到一种深深的渴望。"}}
+{"id": "eval-0498", "word": "yelled", "sentence": "'Impedimenta!' Harry yelled.", "gold": {"word_cn": "大喊", "pos": "verb", "sentence_cn": "'障碍重重！'哈利大喊道。"}}
+{"id": "eval-0499", "word": "yanked", "sentence": "He yanked the curtain aside.", "gold": {"word_cn": "猛地拉开", "pos": "verb", "sentence_cn": "他猛地拉开窗帘。"}}
+{"id": "eval-0500", "word": "zealously", "sentence": "She worked zealously.", "gold": {"word_cn": "热情地", "pos": "adverb", "sentence_cn": "她充满热情地工作。"}}
+{"id": "eval-0501", "word": "whispered", "sentence": "'Dumbledore reckons You-Know-Who's getting stronger again as well?' Ron whispered.", "gold": {"word_cn": "低声说", "pos": "verb", "sentence_cn": "'邓布利多认为神秘人又在变强了？'罗恩低声说。"}}
+{"id": "eval-0502", "word": "torment", "sentence": "You can imagine how the idea would torment him.", "gold": {"word_cn": "折磨", "pos": "verb", "sentence_cn": "你可以想象这个念头会如何折磨他。"}}
+{"id": "eval-0503", "word": "stared", "sentence": "He flung back his head and stared at the sky.", "gold": {"word_cn": "凝视", "pos": "verb", "sentence_cn": "他仰起头，凝视着天空。"}}
+{"id": "eval-0504", "word": "deserted", "sentence": "So we had to find a nice deserted moor, and set up as many anti-Muggle precautions as possible.", "gold": {"word_cn": "荒无人烟的", "pos": "adjective", "sentence_cn": "所以我们得找一块荒无人烟的旷野，布置尽可能多的反麻瓜防范措施。"}}
+{"id": "eval-0505", "word": "desperate", "sentence": "The murder of Pettigrew and all those Muggles was the action of a cornered and desperate man.", "gold": {"word_cn": "绝望的", "pos": "adjective", "sentence_cn": "杀死小矮星彼得和那些麻瓜是一个走投无路、绝望之人的行为。"}}
+{"id": "eval-0506", "word": "panting", "sentence": "'No,' Harry called back, panting.", "gold": {"word_cn": "喘着气", "pos": "verb", "sentence_cn": "'没事，'哈利喘着气回头喊道。"}}
+{"id": "eval-0507", "word": "shivering", "sentence": "He turned and cantered back into the depths of the Forest, leaving Harry shivering behind him.", "gold": {"word_cn": "瑟瑟发抖", "pos": "verb", "sentence_cn": "他转身慢跑回森林深处，留下身后瑟瑟发抖的哈利。"}}
+{"id": "eval-0508", "word": "muttered", "sentence": "'Lumos,' Harry muttered.", "gold": {"word_cn": "喃喃念", "pos": "verb", "sentence_cn": "'荧光闪烁，'哈利喃喃念道。"}}
+{"id": "eval-0509", "word": "utterly", "sentence": "'Harry, come on, they're waiting for you!' Utterly perplexed, Harry got up.", "gold": {"word_cn": "完全", "pos": "adverb", "sentence_cn": "'哈利，快来，他们在等你！'哈利满心困惑地站了起来。"}}
+{"id": "eval-0510", "word": "leant", "sentence": "Hagrid leant upon his spade, but did not seem keen to prolong their talk.", "gold": {"word_cn": "倚", "pos": "verb", "sentence_cn": "海格倚靠在铲子上，但似乎不想延长他们的谈话。"}}
+{"id": "eval-0511", "word": "prolong", "sentence": "Hagrid leant upon his spade, but did not seem keen to prolong their talk.", "gold": {"word_cn": "延长", "pos": "verb", "sentence_cn": "海格倚靠在铲子上，但似乎不想延长他们的谈话。"}}
+{"id": "eval-0512", "word": "slid", "sentence": "He slid a considerable way down what felt like a stone slide, then landed on cold, damp earth.", "gold": {"word_cn": "滑", "pos": "verb", "sentence_cn": "他在一个像石头滑梯一样的东西上滑了相当长一段距离，然后落在了冰冷潮湿的地面上。"}}
+{"id": "eval-0513", "word": "slouched", "sentence": "Krum slouched off to join them shortly afterwards.", "gold": {"word_cn": "懒洋洋走", "pos": "verb", "sentence_cn": "克鲁姆不久后就懒洋洋地走过去加入了他们。"}}
+{"id": "eval-0514", "word": "ventured", "sentence": "'Maybe it's a trap,' Ron ventured.", "gold": {"word_cn": "试探", "pos": "verb", "sentence_cn": "'也许是陷阱，'罗恩试探说。"}}
+{"id": "eval-0515", "word": "groping", "sentence": "He went groping along the wall in the dark.", "gold": {"word_cn": "摸索", "pos": "verb", "sentence_cn": "他在黑暗中顺着墙摸索。"}}
+{"id": "eval-0516", "word": "shrugged", "sentence": "'Probably 'cause it's you, isn't it?' shrugged Ron.", "gold": {"word_cn": "耸肩说", "pos": "verb", "sentence_cn": "'大概因为是你吧？'罗恩耸耸肩说。"}}
+{"id": "eval-0517", "word": "gazing", "sentence": "Harry stood there, gazing at the miraculous map.", "gold": {"word_cn": "凝视", "pos": "verb", "sentence_cn": "哈利站在那里，凝视着这张神奇的地图。"}}
+{"id": "eval-0518", "word": "inched", "sentence": "Ron and Hermione grabbed him, and they inched towards the message, eyes fixed on a dark shadow beneath it.", "gold": {"word_cn": "慢慢挪", "pos": "verb", "sentence_cn": "罗恩和赫敏抓住他，他们朝那行字慢慢挪过去，眼睛紧盯着下方的黑影。"}}
+{"id": "eval-0519", "word": "rolled", "sentence": "Ron rolled his eyes at the ceiling.", "gold": {"word_cn": "翻眼", "pos": "verb", "sentence_cn": "罗恩对着天花板翻了个白眼。"}}
+{"id": "eval-0520", "word": "pacing", "sentence": "A labelled dot showed that Professor Dumbledore was pacing his study.", "gold": {"word_cn": "踱步", "pos": "verb", "sentence_cn": "一个带标记的小点显示邓布利多教授正在书房走来走去。"}}
+{"id": "eval-0521", "word": "crash", "sentence": "They broke into a run and – CRASH.", "gold": {"word_cn": "哐当", "pos": "verb", "sentence_cn": "他们突然跑了起来——接着哐当一声。"}}
+{"id": "eval-0522", "word": "singing", "sentence": "A choir of merpeople were singing in the middle, calling the champions towards them.", "gold": {"word_cn": "歌唱", "pos": "verb", "sentence_cn": "一群人鱼合唱团在中间歌唱，呼唤着勇士们朝他们游去。"}}
+{"id": "eval-0523", "word": "stinging", "sentence": "The cold air was stinging his face.", "gold": {"word_cn": "刺痛", "pos": "verb", "sentence_cn": "冷空气刺痛了他的脸。"}}
+{"id": "eval-0524", "word": "gaped", "sentence": "Harry gaped after her. 'She doesn't expect the Dursleys to turn up, does she?' he asked Ron blankly.", "gold": {"word_cn": "目瞪口呆", "pos": "verb", "sentence_cn": "哈利目瞪口呆地看着她离开。'她不会期望着德思礼一家来吧？'他茫然地问罗恩。"}}

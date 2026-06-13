@@ -100,3 +100,37 @@ Score a JSONL prediction file against the seed set:
 ```powershell
 python local_lexicon_model/eval/run_eval.py --gold local_lexicon_model/data/eval_seed.jsonl --pred local_lexicon_model/reports/predictions.example.jsonl
 ```
+
+For real model comparisons, also write error cases and a Markdown report:
+
+```powershell
+python local_lexicon_model/eval/run_eval.py `
+  --gold local_lexicon_model/data/eval_generated_50.jsonl `
+  --pred local_lexicon_model/reports/ollama_predictions.jsonl `
+  --error-output local_lexicon_model/reports/ollama_error_cases.jsonl `
+  --report-output local_lexicon_model/reports/ollama_eval_report.md `
+  --csv-output local_lexicon_model/reports/ollama_eval_comparison.csv
+```
+
+`word_cn_exact_rate` and `sentence_cn_exact_rate` are strict string-match
+metrics. Treat them as first-pass signals, then review `error_cases.jsonl`
+manually because acceptable Chinese synonyms may be counted as mismatches.
+
+Run an Ollama baseline through the same provider abstraction used by the
+backend:
+
+```powershell
+ollama pull qwen2.5:1.5b
+cd backend
+uv run python ../local_lexicon_model/scripts/run_ollama_baseline.py --model qwen2.5:1.5b
+cd ..
+python local_lexicon_model/eval/run_eval.py --gold local_lexicon_model/data/eval_seed.jsonl --pred local_lexicon_model/reports/ollama_predictions.jsonl
+```
+
+If you run the script with a standalone Python or Anaconda environment, install
+the OpenAI SDK first because the project provider uses it for OpenAI-compatible
+requests:
+
+```powershell
+pip install openai
+```

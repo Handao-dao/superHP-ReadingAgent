@@ -1,0 +1,500 @@
+{"id": "eval-0001", "prediction": "{\"word\": \"滴\", \"word_cn\": \"滴\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利双手捧着空酒杯，看着老师和福格特的脚在吧台前移动，停顿一下，然后转身走向他。\"}", "latency_ms": 1414.85}
+{"id": "eval-0002", "prediction": "{\"word\": \"蹲\", \"word_cn\": \"蹲下\", \"pos\": \"verb\", \"sentence_cn\": \"滴着奶油啤酒，哈利缩成一团躲在一旁，看着老师和福格特的脚趾头移动到酒吧，停顿一下，然后转过身走到他面前。\"}", "latency_ms": 386.23}
+{"id": "eval-0003", "prediction": "{\"word\": \"clutched\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"哈利紧握着空酒杯，躲在一旁，看着老师和福格特的脚移动到酒吧，停下脚步，然后转身走向他。\"}", "latency_ms": 356.33}
+{"id": "eval-0004", "prediction": "{\"word\": \"convinced\", \"word_cn\": \"确信的\", \"pos\": \"adjective\", \"sentence_cn\": \"赫敏看起来确信，但罗恩不相信。\"}", "latency_ms": 306.52}
+{"id": "eval-0005", "prediction": "{\"word\": \"flatly\", \"word_cn\": \"直接地\", \"pos\": \"adverb\", \"sentence_cn\": \"'不，' 哈里直接地说了，‘我们已经够到处乱窜的了。’\"}", "latency_ms": 343.52}
+{"id": "eval-0006", "prediction": "{\"word\": \" poking\", \"word_cn\": \"戳\", \"pos\": \"verb\", \"sentence_cn\": \"'不，' 哈利平心静气地说， '我们已经够戳探了。'\"}", "latency_ms": 313.57}
+{"id": "eval-0007", "prediction": "{\"word\": \"渴望\", \"word_cn\": \"渴望\", \"pos\": \"adjective\", \"sentence_cn\": \"就连分院的魁地奇队和守财狗队也对他翻了脸，因为大家都盼着斯莱特林队丢掉学院杯。\"}", "latency_ms": 364.49}
+{"id": "eval-0008", "prediction": "{\"word\": \"困惑的\", \"word_cn\": \"困惑的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利完全困惑了，于是站了起来。\"}", "latency_ms": 289.34}
+{"id": "eval-0009", "prediction": "{\"word\": \"rustling\", \"word_cn\": \"沙沙声\", \"pos\": \"noun\", \"sentence_cn\": \"在树木沙沙作响的声音中，他似乎又听到了赫敏告诉他们的什么。\"}", "latency_ms": 330.16}
+{"id": "eval-0010", "prediction": "{\"word\": \"安慰\", \"word_cn\": \"安慰\", \"pos\": \"noun\", \"sentence_cn\": \"哈利想不出什么话来安慰他。\"}", "latency_ms": 282.76}
+{"id": "eval-0011", "prediction": "{\"word\": \"预言\", \"word_cn\": \"预言\", \"pos\": \"noun\", \"sentence_cn\": \"独角兽们关心的是预言！\"}", "latency_ms": 266.45}
+{"id": "eval-0012", "prediction": "{\"word\": \"钝\", \"word_cn\": \"钝\", \"pos\": \"adjective\", \"sentence_cn\": \"只有在右边天际有一道淡淡的绿色微光，表明天亮了。\"}", "latency_ms": 309.4}
+{"id": "eval-0013", "prediction": "{\"word\": \"色调\", \"word_cn\": \"颜色的微弱部分\", \"pos\": \"noun\", \"sentence_cn\": \"只有他们右边天边有一丝淡淡的绿色，表明天亮了。\"}", "latency_ms": 283.61}
+{"id": "eval-0014", "prediction": "{\"word\": \"approached\", \"word_cn\": \"走近\", \"pos\": \"verb\", \"sentence_cn\": \"她用长而圆润的眼睛看着哈利，他走过来。\"}", "latency_ms": 293.06}
+{"id": "eval-0015", "prediction": "{\"word\": \"issued\", \"word_cn\": \"发出\", \"pos\": \"verb\", \"sentence_cn\": \"蛇尾发出了火焰，向他飞去。\"}", "latency_ms": 286.49}
+{"id": "eval-0016", "prediction": "{\"word\": \"爆炸\", \"word_cn\": \"爆炸\", \"pos\": \"verb\", \"sentence_cn\": \"蛇尾发出了一股火光，向他飞去。\"}", "latency_ms": 290.64}
+{"id": "eval-0017", "prediction": "{\"word\": \"revision\", \"word_cn\": \"复习\", \"pos\": \"noun\", \"sentence_cn\": \"他本以为赫敏会抱怨说这是整晚的复习时间浪费了，但她什么也没说。\"}", "latency_ms": 327.62}
+{"id": "eval-0018", "prediction": "{\"word\": \"impressed\", \"word_cn\": \"印象深刻\", \"pos\": \"adjective\", \"sentence_cn\": \"'哇！' 罗恩看着非常印象深刻。 '你学会了漂移！'\"}", "latency_ms": 312.0}
+{"id": "eval-0019", "prediction": "{\"word\": \"看待\", \"word_cn\": \"看待\", \"pos\": \"verb\", \"sentence_cn\": \"一名暗黑魔法防御联盟的成员表示，任何会说蛇语的巫师都值得调查。\"}", "latency_ms": 299.73}
+{"id": "eval-0020", "prediction": "{\"word\": \"垂落的\", \"word_cn\": \"dangling\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利悬在地面上，头发竖起，眼镜从鼻子上滑落，似乎要掉进无底深渊。\"}", "latency_ms": 326.74}
+{"id": "eval-0021", "prediction": "{\"word\": \"坑\", \"word_cn\": \"坑\", \"pos\": \"noun\", \"sentence_cn\": \"街道中间有一个大坑，太深了把下水道都给弄坏了。\"}", "latency_ms": 306.8}
+{"id": "eval-0022", "prediction": "{\"word\": \"冲撞\", \"word_cn\": \"冲撞\", \"pos\": \"verb\", \"sentence_cn\": \"哈利刚刚冲进跑，一个黑暗的身影冲撞出了他面前的路。\"}", "latency_ms": 312.93}
+{"id": "eval-0023", "prediction": "{\"word\": \"deflect\", \"word_cn\": \"反射\", \"pos\": \"verb\", \"sentence_cn\": \"这本来是给自己制造一个临时的、隐形的防护墙，用来反射小伤。\"}", "latency_ms": 326.5}
+{"id": "eval-0024", "prediction": "{\"word\": \"brilliance\", \"word_cn\": \"光彩\", \"pos\": \"noun\", \"sentence_cn\": \"哈利说:'谢谢！'，他惊讶于自己的光彩，冲了过去。\"}", "latency_ms": 306.65}
+{"id": "eval-0025", "prediction": "{\"word\": \"slouch\", \"word_cn\": \"斜靠\", \"pos\": \"verb\", \"sentence_cn\": \"克鲁姆斜靠着走，不久后加入了他们。\"}", "latency_ms": 293.56}
+{"id": "eval-0026", "prediction": "{\"word\": \"走\", \"word_cn\": \"走\", \"pos\": \"verb\", \"sentence_cn\": \"他悄悄地走了，哈利没觉得奎里尔注意到他。\"}", "latency_ms": 303.64}
+{"id": "eval-0027", "prediction": "{\"word\": \"应得的\", \"word_cn\": \"应得的\", \"pos\": \"adjective\", \"sentence_cn\": \"像哈利一样，她觉得他们应该得到他们所获得的一切。\"}", "latency_ms": 316.03}
+{"id": "eval-0028", "prediction": "{\"word\": \"爆发\", \"word_cn\": \"爆发\", \"pos\": \"verb\", \"sentence_cn\": \"他犹豫了一下，然后那个他必须问的问题在他还没能阻止自己之前就爆发了。\"}", "latency_ms": 285.4}
+{"id": "eval-0029", "prediction": "{\"word\": \"移动\", \"word_cn\": \"移动\", \"pos\": \"verb\", \"sentence_cn\": \"他听到那人把箱子在墙对面移动。\"}", "latency_ms": 275.59}
+{"id": "eval-0030", "prediction": "{\"word\": \"滑翔\", \"word_cn\": \"滑翔\", \"pos\": \"verb\", \"sentence_cn\": \"然后，当他拐了个弯时，他看到——一个摄魂怪正以滑翔的方式向他靠近。\"}", "latency_ms": 339.88}
+{"id": "eval-0031", "prediction": "{\"word\": \"显著地\", \"word_cn\": \"显著地\", \"pos\": \"adverb\", \"sentence_cn\": \"然而，罗恩清了清嗓子，指向贴在甜点店门内侧的公告。\"}", "latency_ms": 335.36}
+{"id": "eval-0032", "prediction": "{\"word\": \"rescued\", \"word_cn\": \"救下\", \"pos\": \"verb\", \"sentence_cn\": \"我救下了哈利从莉莉和詹姆逊的家里。\"}", "latency_ms": 297.5}
+{"id": "eval-0033", "prediction": "{\"word\": \"压制\", \"word_cn\": \"压制\", \"pos\": \"verb\", \"sentence_cn\": \"他悄悄地在他们中间穿行，环顾四周，想象着如果他能看见哈利现在在哪里的话，杜尔奇那张猪脸会是什么表情。\"}", "latency_ms": 363.09}
+{"id": "eval-0035", "prediction": "{\"word\": \"straightening\", \"word_cn\": \"整理\", \"pos\": \"verb\", \"sentence_cn\": \"接下来，奎里尔飞快地从教室里走出来，整理好头巾。\"}", "latency_ms": 315.93}
+{"id": "eval-0036", "prediction": "{\"word\": \"清楚地\", \"word_cn\": \"清楚地\", \"pos\": \"adverb\", \"sentence_cn\": \"他抬头看着男孩们进来，然后张开双臂让他们看得更清楚。\"}", "latency_ms": 310.13}
+{"id": "eval-0037", "prediction": "{\"word\": \"清楚地\", \"word_cn\": \"清楚地\", \"pos\": \"adverb\", \"sentence_cn\": \"他抬头看着男孩们进来，然后张开双臂让他们看得更清楚。\"}", "latency_ms": 307.03}
+{"id": "eval-0038", "prediction": "{\"word\": \"galloping\", \"word_cn\": \"奔走\", \"pos\": \"verb\", \"sentence_cn\": \"突然从树林的另一侧传来更加快速的奔跑声。\"}", "latency_ms": 288.93}
+{"id": "eval-0039", "prediction": "{\"word\": \"潜入\", \"word_cn\": \"潜入\", \"pos\": \"verb\", \"sentence_cn\": \"他再也不愿意偷偷摸摸地溜达和偷看东西了。\"}", "latency_ms": 270.7}
+{"id": "eval-0040", "prediction": "{\"word\": \"郑重地\", \"word_cn\": \"郑重地\", \"pos\": \"adverb\", \"sentence_cn\": \"他拿出魔杖，轻轻触碰着羊皮纸，说：‘我郑重地发誓，我是没有做坏事的。’\"}", "latency_ms": 363.15}
+{"id": "eval-0041", "prediction": "{\"word\": \"红着脸\", \"word_cn\": \"红着脸\", \"pos\": \"adverb\", \"sentence_cn\": \"格林夫人，满脸通红地跑过来，手里拿着一张她自己做的‘祝你早日康复’的卡片。\"}", "latency_ms": 349.49}
+{"id": "eval-0042", "prediction": "{\"word\": \"rowdy\", \"word_cn\": \"喧闹的\", \"pos\": \"adjective\", \"sentence_cn\": \"一个身材丰满的女人，脸上长着一张漂亮的脸蛋，在酒吧里侍弄一群喧闹的巫师。\"}", "latency_ms": 363.34}
+{"id": "eval-0043", "prediction": "{\"word\": \"胶\", \"word_cn\": \"粘\", \"pos\": \"noun\", \"sentence_cn\": \"他觉得自己的脚像是被黏在了草地上，现在草地已经变成了天花板。\"}", "latency_ms": 303.73}
+{"id": "eval-0044", "prediction": "{\"word\": \"冲刺\", \"word_cn\": \"开始跑\", \"pos\": \"verb\", \"sentence_cn\": \"吓坏了，哈利开始冲向他的路，试图找到进入赛德里克的途径。\"}", "latency_ms": 332.98}
+{"id": "eval-0045", "prediction": "{\"word\": \" meddling\", \"word_cn\": \"插手\", \"pos\": \"verb\", \"sentence_cn\": \"哈利半路走到那里之前，他想起了自己答应过自己不要插手。\"}", "latency_ms": 310.87}
+{"id": "eval-0046", "prediction": "{\"word\": \"tagging\", \"word_cn\": \"标签\", \"pos\": \"noun\", \"sentence_cn\": \"'皮皮鲁……那个总是围着他们转的小胖子在霍格沃茨学校吗？'玛吉·罗塞默斯说。\"}", "latency_ms": 369.52}
+{"id": "eval-0047", "prediction": "{\"word\": \"潜伏\", \"word_cn\": \"潜伏\", \"pos\": \"verb\", \"sentence_cn\": \"一个标记的点显示看门猫，Mrs Norris，正在二楼潜伏。\"}", "latency_ms": 326.73}
+{"id": "eval-0048", "prediction": "{\"word\": \"悲伤的\", \"word_cn\": \"悲伤的\", \"pos\": \"adjective\", \"sentence_cn\": \"他有深沉、悲伤的声音。\"}", "latency_ms": 286.49}
+{"id": "eval-0049", "prediction": "{\"word\": \"威胁\", \"word_cn\": \"威胁\", \"pos\": \"verb\", \"sentence_cn\": \"他走近时，听到奎里尔的声音。‘不——不——不要再次了，请不要——’听起来像是有人在威胁他。\"}", "latency_ms": 342.8}
+{"id": "eval-0050", "prediction": "{\"word\": \"阴沉的\", \"word_cn\": \"阴沉的\", \"pos\": \"adjective\", \"sentence_cn\": \"他用阴沉的声音说:'我确定弗洛伦斯认为他是在为最好的事情而努力。'\"}", "latency_ms": 303.93}
+{"id": "eval-0051", "prediction": "", "error": "Unable to extract JSON from response: {\n  \"word\": \"喘息\",\n  \"word_cn\": \"喘息\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"'不,\" 哈里回道，喘息。\"\n}", "latency_ms": 293.59}
+{"id": "eval-0052", "prediction": "{\"word\": \"靠\", \"word_cn\": \"靠\", \"pos\": \"verb\", \"sentence_cn\": \"他靠着篱笆，喘着气，环顾四周。\"}", "latency_ms": 292.42}
+{"id": "eval-0053", "prediction": "{\"word\": \"喘息\", \"word_cn\": \"喘息\", \"pos\": \"verb\", \"sentence_cn\": \"他倚靠在篱笆上，屏住呼吸，四处张望。\"}", "latency_ms": 286.32}
+{"id": "eval-0054", "prediction": "{\"word\": \"令人烦恼的\", \"word_cn\": \"令人烦恼的\", \"pos\": \"adjective\", \"sentence_cn\": \"那只蜘蛛要么太大了，要么太神奇了，巫师们施展的咒语只是让它更加烦恼。\"}", "latency_ms": 343.82}
+{"id": "eval-0055", "prediction": "{\"word\": \"gleaming\", \"word_cn\": \"闪耀的\", \"pos\": \"adjective\", \"sentence_cn\": \"当他们到达那里时，他们都用一只手抓住了杯子上闪闪发光的把手。‘三下，对吗？’哈利说。'一 - 二 - 三 -'\"}", "latency_ms": 386.08}
+{"id": "eval-0056", "prediction": "{\"word\": \" scoff\", \"word_cn\": \"轻蔑地说\", \"pos\": \"verb\", \"sentence_cn\": \"他没有告诉任何人关于斯莱特林的事，因为他知道罗恩会惊慌失措，而赫敏则会轻蔑地说。\"}", "latency_ms": 354.82}
+{"id": "eval-0058", "prediction": "{\"word\": \"beaming\", \"word_cn\": \"灿烂的\", \"pos\": \"adjective\", \"sentence_cn\": \"乔治悄悄关上门，然后转过身来，灿烂地看向哈利。\"}", "latency_ms": 318.4}
+{"id": "eval-0059", "prediction": "{\"word\": \"terrified\", \"word_cn\": \"惊恐的\", \"pos\": \"adjective\", \"sentence_cn\": \"他紧紧地抓住它们，吓得直哆嗦。\"}", "latency_ms": 293.9}
+{"id": "eval-0060", "prediction": "{\"word\": \"paced\", \"word_cn\": \"踱步\", \"pos\": \"verb\", \"sentence_cn\": \"他来回踱步站在火炉前。\"}", "latency_ms": 279.34}
+{"id": "eval-0061", "prediction": "{\"word\": \"make\", \"word_cn\": \"制造\", \"pos\": \"verb\", \"sentence_cn\": \"他们怎么能够弥补这个损失？\"}", "latency_ms": 269.84}
+{"id": "eval-0062", "prediction": "{\"word\": \"尴尬的\", \"word_cn\": \"尴尬的\", \"pos\": \"adjective\", \"sentence_cn\": \"克林德看起来有些尴尬。\"}", "latency_ms": 300.92}
+{"id": "eval-0063", "prediction": "{\"word\": \"谦虚\", \"word_cn\": \"谦虚\", \"pos\": \"adjective\", \"sentence_cn\": \"总是谦虚，我们的Ced，总是绅士……但最好的人赢了。\"}", "latency_ms": 319.94}
+{"id": "eval-0064", "prediction": "{\"word\": \"shiver\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"哈利也颤抖了一下，不像其他两个那样有披风。\"}", "latency_ms": 295.56}
+{"id": "eval-0065", "prediction": "{\"word\": \"搅拌\", \"word_cn\": \"搅拌\", \"pos\": \"verb\", \"sentence_cn\": \"怀特夫人正在锅里搅拌大壶里的内容。\"}", "latency_ms": 283.96}
+{"id": "eval-0066", "prediction": "{\"word\": \"imprecise\", \"word_cn\": \"模糊的\", \"pos\": \"adjective\", \"sentence_cn\": \"教授麦格说，这是魔法的一个非常模糊的分支。\"}", "latency_ms": 316.59}
+{"id": "eval-0067", "prediction": "{\"word\": \"犯规\", \"word_cn\": \"犯规\", \"pos\": \"noun\", \"sentence_cn\": \"他喊着关于飞天棒球的犯规时，哈利粗暴地把他摇醒。\"}", "latency_ms": 316.23}
+{"id": "eval-0068", "prediction": "{\"word\": \"roughly\", \"word_cn\": \"大约地\", \"pos\": \"adverb\", \"sentence_cn\": \"他喊着关于魁地奇犯规的事情，哈利粗暴地把他摇醒。\"}", "latency_ms": 320.9}
+{"id": "eval-0069", "prediction": "{\"word\": \"绝望的\", \"word_cn\": \"绝望的\", \"pos\": \"adjective\", \"sentence_cn\": \"格兰芬多的皮特吉韦被谋杀，以及所有那些麻瓜都是一个受困和绝望的人所为。\"}", "latency_ms": 352.69}
+{"id": "eval-0070", "prediction": "{\"word\": \"cornered\", \"word_cn\": \"困窘的\", \"pos\": \"adjective\", \"sentence_cn\": \"格兰芬多的巫师们围攻了黑魔王，但没有成功。他们被黑魔王的魔法困住了，绝望地试图逃脱。\"}", "latency_ms": 373.22}
+{"id": "eval-0071", "prediction": "{\"word\": \"残忍的\", \"word_cn\": \"cruel\", \"pos\": \"adjective\", \"sentence_cn\": \"格兰芬多的皮特吉韦尔和所有那些巫师和麻瓜的谋杀，都是一个被逼到绝境、绝望的人所为的——残忍……徒劳无功。\"}", "latency_ms": 404.33}
+{"id": "eval-0072", "prediction": "{\"word\": \"whimpering\", \"word_cn\": \"呜咽\", \"pos\": \"verb\", \"sentence_cn\": \"他独自一人从图书馆回来的时候，听到前面一节教室里有人在呜咽。\"}", "latency_ms": 338.37}
+{"id": "eval-0073", "prediction": "{\"word\": \"caved\", \"word_cn\": \"塌陷\", \"pos\": \"noun\", \"sentence_cn\": \"另外三个——其中一个塌陷了，所以没有人能通过它。\"}", "latency_ms": 277.33}
+{"id": "eval-0074", "prediction": "", "error": "Unable to extract JSON from response: {\n  \"word\": \" bitterly\",\n  \"word_cn\": \"咬牙切齿地\",\n  \"pos\": \"adverb\",\n  \"sentence_cn\": \"‘我本应该那样做。’‘我是唯一一个认真对待那首歌的人！’哈利咬牙切齿地说。”\n}", "latency_ms": 352.97}
+{"id": "eval-0075", "prediction": "{\"word\": \"厚\", \"word_cn\": \"厚\", \"pos\": \"adjective\", \"sentence_cn\": \"我唯一能认真对待那首歌的人就是你!\"}", "latency_ms": 286.64}
+{"id": "eval-0076", "prediction": "{\"word\": \"twitching\", \"word_cn\": \"抽搐\", \"pos\": \"verb\", \"sentence_cn\": \"他挣扎着通过，撕裂了他的长袍，然后转过身来，看到科德奇在地上抽搐、抽动，库姆站在他的旁边。\"}", "latency_ms": 369.59}
+{"id": "eval-0077", "prediction": "{\"word\": \"jerking\", \"word_cn\": \"抽搐\", \"pos\": \"noun\", \"sentence_cn\": \"他挣扎着通过，撕裂了他的长袍，然后转过身来，看到科德里在地面上抽搐和颤抖，库姆站在他的旁边。\"}", "latency_ms": 373.56}
+{"id": "eval-0078", "prediction": "{\"word\": \"存在\", \"word_cn\": \"存在\", \"pos\": \"noun\", \"sentence_cn\": \"即便是巫师，也能感觉到他们的存在，尽管他们看不见。\"}", "latency_ms": 293.4}
+{"id": "eval-0079", "prediction": "{\"word\": \"bolted\", \"word_cn\": \"冲出去\", \"pos\": \"verb\", \"sentence_cn\": \"麦格狠狠地尖叫着，然后冲出去了——弗戈也跟着冲出去了。\"}", "latency_ms": 319.5}
+{"id": "eval-0080", "prediction": "{\"word\": \"闪烁\", \"word_cn\": \"闪现\", \"pos\": \"verb\", \"sentence_cn\": \"哈利开始沿着它跑，他的魔杖光束在草墙的阴影中闪烁和变形。\"}", "latency_ms": 331.37}
+{"id": "eval-0081", "prediction": "{\"word\": \"扭曲\", \"word_cn\": \"distort\", \"pos\": \"verb\", \"sentence_cn\": \"哈利开始沿着它跑，他的魔杖光束摇晃着，使他影子在篱笆墙上扭曲变形。\"}", "latency_ms": 345.22}
+{"id": "eval-0082", "prediction": "{\"word\": \"canter\", \"word_cn\": \"骑马\", \"pos\": \"verb\", \"sentence_cn\": \"他转过身，策马返回森林深处，留下哈利在他身后瑟缩着。\"}", "latency_ms": 320.54}
+{"id": "eval-0083", "prediction": "{\"word\": \"gape\", \"word_cn\": \"张大嘴\", \"pos\": \"verb\", \"sentence_cn\": \"哈利目瞪口呆地看着她。\"}", "latency_ms": 272.58}
+{"id": "eval-0084", "prediction": "{\"word\": \"blankly\", \"word_cn\": \"呆板地\", \"pos\": \"adverb\", \"sentence_cn\": \"他问罗恩时，显得非常呆板。\"}", "latency_ms": 287.32}
+{"id": "eval-0085", "prediction": "{\"word\": \"dash\", \"word_cn\": \" dashes\", \"pos\": \"noun\", \"sentence_cn\": \"'谢谢！' 哈里激动地跑过去。\"}", "latency_ms": 290.93}
+{"id": "eval-0086", "prediction": "{\"word\": \"眼镜\", \"word_cn\": \"眼镜\", \"pos\": \"noun\", \"sentence_cn\": \"他透过半圆形的眼镜仔细地盯着她，他的长手指轻轻地探头摸着。\"}", "latency_ms": 315.07}
+{"id": "eval-0087", "prediction": "{\"word\": \"tankard\", \"word_cn\": \"罐子\", \"pos\": \"noun\", \"sentence_cn\": \"哈利双手捧着空的罐子，滴着奶油啤酒，藏在暗处。\"}", "latency_ms": 320.29}
+{"id": "eval-0089", "prediction": "{\"word\": \"预防措施\", \"word_cn\": \"预防措施\", \"pos\": \"noun\", \"sentence_cn\": \"我们不得不找到一个安静的荒野，尽可能多地设置反巫师的预防措施。\"}", "latency_ms": 322.89}
+{"id": "eval-0091", "prediction": "{\"word\": \"while\", \"word_cn\": \"度过\", \"pos\": \"verb\", \"sentence_cn\": \"哈利、比尔和小天狼星在城堡周围散步消磨了下午的时间。\"}", "latency_ms": 277.08}
+{"id": "eval-0092", "prediction": "{\"word\": \"lifted\", \"word_cn\": \"解除\", \"pos\": \"verb\", \"sentence_cn\": \"这项措施将在皮门托克被重新抓住时解除。\"}", "latency_ms": 290.16}
+{"id": "eval-0093", "prediction": "{\"word\": \"recapture\", \"word_cn\": \"重获\", \"pos\": \"verb\", \"sentence_cn\": \"这项措施将在皮皮·布鲁克重获后解除。\"}", "latency_ms": 312.81}
+{"id": "eval-0094", "prediction": "{\"word\": \"afford\", \"word_cn\": \"负担得起\", \"pos\": \"verb\", \"sentence_cn\": \"格兰芬多队并没有退出比赛的可能，尽管他们不能承担再输一场的风险。\"}", "latency_ms": 343.24}
+{"id": "eval-0095", "prediction": "{\"word\": \"犹豫\", \"word_cn\": \"犹豫\", \"pos\": \"verb\", \"sentence_cn\": \"他犹豫了，然后他问的问题就从他的嘴里冒了出来，他还没来得及阻止自己。\"}", "latency_ms": 330.01}
+{"id": "eval-0097", "prediction": "{\"word\": \"爆炸\", \"word_cn\": \"爆炸\", \"pos\": \"verb\", \"sentence_cn\": \"他想知道是否能把它轰出去。\"}", "latency_ms": 284.78}
+{"id": "eval-0098", "prediction": "{\"word\": \"巡逻\", \"word_cn\": \"巡逻\", \"pos\": \"verb\", \"sentence_cn\": \"晚上，霍格沃茨镇的街道上将会有食死徒进行巡逻。\"}", "latency_ms": 331.86}
+{"id": "eval-0099", "prediction": "{\"word\": \"宣誓的\", \"word_cn\": \"sworn\", \"pos\": \"adjective\", \"sentence_cn\": \"我们是被宣誓的，不能和天对抗。\"}", "latency_ms": 300.1}
+{"id": "eval-0100", "prediction": "{\"word\": \"passageway\", \"word_cn\": \"通道\", \"pos\": \"noun\", \"sentence_cn\": \"他举起魔杖，念道：‘光明！’然后看到自己身处一个非常狭窄、低矮、充满泥土气息的通道。\"}", "latency_ms": 357.2}
+{"id": "eval-0101", "prediction": "{\"word\": \"难堪的\", \"word_cn\": \"难堪的\", \"pos\": \"adjective\", \"sentence_cn\": \"这给布莱克留下了非常尴尬的局面。\"}", "latency_ms": 295.65}
+{"id": "eval-0102", "prediction": "{\"word\": \"concerned\", \"word_cn\": \"担心的\", \"pos\": \"adjective\", \"sentence_cn\": \"像海伦娜一样，他似乎想专注于帮助哈利通过最后一个任务，然后再关心其他事情。\"}", "latency_ms": 344.99}
+{"id": "eval-0103", "prediction": "{\"word\": \"labelled\", \"word_cn\": \"标记的\", \"pos\": \"adjective\", \"sentence_cn\": \"在顶部左角有一个标记的点，显示邓布利多正在他的书房里踱步。\"}", "latency_ms": 351.89}
+{"id": "eval-0104", "prediction": "{\"word\": \"thought\", \"word_cn\": \"想\", \"pos\": \"verb\", \"sentence_cn\": \"我本以为我们会写些东西。\"}", "latency_ms": 266.61}
+{"id": "eval-0105", "prediction": "{\"word\": \"hated\", \"word_cn\": \"讨厌的\", \"pos\": \"adjective\", \"sentence_cn\": \"从最受欢迎和受人尊敬的人变成最被讨厌的。\"}", "latency_ms": 286.25}
+{"id": "eval-0106", "prediction": "{\"word\": \"爆发\", \"word_cn\": \"爆发\", \"pos\": \"verb\", \"sentence_cn\": \"他犹豫了一下，然后那个他必须问的问题在他还没能阻止自己之前就爆发了。‘为什么？’\"}", "latency_ms": 343.25}
+{"id": "eval-0107", "prediction": "{\"word\": \"惊愕\", \"word_cn\": \"惊愕\", \"pos\": \"noun\", \"sentence_cn\": \"他再次拿出地图，只见上面出现了一个新墨水的图象，标着‘哈利·波特’。\"}", "latency_ms": 379.87}
+{"id": "eval-0108", "prediction": "{\"word\": \"扩散\", \"word_cn\": \"扩散\", \"pos\": \"verb\", \"sentence_cn\": \"薄如蜘蛛网的墨线从乔治的魔杖触碰的地方开始蔓延开来。\"}", "latency_ms": 357.31}
+{"id": "eval-0109", "prediction": "{\"word\": \"shrilly\", \"word_cn\": \"尖声的\", \"pos\": \"adjective\", \"sentence_cn\": \"格林夫人带着自己做的‘祝你早日康复’卡片来了，除非哈利把卡片夹在水果碗里，否则它会唱得尖声刺耳。\"}", "latency_ms": 456.0}
+{"id": "eval-0110", "prediction": "{\"word\": \"曲线\", \"word_cn\": \"曲线的\", \"pos\": \"adjective\", \"sentence_cn\": \"一个曲线的、长相漂亮的女子正在酒吧里侍弄一群酒鬼。\"}", "latency_ms": 343.07}
+{"id": "eval-0111", "prediction": "{\"word\": \"严厉的\", \"word_cn\": \"严厉的\", \"pos\": \"adjective\", \"sentence_cn\": \" Cornelius Fudge 坐在 Madame Maxime 的旁边，看起来很严厉，没有说话。\"}", "latency_ms": 360.12}
+{"id": "eval-0113", "prediction": "{\"word\": \"瞥见\", \"word_cn\": \"瞥见\", \"pos\": \"verb\", \"sentence_cn\": \"哈利只看到八双闪亮的黑色眼睛，和锋利的钳子。\"}", "latency_ms": 333.26}
+{"id": "eval-0115", "prediction": "{\"word\": \"显然地\", \"word_cn\": \"显然地\", \"pos\": \"adverb\", \"sentence_cn\": \"双胞胎显然在尽可能多地偷出糖果。\"}", "latency_ms": 329.99}
+{"id": "eval-0117", "prediction": "{\"word\": \"魔咒\", \"word_cn\": \"魔法咒语\", \"pos\": \"other\", \"sentence_cn\": \"他深吸了一口气，穿过了一片被魔法咒语笼罩的雾气。\"}", "latency_ms": 356.53}
+{"id": "eval-0118", "prediction": "{\"word\": \"genial\", \"word_cn\": \"好心的，乐于助人的\", \"pos\": \"adjective\", \"sentence_cn\": \"阿莫恶狠狠地吼叫着，拍了儿子一巴掌。\"}", "latency_ms": 343.28}
+{"id": "eval-0119", "prediction": "{\"word\": \"麦穗\", \"word_cn\": \"麦穗\", \"pos\": \"noun\", \"sentence_cn\": \"怀特先生坐在桌子旁，检查一大束羊皮纸票。\"}", "latency_ms": 346.7}
+{"id": "eval-0120", "prediction": "{\"word\": \"胆怯地\", \"word_cn\": \"胆怯地\", \"pos\": \"adverb\", \"sentence_cn\": \"‘有点儿，’ 赫敏胆怯地说。\"}", "latency_ms": 356.66}
+{"id": "eval-0121", "prediction": "{\"word\": \"结论\", \"word_cn\": \"结论\", \"pos\": \"noun\", \"sentence_cn\": \"看弗杜德，因为她是巨人的一部分就对她的结论跳得出结论。\"}", "latency_ms": 345.21}
+{"id": "eval-0122", "prediction": "{\"word\": \"蜿蜒\", \"word_cn\": \"蜿蜒的\", \"pos\": \"adjective\", \"sentence_cn\": \"他举着灯笼，指着一条狭窄、蜿蜒的地面小径，消失在密林中的黑色树木中。\"}", "latency_ms": 348.37}
+{"id": "eval-0123", "prediction": "{\"word\": \"陷阱门\", \"word_cn\": \"陷阱门\", \"pos\": \"phrase\", \"sentence_cn\": \"他很慢地推开陷阱门，探出脑袋往外面看。\"}", "latency_ms": 306.16}
+{"id": "eval-0124", "prediction": "{\"word\": \"低语\", \"word_cn\": \"低语\", \"pos\": \"verb\", \"sentence_cn\": \"你知道，监狱里大多数囚犯在黑暗中自言自语。\"}", "latency_ms": 330.2}
+{"id": "eval-0125", "prediction": "{\"word\": \"下场\", \"word_cn\": \"结局，失败\", \"pos\": \"noun\", \"sentence_cn\": \"但，正如我们所知，伏地魔在小哈利·波特身上终结了自己的下场。\"}", "latency_ms": 353.29}
+{"id": "eval-0126", "prediction": "{\"word\": \"病的\", \"word_cn\": \"生病的\", \"pos\": \"adjective\", \"sentence_cn\": \"它看上去像是他生病了。\"}", "latency_ms": 343.94}
+{"id": "eval-0127", "prediction": "{\"word\": \"修补\", \"word_cn\": \"修补\", \"pos\": \"verb\", \"sentence_cn\": \"接下来，告诉我总是最后被修补的是什么？中间的中间和尽头的尽头？\"}", "latency_ms": 389.37}
+{"id": "eval-0128", "prediction": "{\"word\": \"fleetly\", \"word_cn\": \"短暂地\", \"pos\": \"adverb\", \"sentence_cn\": \"他只短暂地，自从发现自己是冠军以来，再次看到了自己举起霍格沃茨杯的形象。\"}", "latency_ms": 353.65}
+{"id": "eval-0129", "prediction": "{\"word\": \"咚咚\", \"word_cn\": \"咚咚\", \"pos\": \"other\", \"sentence_cn\": \"他的心脏在喉咙里咚咚地跳得很不舒服。\"}", "latency_ms": 329.54}
+{"id": "eval-0130", "prediction": "{\"word\": \"排泄\", \"word_cn\": \"排泄\", \"pos\": \"noun\", \"sentence_cn\": \"德姆科斯尔是被留在他们身边太久的巫师会从他身上夺走力量。\"}", "latency_ms": 400.17}
+{"id": "eval-0131", "prediction": "{\"word\": \"蜿蜒\", \"word_cn\": \"蜿蜒的\", \"pos\": \"adjective\", \"sentence_cn\": \"他举着灯笼，指着一条狭窄、蜿蜒的地面小径，消失在密林中的黑色树木中。\"}", "latency_ms": 343.56}
+{"id": "eval-0132", "prediction": "{\"word\": \"羞辱\", \"word_cn\": \"羞辱\", \"pos\": \"verb\", \"sentence_cn\": \"哈利每次想到他们，都会感到恶心和羞辱。\"}", "latency_ms": 326.14}
+{"id": "eval-0133", "prediction": "{\"word\": \"折磨\", \"word_cn\": \"折磨\", \"pos\": \"verb\", \"sentence_cn\": \"你可以想象一下这个想法会如何折磨他。\"}", "latency_ms": 333.35}
+{"id": "eval-0134", "prediction": "{\"word\": \"rumble\", \"word_cn\": \"低沉的\", \"pos\": \"adverb\", \"sentence_cn\": \"Fudge用一种低沉的声音继续说道。\"}", "latency_ms": 337.05}
+{"id": "eval-0135", "prediction": "{\"word\": \"aware\", \"word_cn\": \"知道的\", \"pos\": \"adjective\", \"sentence_cn\": \"不是很多人知道皮诺曹他们知道伏地魔要来他们家。\"}", "latency_ms": 363.25}
+{"id": "eval-0139", "prediction": "{\"word\": \"tagging\", \"word_cn\": \"标签\", \"pos\": \"noun\", \"sentence_cn\": \"'皮皮鲁……那个总是跟着他们到处跑的小胖子？'\"}", "latency_ms": 349.26}
+{"id": "eval-0140", "prediction": "{\"word\": \"间谍\", \"word_cn\": \"间谍\", \"pos\": \"noun\", \"sentence_cn\": \"他讨厌偷偷摸摸和间谍。\"}", "latency_ms": 316.57}
+{"id": "eval-0141", "prediction": "{\"word\": \"支持\", \"word_cn\": \"支持\", \"pos\": \"noun\", \"sentence_cn\": \"赫敏又回头看了看哈利，他现在正用藤蔓支撑着自己。\"}", "latency_ms": 357.13}
+{"id": "eval-0143", "prediction": "{\"word\": \"裂开\", \"word_cn\": \"裂开\", \"pos\": \"verb\", \"sentence_cn\": \"马路中间有一个坑，太深了把下面的下水道都给裂开了。\"}", "latency_ms": 328.07}
+{"id": "eval-0145", "prediction": "{\"word\": \"包裹\", \"word_cn\": \"包裹\", \"pos\": \"noun\", \"sentence_cn\": \"哈利和罗恩、赫敏分别穿着外套和围巾告别，他们被包裹在了里面。\"}", "latency_ms": 385.24}
+{"id": "eval-0146", "prediction": "{\"word\": \"bid\", \"word_cn\": \"告别\", \"pos\": \"verb\", \"sentence_cn\": \"哈利向罗恩和赫敏道别，他们被裹在斗篷里和围巾中。\"}", "latency_ms": 393.61}
+{"id": "eval-0147", "prediction": "{\"word\": \"count\", \"word_cn\": \"数\", \"pos\": \"noun\", \"sentence_cn\": \"一百步，两百步，他随着台阶的升高而忘记了数数，看着自己的脚。\"}", "latency_ms": 325.71}
+{"id": "eval-0148", "prediction": "{\"word\": \"抓到\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"他和克德鲁都抓住了一个把手。\"}", "latency_ms": 243.45}
+{"id": "eval-0149", "prediction": "{\"word\": \"紧张地\", \"word_cn\": \"nervously\", \"pos\": \"adverb\", \"sentence_cn\": \"罗纳德不安地在地下摸了摸。\"}", "latency_ms": 323.64}
+{"id": "eval-0151", "prediction": "{\"word\": \"篱笆\", \"word_cn\": \"篱笆\", \"pos\": \"noun\", \"sentence_cn\": \"他倚靠在篱笆上，喘着气。\"}", "latency_ms": 339.75}
+{"id": "eval-0153", "prediction": "{\"word\": \"抓住\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"他和克德鲁都抓住了一个把手。\"}", "latency_ms": 296.81}
+{"id": "eval-0154", "prediction": "{\"word\": \"staggered\", \"word_cn\": \"踉跄地\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利踉跄地站了起来。\"}", "latency_ms": 286.34}
+{"id": "eval-0155", "prediction": "{\"word\": \"眨眼\", \"word_cn\": \"眨眼睛\", \"pos\": \"verb\", \"sentence_cn\": \"他眨了眨眼睛，凝视着黑暗。\"}", "latency_ms": 323.47}
+{"id": "eval-0156", "prediction": "{\"word\": \"gripped\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"哈利紧紧地握住了他的魔杖。\"}", "latency_ms": 330.47}
+{"id": "eval-0157", "prediction": "{\"word\": \"brace\", \"word_cn\": \"准备\", \"pos\": \"verb\", \"sentence_cn\": \"哈利做好了迎接冲击的准备。\"}", "latency_ms": 332.61}
+{"id": "eval-0158", "prediction": "{\"word\": \"摇摆\", \"word_cn\": \"摇摆\", \"pos\": \"verb\", \"sentence_cn\": \"那棵大树在风中摇摆。\"}", "latency_ms": 246.57}
+{"id": "eval-0159", "prediction": "{\"word\": \"愤怒\", \"word_cn\": \"怒\", \"pos\": \"adjective\", \"sentence_cn\": \"他惊了一下，以为会得到叔叔的愤怒。\"}", "latency_ms": 254.25}
+{"id": "eval-0160", "prediction": "{\"word\": \"爆发\", \"word_cn\": \"爆发\", \"pos\": \"verb\", \"sentence_cn\": \"他惊了一下，以为会从叔叔那里爆发出来愤怒。\"}", "latency_ms": 329.66}
+{"id": "eval-0161", "prediction": "{\"word\": \"易怒的\", \"word_cn\": \"易怒的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利感到疲倦且易怒。\"}", "latency_ms": 363.3}
+{"id": "eval-0163", "prediction": "{\"word\": \"缩小\", \"word_cn\": \"缩小\", \"pos\": \"verb\", \"sentence_cn\": \"纽特似乎坐在他的座位上变小了。\"}", "latency_ms": 363.08}
+{"id": "eval-0164", "prediction": "{\"word\": \"impatiently\", \"word_cn\": \"生气地\", \"pos\": \"adverb\", \"sentence_cn\": \"'这不可能对得起我了。' 罗恩气愤地说道。\"}", "latency_ms": 316.07}
+{"id": "eval-0165", "prediction": "{\"word\": \"reassuring\", \"word_cn\": \"安心的\", \"pos\": \"adjective\", \"sentence_cn\": \"赫敏给了他一个安心的微笑。\"}", "latency_ms": 323.52}
+{"id": "eval-0166", "prediction": "{\"word\": \"暗淡的\", \"word_cn\": \"暗淡的\", \"pos\": \"adjective\", \"sentence_cn\": \"房间昏暗且灰尘多。\"}", "latency_ms": 340.68}
+{"id": "eval-0167", "prediction": "{\"word\": \"笨拙地\", \"word_cn\": \"笨拙地\", \"pos\": \"adverb\", \"sentence_cn\": \"他笨拙地爬上了他的魔杖。\"}", "latency_ms": 352.93}
+{"id": "eval-0168", "prediction": "{\"word\": \"阴森的\", \"word_cn\": \"阴森的\", \"pos\": \"adjective\", \"sentence_cn\": \"大厅里弥漫着一种阴森的气息。\"}", "latency_ms": 266.16}
+{"id": "eval-0169", "prediction": "{\"word\": \"握紧的\", \"word_cn\": \"握紧的\", \"pos\": \"adjective\", \"sentence_cn\": \"他握紧了拳头。\"}", "latency_ms": 253.14}
+{"id": "eval-0170", "prediction": "{\"word\": \"厌恶\", \"word_cn\": \"恶心\", \"pos\": \"adjective\", \"sentence_cn\": \"她看着他，感到非常恶心。\"}", "latency_ms": 280.17}
+{"id": "eval-0171", "prediction": "{\"word\": \"嘀咕\", \"word_cn\": \"嘀咕\", \"pos\": \"verb\", \"sentence_cn\": \"赫敏的姨妈正在小声自言自语，她正在给她治病。\"}", "latency_ms": 353.83}
+{"id": "eval-0172", "prediction": "{\"word\": \" shoved\", \"word_cn\": \"推\", \"pos\": \"verb\", \"sentence_cn\": \"麦格教授推开他，让他过去。\"}", "latency_ms": 309.34}
+{"id": "eval-0173", "prediction": "{\"word\": \"严厉地\", \"word_cn\": \"sternly\", \"pos\": \"adverb\", \"sentence_cn\": \"'那已经足够了。' McGonagall严肃地说。\"}", "latency_ms": 317.33}
+{"id": "eval-0174", "prediction": "{\"word\": \"爬\", \"word_cn\": \"爬\", \"pos\": \"verb\", \"sentence_cn\": \"他悄悄地沿着走廊爬行。\"}", "latency_ms": 326.54}
+{"id": "eval-0175", "prediction": "{\"word\": \" reluctantly\", \"word_cn\": \"勉强地\", \"pos\": \"adverb\", \"sentence_cn\": \"'好吧', 哈利勉强地说。\"}", "latency_ms": 312.65}
+{"id": "eval-0176", "prediction": "{\"word\": \"边缘\", \"word_cn\": \"边缘\", \"pos\": \"noun\", \"sentence_cn\": \"他小心翼翼地沿着狭窄的边缘前行。\"}", "latency_ms": 300.89}
+{"id": "eval-0177", "prediction": "{\"word\": \" poking\", \"word_cn\": \"戳\", \"pos\": \"verb\", \"sentence_cn\": \"我们已经够戳了。\"}", "latency_ms": 309.53}
+{"id": "eval-0178", "prediction": "{\"word\": \"痛苦地\", \"word_cn\": \"疼痛地\", \"pos\": \"adverb\", \"sentence_cn\": \"他痛苦地落在肩膀上。\"}", "latency_ms": 283.52}
+{"id": "eval-0180", "prediction": "{\"word\": \"匆忙地\", \"word_cn\": \"hastily\", \"pos\": \"adverb\", \"sentence_cn\": \"‘我不该这么说的，’罗恩匆匆地说。\"}", "latency_ms": 276.16}
+{"id": "eval-0181", "prediction": "{\"word\": \"滑下\", \"word_cn\": \"滑下\", \"pos\": \"verb\", \"sentence_cn\": \"他滑下了一段相当长的距离，感觉像是在滑下一块石头。\"}", "latency_ms": 323.06}
+{"id": "eval-0182", "prediction": "{\"word\": \"撤回\", \"word_cn\": \"撤回\", \"pos\": \"verb\", \"sentence_cn\": \"我认为我们应该撤回并重新考虑我们的策略。\"}", "latency_ms": 303.45}
+{"id": "eval-0183", "prediction": "{\"word\": \"重新考虑\", \"word_cn\": \"重新考虑\", \"pos\": \"verb\", \"sentence_cn\": \"我认为我们应该撤退并重新考虑我们的策略。\"}", "latency_ms": 284.44}
+{"id": "eval-0184", "prediction": "{\"word\": \"冲刺\", \"word_cn\": \"冲刺\", \"pos\": \"verb\", \"sentence_cn\": \"吓坏了，哈利开始冲上他的路。\"}", "latency_ms": 284.96}
+{"id": "eval-0185", "prediction": "{\"word\": \"muffled\", \"word_cn\": \"闷声\", \"pos\": \"adjective\", \"sentence_cn\": \"他能听到从门后传来的声音很轻，听起来像是被闷住了声音。\"}", "latency_ms": 370.23}
+{"id": "eval-0186", "prediction": "{\"word\": \"歇斯底里\", \"word_cn\": \"歇斯底里\", \"pos\": \"adjective\", \"sentence_cn\": \"她放声大笑，显得非常歇斯底里。\"}", "latency_ms": 363.97}
+{"id": "eval-0187", "prediction": "{\"word\": \"怒视\", \"word_cn\": \"怒视\", \"pos\": \"verb\", \"sentence_cn\": \"斯内普瞪着他们，怒视着他们。\"}", "latency_ms": 389.55}
+{"id": "eval-0188", "prediction": "{\"word\": \"小心翼翼地\", \"word_cn\": \"小心谨慎地\", \"pos\": \"adverb\", \"sentence_cn\": \"他小心翼翼地看着他们。\"}", "latency_ms": 350.3}
+{"id": "eval-0189", "prediction": "{\"word\": \"分心的\", \"word_cn\": \"分心的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利感到太分心，无法集中精力做作业。\"}", "latency_ms": 406.65}
+{"id": "eval-0190", "prediction": "{\"word\": \"grinned\", \"word_cn\": \"咧嘴笑\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩冲他咧嘴笑了。\"}", "latency_ms": 289.46}
+{"id": "eval-0191", "prediction": "{\"word\": \"缩小\", \"word_cn\": \"缩小\", \"pos\": \"verb\", \"sentence_cn\": \"纽特似乎坐在他的座位上变小了。\"}", "latency_ms": 290.01}
+{"id": "eval-0192", "prediction": "{\"word\": \"impatiently\", \"word_cn\": \"生气地\", \"pos\": \"adverb\", \"sentence_cn\": \"'这不可能对得起我了。' 罗恩气愤地说道。\"}", "latency_ms": 399.76}
+{"id": "eval-0193", "prediction": "{\"word\": \"阻止\", \"word_cn\": \"阻止\", \"pos\": \"verb\", \"sentence_cn\": \"她无法阻止自己笑。\"}", "latency_ms": 333.41}
+{"id": "eval-0194", "prediction": "{\"word\": \"跛行\", \"word_cn\": \"走路瘸了\", \"pos\": \"adverb\", \"sentence_cn\": \"这只老狗走着有些跛，向他们走了过来。\"}", "latency_ms": 333.69}
+{"id": "eval-0195", "prediction": "{\"word\": \"摇摆\", \"word_cn\": \"摇摆\", \"pos\": \"verb\", \"sentence_cn\": \"那棵大树在风中摇摆。\"}", "latency_ms": 349.96}
+{"id": "eval-0196", "prediction": "{\"word\": \"愤怒\", \"word_cn\": \"怒\", \"pos\": \"adjective\", \"sentence_cn\": \"他惊了一下，以为会得到叔叔的愤怒。\"}", "latency_ms": 359.65}
+{"id": "eval-0197", "prediction": "{\"word\": \"relieved\", \"word_cn\": \"释然的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利感到非常释然。\"}", "latency_ms": 339.86}
+{"id": "eval-0198", "prediction": "{\"word\": \"frantically\", \"word_cn\": \"疯狂地\", \"pos\": \"adverb\", \"sentence_cn\": \"他用魔杖疯狂地挥舞。\"}", "latency_ms": 293.85}
+{"id": "eval-0199", "prediction": "{\"word\": \"呻吟\", \"word_cn\": \"呻吟\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩痛苦地呻吟着。\"}", "latency_ms": 302.73}
+{"id": "eval-0200", "prediction": "{\"word\": \"聚集\", \"word_cn\": \"聚集\", \"pos\": \"verb\", \"sentence_cn\": \"学生们在公共房间聚集。\"}", "latency_ms": 263.3}
+{"id": "eval-0201", "prediction": "{\"word\": \"grunt\", \"word_cn\": \"哼\", \"pos\": \"verb\", \"sentence_cn\": \"'好,' Ron哼了一声。\"}", "latency_ms": 340.11}
+{"id": "eval-0202", "prediction": "{\"word\": \"易怒的\", \"word_cn\": \"易怒的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利感到疲倦且易怒。\"}", "latency_ms": 326.63}
+{"id": "eval-0204", "prediction": "{\"word\": \"venture\", \"word_cn\": \"冒险\", \"pos\": \"verb\", \"sentence_cn\": \"'也许这是陷阱，'罗恩冒险地说。\"}", "latency_ms": 332.99}
+{"id": "eval-0205", "prediction": "{\"word\": \" bitterly\", \"word_cn\": \"咬牙切齿地\", \"pos\": \"adverb\", \"sentence_cn\": \"‘我本应该那样做，’哈利咬牙切齿地说。\"}", "latency_ms": 357.32}
+{"id": "eval-0206", "prediction": "{\"word\": \"明显的\", \"word_cn\": \"obvious\", \"pos\": \"adjective\", \"sentence_cn\": \"答案很明显。\"}", "latency_ms": 319.39}
+{"id": "eval-0207", "prediction": "{\"word\": \"潜伏\", \"word_cn\": \"潜伏\", \"pos\": \"verb\", \"sentence_cn\": \"他有一种感觉，似乎有人在阴影中潜伏。\"}", "latency_ms": 359.95}
+{"id": "eval-0208", "prediction": "{\"word\": \"跟踪\", \"word_cn\": \"跟踪\", \"pos\": \"verb\", \"sentence_cn\": \"那只猫在跟踪一只鸟。\"}", "latency_ms": 267.73}
+{"id": "eval-0209", "prediction": "{\"word\": \"gaze\", \"word_cn\": \"凝视\", \"pos\": \"verb\", \"sentence_cn\": \"他看着她。\"}", "latency_ms": 359.31}
+{"id": "eval-0210", "prediction": "{\"word\": \"手势\", \"word_cn\": \"手势\", \"pos\": \"phrase\", \"sentence_cn\": \"他向门口做了个手势。\"}", "latency_ms": 319.94}
+{"id": "eval-0211", "prediction": "{\"word\": \" reluctantly\", \"word_cn\": \"勉强地\", \"pos\": \"adverb\", \"sentence_cn\": \"'好吧', 哈利勉强地说。\"}", "latency_ms": 329.52}
+{"id": "eval-0212", "prediction": "{\"word\": \"边缘\", \"word_cn\": \"边缘\", \"pos\": \"noun\", \"sentence_cn\": \"他小心翼翼地沿着狭窄的边缘前行。\"}", "latency_ms": 307.8}
+{"id": "eval-0213", "prediction": "{\"word\": \"scrambled\", \"word_cn\": \"混乱的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利慌忙站了起来。\"}", "latency_ms": 328.99}
+{"id": "eval-0214", "prediction": "{\"word\": \"皱眉\", \"word_cn\": \"皱眉\", \"pos\": \"verb\", \"sentence_cn\": \"赫敏皱起眉头看着那本书。\"}", "latency_ms": 339.67}
+{"id": "eval-0215", "prediction": "{\"word\": \"grinned\", \"word_cn\": \"咧嘴笑\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩冲他咧嘴笑了。\"}", "latency_ms": 333.06}
+{"id": "eval-0216", "prediction": "", "error": "Unable to extract JSON from response: {\n  \"word\": \"snapped\",\n  \"word_cn\": \" snapping\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"'What?'\" + \" Snape\" + \" snapped.\" + \" 'What?\"\"\n}", "latency_ms": 303.49}
+{"id": "eval-0217", "prediction": "{\"word\": \" slamming\", \"word_cn\": \"砰地关上\", \"pos\": \"phrase\", \"sentence_cn\": \"他冲出去，把门重重地关上了。\"}", "latency_ms": 363.4}
+{"id": "eval-0218", "prediction": "{\"word\": \"走\", \"word_cn\": \"走\", \"pos\": \"verb\", \"sentence_cn\": \"他跨过房间。\"}", "latency_ms": 276.9}
+{"id": "eval-0219", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"她的手微微颤抖着。\"}", "latency_ms": 313.42}
+{"id": "eval-0220", "prediction": "{\"word\": \"sighed\", \"word_cn\": \"叹气\", \"pos\": \"verb\", \"sentence_cn\": \"‘我猜是这样吧，’赫敏叹了口气。\"}", "latency_ms": 360.13}
+{"id": "eval-0221", "prediction": "{\"word\": \"yanking\", \"word_cn\": \"拉扯\", \"pos\": \"verb\", \"sentence_cn\": \"他抓住她的手，用力把她拉了起来。\"}", "latency_ms": 353.43}
+{"id": "eval-0222", "prediction": "{\"word\": \"crane\", \"word_cn\": \"伸脖子\", \"pos\": \"verb\", \"sentence_cn\": \"他伸着脖子去看人群。\"}", "latency_ms": 326.0}
+{"id": "eval-0223", "prediction": "{\"word\": \"怦然心动\", \"word_cn\": \"怦然心动\", \"pos\": \"adverb\", \"sentence_cn\": \"他的心脏在怦然跳动。\"}", "latency_ms": 334.0}
+{"id": "eval-0224", "prediction": "{\"word\": \"mockingly\", \"word_cn\": \"嘲弄地\", \"pos\": \"adverb\", \"sentence_cn\": \"‘害怕，是吗？’麦格怪异地嘲弄地说。\"}", "latency_ms": 332.78}
+{"id": "eval-0225", "prediction": "{\"word\": \"蹒跚\", \"word_cn\": \"蹒跚\", \"pos\": \"verb\", \"sentence_cn\": \"他蹒跚着走下黑暗的走廊。\"}", "latency_ms": 320.16}
+{"id": "eval-0226", "prediction": "{\"word\": \"恳求\", \"word_cn\": \"恳求\", \"pos\": \"verb\", \"sentence_cn\": \"她的眼睛在恳求。\"}", "latency_ms": 306.95}
+{"id": "eval-0227", "prediction": "{\"word\": \" slamming \", \"word_cn\": \"砰地关上\", \"pos\": \"phrase\", \"sentence_cn\": \"罗恩重重地把书合上了。\"}", "latency_ms": 319.6}
+{"id": "eval-0228", "prediction": "{\"word\": \"lurched\", \"word_cn\": \"突然\", \"pos\": \"adverb\", \"sentence_cn\": \"公交车突然停了下来。\"}", "latency_ms": 316.2}
+{"id": "eval-0229", "prediction": "{\"word\": \"staggered\", \"word_cn\": \"踉跄地\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利踉跄地退后。\"}", "latency_ms": 383.9}
+{"id": "eval-0230", "prediction": "{\"word\": \"紧紧地\", \"word_cn\": \"紧紧地\", \"pos\": \"adverb\", \"sentence_cn\": \"他紧紧地握住了他的魔杖。\"}", "latency_ms": 310.52}
+{"id": "eval-0231", "prediction": "{\"word\": \"gravely\", \"word_cn\": \"严肃地\", \"pos\": \"adverb\", \"sentence_cn\": \"邓布利多严肃地点了点头。\"}", "latency_ms": 293.02}
+{"id": "eval-0232", "prediction": "{\"word\": \"trudged\", \"word_cn\": \"蹒跚地走\", \"pos\": \"verb\", \"sentence_cn\": \"他们蹒跚地走上楼梯。\"}", "latency_ms": 365.57}
+{"id": "eval-0233", "prediction": "", "error": "Invalid JSON: Expecting ',' delimiter: line 5 column 26 (char 83); extracted={\n  \"word\": \"hissed\",\n  \"word_cn\": \"嘶吼\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"'安静',\" + \"Snape嘶吼道。\"\n}", "latency_ms": 283.34}
+{"id": "eval-0234", "prediction": "{\"word\": \"蠕动\", \"word_cn\": \"蠕动\", \"pos\": \"verb\", \"sentence_cn\": \"那条虫子在手里蠕动。\"}", "latency_ms": 333.96}
+{"id": "eval-0235", "prediction": "{\"word\": \"嘀咕\", \"word_cn\": \"嘀咕\", \"pos\": \"verb\", \"sentence_cn\": \"那位老人在自言自语。\"}", "latency_ms": 309.84}
+{"id": "eval-0236", "prediction": "{\"word\": \"瞥了一眼\", \"word_cn\": \"瞥了一眼\", \"pos\": \"verb\", \"sentence_cn\": \"她转过身去瞥了一眼。\"}", "latency_ms": 356.63}
+{"id": "eval-0237", "prediction": "{\"word\": \"nudging\", \"word_cn\": \"轻推\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩轻轻地碰了他一下。\"}", "latency_ms": 336.07}
+{"id": "eval-0238", "prediction": "", "error": "Invalid JSON: Illegal trailing comma before end of object: line 5 column 27 (char 85); extracted={\n  \"word\": \"snarled\",\n  \"word_cn\": \"咆哮\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"'给我让开！'\",\n}", "latency_ms": 313.84}
+{"id": "eval-0239", "prediction": "{\"word\": \"wailing\", \"word_cn\": \"哭泣\", \"pos\": \"verb\", \"sentence_cn\": \"那个婴儿大声哭了起来。\"}", "latency_ms": 326.66}
+{"id": "eval-0240", "prediction": "{\"word\": \"flail\", \"word_cn\": \"挥舞\", \"pos\": \"verb\", \"sentence_cn\": \"他疯狂地挥舞着双臂。\"}", "latency_ms": 383.02}
+{"id": "eval-0241", "prediction": "{\"word\": \"grabbed\", \"word_cn\": \"抓\", \"pos\": \"verb\", \"sentence_cn\": \"哈利抓住了他的手臂。\"}", "latency_ms": 273.52}
+{"id": "eval-0242", "prediction": "{\"word\": \"gnawing\", \"word_cn\": \"折磨\", \"pos\": \"verb\", \"sentence_cn\": \"他能感觉到什么东西在自己体内折磨。\"}", "latency_ms": 306.0}
+{"id": "eval-0243", "prediction": "{\"word\": \"squirmed\", \"word_cn\": \"扭动\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩在座位上扭动起来。\"}", "latency_ms": 280.07}
+{"id": "eval-0244", "prediction": "{\"word\": \"摸索\", \"word_cn\": \"摸索\", \"pos\": \"verb\", \"sentence_cn\": \"他摸黑沿着墙摸索。\"}", "latency_ms": 313.36}
+{"id": "eval-0246", "prediction": "{\"word\": \"凝视\", \"word_cn\": \"凝视\", \"pos\": \"verb\", \"sentence_cn\": \"哈利站在那里，凝视着地图。\"}", "latency_ms": 306.44}
+{"id": "eval-0247", "prediction": "{\"word\": \"戳\", \"word_cn\": \"戳\", \"pos\": \"verb\", \"sentence_cn\": \"她在他肋骨上戳了他一下。\"}", "latency_ms": 324.57}
+{"id": "eval-0249", "prediction": "{\"word\": \"yelled\", \"word_cn\": \"大喊\", \"pos\": \"verb\", \"sentence_cn\": \"'Impedimenta!' 哈利大喊。\"}", "latency_ms": 355.42}
+{"id": "eval-0250", "prediction": "{\"word\": \"咚咚\", \"word_cn\": \"咚咚\", \"pos\": \"adverb\", \"sentence_cn\": \"他的心脏咚咚地跳动着。\"}", "latency_ms": 350.44}
+{"id": "eval-0251", "prediction": "{\"word\": \"垂\", \"word_cn\": \"垂\", \"pos\": \"verb\", \"sentence_cn\": \"弗雷德·韦斯莱的头垂在阿莉卡·辛普森肩上。\"}", "latency_ms": 336.74}
+{"id": "eval-0252", "prediction": "{\"word\": \" slamming \", \"word_cn\": \"砰地关上\", \"pos\": \"phrase\", \"sentence_cn\": \"罗恩砰地把书合上了。\"}", "latency_ms": 309.5}
+{"id": "eval-0253", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩把那只颤抖的啮齿类生物塞回了口袋里。\"}", "latency_ms": 326.47}
+{"id": "eval-0254", "prediction": "{\"word\": \"直\", \"word_cn\": \"直\", \"pos\": \"adverb\", \"sentence_cn\": \"罗恩把颤抖的啮齿类动物塞回了口袋里，然后站了起来。\"}", "latency_ms": 383.61}
+{"id": "eval-0255", "prediction": "{\"word\": \"按摩\", \"word_cn\": \"按摩\", \"pos\": \"noun\", \"sentence_cn\": \"罗恩把颤抖的啮齿类动物塞回了口袋里，揉了揉他的头。\"}", "latency_ms": 369.84}
+{"id": "eval-0256", "prediction": "{\"word\": \"沉\", \"word_cn\": \"沉\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利重重地坐在镜子前面的地板上。\"}", "latency_ms": 343.56}
+{"id": "eval-0257", "prediction": "{\"word\": \"seized\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"哈利抓起放在他身边的斯莱特林魔蛇的牙，直接插进书的心脏。\"}", "latency_ms": 364.71}
+{"id": "eval-0258", "prediction": "{\"word\": \" plunged\", \"word_cn\": \"冲进\", \"pos\": \"verb\", \"sentence_cn\": \"哈利抓住地板上的一根斯莱特林魔蛇牙，直接插进了书的心脏。\"}", "latency_ms": 383.06}
+{"id": "eval-0259", "prediction": "{\"word\": \"fuming\", \"word_cn\": \"愤怒的\", \"pos\": \"adjective\", \"sentence_cn\": \"Ron几乎和做家庭作业一样生气，他把《标准魔法书》第2版关上了。\"}", "latency_ms": 346.6}
+{"id": "eval-0260", "prediction": "{\"word\": \"喘气\", \"word_cn\": \"喘气\", \"pos\": \"verb\", \"sentence_cn\": \"哈利屏住呼吸，喘着气。\"}", "latency_ms": 353.91}
+{"id": "eval-0261", "prediction": "{\"word\": \"怒视\", \"word_cn\": \"怒视\", \"pos\": \"verb\", \"sentence_cn\": \"斯内普瞪了他一眼。\"}", "latency_ms": 332.87}
+{"id": "eval-0262", "prediction": "", "error": "Invalid JSON: Expecting ',' delimiter: line 5 column 29 (char 91); extracted={\n  \"word\": \"stammered\",\n  \"word_cn\": \"结巴地说\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"我——我不行的，\" 结巴地说。\n}", "latency_ms": 376.03}
+{"id": "eval-0263", "prediction": "{\"word\": \"闷热的\", \"word_cn\": \"闷热的\", \"pos\": \"adjective\", \"sentence_cn\": \"房间又热又闷。\"}", "latency_ms": 340.19}
+{"id": "eval-0264", "prediction": "{\"word\": \"抓着\", \"word_cn\": \"抓着\", \"pos\": \"verb\", \"sentence_cn\": \"哈利双手紧握着魔杖。\"}", "latency_ms": 337.18}
+{"id": "eval-0265", "prediction": "{\"word\": \" shoved\", \"word_cn\": \"推\", \"pos\": \"verb\", \"sentence_cn\": \"麦格教授推开他，让他过去。\"}", "latency_ms": 289.4}
+{"id": "eval-0266", "prediction": "{\"word\": \"爬\", \"word_cn\": \"爬\", \"pos\": \"verb\", \"sentence_cn\": \"他悄悄地沿着走廊爬行。\"}", "latency_ms": 236.39}
+{"id": "eval-0267", "prediction": "{\"word\": \"蹲下\", \"word_cn\": \"蹲下\", \"pos\": \"verb\", \"sentence_cn\": \"哈利躲在墙壁后面蹲下。\"}", "latency_ms": 273.44}
+{"id": "eval-0268", "prediction": "", "error": "Invalid JSON: Illegal trailing comma before end of object: line 5 column 34 (char 96); extracted={\n  \"word\": \"whispered\",\n  \"word_cn\": \"低语\",\n  \"pos\": \"adverb\",\n  \"sentence_cn\": \"'这是什么？' 肯定是低语。\",\n}", "latency_ms": 297.29}
+{"id": "eval-0269", "prediction": "{\"word\": \"staggered\", \"word_cn\": \"踉跄地\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利踉跄地站了起来。\"}", "latency_ms": 349.8}
+{"id": "eval-0270", "prediction": "{\"word\": \"眨眼\", \"word_cn\": \"眨眼睛\", \"pos\": \"verb\", \"sentence_cn\": \"他眨了眨眼睛，凝视着黑暗。\"}", "latency_ms": 353.27}
+{"id": "eval-0271", "prediction": "{\"word\": \"gripped\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"哈利紧紧地握住了他的魔杖。\"}", "latency_ms": 342.63}
+{"id": "eval-0272", "prediction": "{\"word\": \"结实的\", \"word_cn\": \"结实的\", \"pos\": \"adjective\", \"sentence_cn\": \"这张桌子看起来很结实。\"}", "latency_ms": 320.07}
+{"id": "eval-0273", "prediction": "{\"word\": \"peered\", \"word_cn\": \"凝视\", \"pos\": \"verb\", \"sentence_cn\": \"他透过黑暗中凝视。\"}", "latency_ms": 317.15}
+{"id": "eval-0274", "prediction": "{\"word\": \"flatten\", \"word_cn\": \"扁平化\", \"pos\": \"verb\", \"sentence_cn\": \"他贴着墙壁扁平化了自己。\"}", "latency_ms": 253.03}
+{"id": "eval-0275", "prediction": "{\"word\": \" muttered\", \"word_cn\": \"嘀咕\", \"pos\": \"verb\", \"sentence_cn\": \"哈利嘟囔着说：‘光亮。'\"}", "latency_ms": 246.99}
+{"id": "eval-0276", "prediction": "{\"word\": \"snatched\", \"word_cn\": \"抓走\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩一把抓住了那封信。\"}", "latency_ms": 305.8}
+{"id": "eval-0277", "prediction": "{\"word\": \"tugging\", \"word_cn\": \"拉扯\", \"pos\": \"verb\", \"sentence_cn\": \"哈利在拽着他的袖子。\"}", "latency_ms": 283.6}
+{"id": "eval-0278", "prediction": "{\"word\": \"挤进\", \"word_cn\": \"挤进\", \"pos\": \"phrase\", \"sentence_cn\": \"他挤进了狭窄的缝隙。\"}", "latency_ms": 293.16}
+{"id": "eval-0279", "prediction": "{\"word\": \"摇摆\", \"word_cn\": \"摇摆\", \"pos\": \"verb\", \"sentence_cn\": \"那棵大树在风中摇摆。\"}", "latency_ms": 306.78}
+{"id": "eval-0280", "prediction": "{\"word\": \"愤怒\", \"word_cn\": \"怒\", \"pos\": \"adjective\", \"sentence_cn\": \"他惊了一下，以为会得到叔叔的愤怒。\"}", "latency_ms": 336.39}
+{"id": "eval-0281", "prediction": "{\"word\": \"抗议\", \"word_cn\": \"抗议\", \"pos\": \"verb\", \"sentence_cn\": \"'但是那不公平！' 罗恩抗议道。\"}", "latency_ms": 310.74}
+{"id": "eval-0282", "prediction": "{\"word\": \"relieved\", \"word_cn\": \"释然的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利感到非常释然。\"}", "latency_ms": 309.82}
+{"id": "eval-0283", "prediction": "{\"word\": \"frantically\", \"word_cn\": \"疯狂地\", \"pos\": \"adverb\", \"sentence_cn\": \"他用魔杖疯狂地挥舞。\"}", "latency_ms": 340.13}
+{"id": "eval-0284", "prediction": "{\"word\": \"呻吟\", \"word_cn\": \"呻吟\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩痛苦地呻吟着。\"}", "latency_ms": 356.16}
+{"id": "eval-0285", "prediction": "{\"word\": \"聚集\", \"word_cn\": \"聚集\", \"pos\": \"verb\", \"sentence_cn\": \"学生们在公共房间聚集。\"}", "latency_ms": 269.6}
+{"id": "eval-0286", "prediction": "{\"word\": \"grunt\", \"word_cn\": \"哼\", \"pos\": \"verb\", \"sentence_cn\": \"'好,' Ron哼了一声。\"}", "latency_ms": 290.19}
+{"id": "eval-0287", "prediction": "{\"word\": \"嫉妒\", \"word_cn\": \"jealousy\", \"pos\": \"noun\", \"sentence_cn\": \"麦格的眼神中充满了嫉妒。\"}", "latency_ms": 329.8}
+{"id": "eval-0288", "prediction": "{\"word\": \"darted\", \"word_cn\": \"奔跑\", \"pos\": \"verb\", \"sentence_cn\": \"哈利像只兔子一样跑到了柱子后面。\"}", "latency_ms": 340.25}
+{"id": "eval-0289", "prediction": "{\"word\": \"wretched\", \"word_cn\": \"可恶的\", \"pos\": \"adjective\", \"sentence_cn\": \"他感到非常可恶。\"}", "latency_ms": 330.65}
+{"id": "eval-0291", "prediction": "{\"word\": \"growled\", \"word_cn\": \"吼\", \"pos\": \"verb\", \"sentence_cn\": \"赫敏，你再不听话我就要让你知道我的厉害了！\"}", "latency_ms": 296.11}
+{"id": "eval-0292", "prediction": "{\"word\": \"推进\", \"word_cn\": \"推进\", \"pos\": \"verb\", \"sentence_cn\": \"他把信塞进哈利的手里。\"}", "latency_ms": 243.48}
+{"id": "eval-0293", "prediction": "{\"word\": \"乱爬\", \"word_cn\": \"乱爬\", \"pos\": \"verb\", \"sentence_cn\": \"他们正在乱爬上岸。\"}", "latency_ms": 303.14}
+{"id": "eval-0294", "prediction": "{\"word\": \"盯着\", \"word_cn\": \"盯着\", \"pos\": \"verb\", \"sentence_cn\": \"哈利瞪大眼睛看着他，张着嘴。\"}", "latency_ms": 321.58}
+{"id": "eval-0295", "prediction": "{\"word\": \"晕\", \"word_cn\": \"晕\", \"pos\": \"adjective\", \"sentence_cn\": \"这个地方弥漫着一股鱼香，很浓烈。\"}", "latency_ms": 281.22}
+{"id": "eval-0296", "prediction": "{\"word\": \"停留\", \"word_cn\": \"停留\", \"pos\": \"verb\", \"sentence_cn\": \"这个地方弥漫着鱼香的余味。\"}", "latency_ms": 306.38}
+{"id": "eval-0297", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"她的声音在颤抖。\"}", "latency_ms": 290.41}
+{"id": "eval-0298", "prediction": "{\"word\": \"darting\", \"word_cn\": \"飞快地\", \"pos\": \"adverb\", \"sentence_cn\": \"他的眼睛在房间里快速地转动。\"}", "latency_ms": 339.6}
+{"id": "eval-0299", "prediction": "{\"word\": \"flail\", \"word_cn\": \"挥舞\", \"pos\": \"verb\", \"sentence_cn\": \"他疯狂地挥舞着双臂。\"}", "latency_ms": 348.77}
+{"id": "eval-0300", "prediction": "{\"word\": \"snatched\", \"word_cn\": \"抓起\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩一把抓起了那张纸。\"}", "latency_ms": 321.27}
+{"id": "eval-0301", "prediction": "{\"word\": \"cling\", \"word_cn\": \"抓\", \"pos\": \"verb\", \"sentence_cn\": \"她紧紧地抓住了他的手臂。\"}", "latency_ms": 306.93}
+{"id": "eval-0302", "prediction": "{\"word\": \"跌倒\", \"word_cn\": \"跌倒\", \"pos\": \"verb\", \"sentence_cn\": \"他绊倒在了一根植物上。\"}", "latency_ms": 323.59}
+{"id": "eval-0303", "prediction": "{\"word\": \"hiss\", \"word_cn\": \"嘶\", \"pos\": \"other\", \"sentence_cn\": \"他听到身后传来轻微的嘶声。\"}", "latency_ms": 322.7}
+{"id": "eval-0304", "prediction": "{\"word\": \"笨重的\", \"word_cn\": \"笨重的\", \"pos\": \"adjective\", \"sentence_cn\": \"那个巨人正笨重地向他们走来。\"}", "latency_ms": 309.84}
+{"id": "eval-0305", "prediction": "{\"word\": \"screeched\", \"word_cn\": \"尖叫\", \"pos\": \"verb\", \"sentence_cn\": \"那只乌鸦尖叫着飞走了。\"}", "latency_ms": 310.65}
+{"id": "eval-0306", "prediction": "{\"word\": \"烦恼\", \"word_cn\": \"烦恼\", \"pos\": \"noun\", \"sentence_cn\": \"他试图隐藏自己的烦恼。\"}", "latency_ms": 302.56}
+{"id": "eval-0307", "prediction": "{\"word\": \"抓\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"他伸手去抓住把手。\"}", "latency_ms": 320.64}
+{"id": "eval-0308", "prediction": "{\"word\": \"呜咽\", \"word_cn\": \"呜咽\", \"pos\": \"verb\", \"sentence_cn\": \"那只狗发出了一声呜咽。\"}", "latency_ms": 319.83}
+{"id": "eval-0309", "prediction": "{\"word\": \"折叠\", \"word_cn\": \"折叠\", \"pos\": \"verb\", \"sentence_cn\": \"他小心翼翼地折叠了信件。\"}", "latency_ms": 269.46}
+{"id": "eval-0310", "prediction": "{\"word\": \"clatter\", \"word_cn\": \"叮当声\", \"pos\": \"noun\", \"sentence_cn\": \"他身后传来一阵叮当声。\"}", "latency_ms": 253.32}
+{"id": "eval-0311", "prediction": "{\"word\": \" shoved\", \"word_cn\": \"塞\", \"pos\": \"verb\", \"sentence_cn\": \"哈利把羊皮纸塞进了他的包里。\"}", "latency_ms": 280.23}
+{"id": "eval-0312", "prediction": "{\"word\": \"狭隘地\", \"word_cn\": \"狭隘地\", \"pos\": \"adverb\", \"sentence_cn\": \"他非常谨慎，几乎没被击中。\"}", "latency_ms": 362.11}
+{"id": "eval-0313", "prediction": "{\"word\": \"gripped\", \"word_cn\": \"抓住\", \"pos\": \"verb\", \"sentence_cn\": \"哈利紧紧地抓住了桌子的边缘。\"}", "latency_ms": 274.75}
+{"id": "eval-0314", "prediction": "{\"word\": \"tugged\", \"word_cn\": \"拉\", \"pos\": \"verb\", \"sentence_cn\": \"她拉了他衣袖。\"}", "latency_ms": 312.75}
+{"id": "eval-0315", "prediction": "{\"word\": \"lunged\", \"word_cn\": \"冲过去\", \"pos\": \"verb\", \"sentence_cn\": \"那只生物冲过去袭击了他。\"}", "latency_ms": 243.84}
+{"id": "eval-0316", "prediction": "{\"word\": \"窥视\", \"word_cn\": \"窥视\", \"pos\": \"verb\", \"sentence_cn\": \"他透过窗帘窥视。\"}", "latency_ms": 239.86}
+{"id": "eval-0317", "prediction": "{\"word\": \" plunges \", \"word_cn\": \" 沉入\", \"pos\": \"verb\", \"sentence_cn\": \"骑士将他的剑插进龙的嘴里。\"}", "latency_ms": 330.31}
+{"id": "eval-0318", "prediction": "{\"word\": \"扫视\", \"word_cn\": \"扫视\", \"pos\": \"verb\", \"sentence_cn\": \"海格不停地在桌子旁边扫视着她。\"}", "latency_ms": 312.5}
+{"id": "eval-0320", "prediction": "{\"word\": \"clasped\", \"word_cn\": \"握着的\", \"pos\": \"phrase\", \"sentence_cn\": \"他双手紧握在一起。\"}", "latency_ms": 343.45}
+{"id": "eval-0321", "prediction": "{\"word\": \"握紧的\", \"word_cn\": \"握紧的\", \"pos\": \"adjective\", \"sentence_cn\": \"他握紧了拳头。\"}", "latency_ms": 320.51}
+{"id": "eval-0322", "prediction": "{\"word\": \"厌恶\", \"word_cn\": \"恶心\", \"pos\": \"adjective\", \"sentence_cn\": \"她看着他，感到非常恶心。\"}", "latency_ms": 299.45}
+{"id": "eval-0323", "prediction": "{\"word\": \" reluctant\", \"word_cn\": \"犹豫的\", \"pos\": \"adjective\", \"sentence_cn\": \"他不愿意离开。\"}", "latency_ms": 269.68}
+{"id": "eval-0324", "prediction": "{\"word\": \"瞥见\", \"word_cn\": \"瞥见\", \"pos\": \"verb\", \"sentence_cn\": \"他瞥见了什么东西在移动。\"}", "latency_ms": 293.23}
+{"id": "eval-0325", "prediction": "{\"word\": \"爬\", \"word_cn\": \"爬\", \"pos\": \"verb\", \"sentence_cn\": \"他悄悄地爬上楼梯。\"}", "latency_ms": 303.85}
+{"id": "eval-0326", "prediction": "{\"word\": \"绝望\", \"word_cn\": \"绝望\", \"pos\": \"adjective\", \"sentence_cn\": \"他感到一阵绝望。\"}", "latency_ms": 316.76}
+{"id": "eval-0327", "prediction": "{\"word\": \"染上\", \"word_cn\": \"染上\", \"pos\": \"verb\", \"sentence_cn\": \"他的袍子被染上了，而且破了。\"}", "latency_ms": 320.1}
+{"id": "eval-0328", "prediction": "{\"word\": \"croaked\", \"word_cn\": \"嘶哑地\", \"pos\": \"verb\", \"sentence_cn\": \"'水', 他嘶哑地说。\"}", "latency_ms": 269.16}
+{"id": "eval-0329", "prediction": "{\"word\": \"塌下\", \"word_cn\": \"倒下\", \"pos\": \"verb\", \"sentence_cn\": \"他倒在了床上。\"}", "latency_ms": 264.03}
+{"id": "eval-0330", "prediction": "{\"word\": \"恐惧\", \"word_cn\": \"dread\", \"pos\": \"adjective\", \"sentence_cn\": \"他感到一种深深的恐惧。\"}", "latency_ms": 242.5}
+{"id": "eval-0331", "prediction": "{\"word\": \"阴暗\", \"word_cn\": \"阴暗\", \"pos\": \"adjective\", \"sentence_cn\": \"房间里充满了阴暗。\"}", "latency_ms": 260.1}
+{"id": "eval-0332", "prediction": "{\"word\": \"grumbled\", \"word_cn\": \"嘟囔着\", \"pos\": \"verb\", \"sentence_cn\": \"'好吧,' 罗恩嘟囔着。\"}", "latency_ms": 303.24}
+{"id": "eval-0333", "prediction": "{\"word\": \"说服\", \"word_cn\": \"说服\", \"pos\": \"verb\", \"sentence_cn\": \"她试图说服他留下。\"}", "latency_ms": 302.44}
+{"id": "eval-0334", "prediction": "{\"word\": \"后退\", \"word_cn\": \"后退\", \"pos\": \"verb\", \"sentence_cn\": \"他后退了几步。\"}", "latency_ms": 324.53}
+{"id": "eval-0335", "prediction": "{\"word\": \"银色的\", \"word_cn\": \"银色的\", \"pos\": \"adjective\", \"sentence_cn\": \"房间充满了银色的光线。\"}", "latency_ms": 372.96}
+{"id": "eval-0336", "prediction": "{\"word\": \"尖叫\", \"word_cn\": \"尖叫\", \"pos\": \"verb\", \"sentence_cn\": \"那个女孩尖叫着跑开了。\"}", "latency_ms": 316.77}
+{"id": "eval-0337", "prediction": "{\"word\": \"滑动\", \"word_cn\": \"滑动\", \"pos\": \"verb\", \"sentence_cn\": \"门滑开了。\"}", "latency_ms": 309.72}
+{"id": "eval-0338", "prediction": "{\"word\": \"破碎\", \"word_cn\": \"破碎\", \"pos\": \"verb\", \"sentence_cn\": \"窗户碎成了千片。\"}", "latency_ms": 293.53}
+{"id": "eval-0339", "prediction": "{\"word\": \"抽泣\", \"word_cn\": \"抽泣\", \"pos\": \"verb\", \"sentence_cn\": \"她安静地在角落里抽泣。\"}", "latency_ms": 303.27}
+{"id": "eval-0340", "prediction": "{\"word\": \"staggered\", \"word_cn\": \"踉跄地\", \"pos\": \"verb\", \"sentence_cn\": \"哈利踉跄地后退了。\"}", "latency_ms": 292.28}
+{"id": "eval-0341", "prediction": "{\"word\": \"惊吓的\", \"word_cn\": \"惊吓的\", \"pos\": \"adjective\", \"sentence_cn\": \"那声音把他给惊吓了。\"}", "latency_ms": 287.99}
+{"id": "eval-0342", "prediction": "{\"word\": \"粘稠的\", \"word_cn\": \"粘稠的\", \"pos\": \"adjective\", \"sentence_cn\": \"地板上沾满了洒落的饮料。\"}", "latency_ms": 373.31}
+{"id": "eval-0343", "prediction": "{\"word\": \"结实的\", \"word_cn\": \"结实的\", \"pos\": \"adjective\", \"sentence_cn\": \"他抓住了一根结实的树枝。\"}", "latency_ms": 310.04}
+{"id": "eval-0344", "prediction": "{\"word\": \"冲劲\", \"word_cn\": \"冲劲\", \"pos\": \"noun\", \"sentence_cn\": \"他感到一股冲劲。\"}", "latency_ms": 266.22}
+{"id": "eval-0345", "prediction": "{\"word\": \"迅速地\", \"word_cn\": \"swiftly\", \"pos\": \"adverb\", \"sentence_cn\": \"她迅速地移动。\"}", "latency_ms": 243.17}
+{"id": "eval-0346", "prediction": "{\"word\": \"纠缠的\", \"word_cn\": \"纠缠的\", \"pos\": \"other\", \"sentence_cn\": \"他的头发乱糟糟的，很凌乱。\"}", "latency_ms": 267.32}
+{"id": "eval-0347", "prediction": "{\"word\": \"温柔地\", \"word_cn\": \"温柔地\", \"pos\": \"adverb\", \"sentence_cn\": \"她轻轻地触碰了他的脸。\"}", "latency_ms": 315.78}
+{"id": "eval-0348", "prediction": "{\"word\": \"terrified\", \"word_cn\": \"惊恐的\", \"pos\": \"adjective\", \"sentence_cn\": \"他太害怕了，不敢动弹。\"}", "latency_ms": 366.89}
+{"id": "eval-0349", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"她的手在颤抖。\"}", "latency_ms": 336.68}
+{"id": "eval-0350", "prediction": "{\"word\": \"胜利的\", \"word_cn\": \"胜利的\", \"pos\": \"adjective\", \"sentence_cn\": \"他放声高喊，充满了胜利的喜悦。\"}", "latency_ms": 292.98}
+{"id": "eval-0351", "prediction": "{\"word\": \"trot\", \"word_cn\": \"遛\", \"pos\": \"verb\", \"sentence_cn\": \"这只狗跟着他慢慢地走。\"}", "latency_ms": 330.13}
+{"id": "eval-0352", "prediction": "{\"word\": \"tugged\", \"word_cn\": \"拉\", \"pos\": \"verb\", \"sentence_cn\": \"她拉了他衣袖。\"}", "latency_ms": 343.12}
+{"id": "eval-0353", "prediction": "{\"word\": \"tumbled\", \"word_cn\": \"跌倒\", \"pos\": \"verb\", \"sentence_cn\": \"他摔了下来。\"}", "latency_ms": 310.57}
+{"id": "eval-0354", "prediction": "{\"word\": \"抽搐\", \"word_cn\": \"抽搐\", \"pos\": \"verb\", \"sentence_cn\": \"他感到一丝罪恶感。\"}", "latency_ms": 343.11}
+{"id": "eval-0355", "prediction": "{\"word\": \"丑陋的\", \"word_cn\": \"丑陋的\", \"pos\": \"adjective\", \"sentence_cn\": \"这个生物很丑陋，身体畸形。\"}", "latency_ms": 323.0}
+{"id": "eval-0356", "prediction": "{\"word\": \"不可忍受的\", \"word_cn\": \"不可忍受的\", \"pos\": \"adjective\", \"sentence_cn\": \"疼痛是无法忍受的。\"}", "latency_ms": 353.65}
+{"id": "eval-0357", "prediction": "{\"word\": \"不平的\", \"word_cn\": \"不平的\", \"pos\": \"adjective\", \"sentence_cn\": \"地板是不平的，很危险。\"}", "latency_ms": 298.94}
+{"id": "eval-0358", "prediction": "{\"word\": \"ungrateful\", \"word_cn\": \"不感恩的\", \"pos\": \"adjective\", \"sentence_cn\": \"你怎么能这样不感恩呢？\"}", "latency_ms": 287.4}
+{"id": "eval-0359", "prediction": "{\"word\": \"解锁\", \"word_cn\": \"解锁\", \"pos\": \"verb\", \"sentence_cn\": \"他费劲地尝试打开门。\"}", "latency_ms": 296.54}
+{"id": "eval-0360", "prediction": "{\"word\": \"不愿意的\", \"word_cn\": \"不愿意的\", \"pos\": \"adjective\", \"sentence_cn\": \"他不愿意放弃。\"}", "latency_ms": 301.86}
+{"id": "eval-0361", "prediction": "{\"word\": \"冲动\", \"word_cn\": \"冲动\", \"pos\": \"noun\", \"sentence_cn\": \"他抵制了回头看的冲动。\"}", "latency_ms": 318.51}
+{"id": "eval-0362", "prediction": "{\"word\": \"utterly\", \"word_cn\": \"完全地\", \"pos\": \"adverb\", \"sentence_cn\": \"他完全困惑了。\"}", "latency_ms": 279.53}
+{"id": "eval-0363", "prediction": "{\"word\": \"英勇的\", \"word_cn\": \"valiant\", \"pos\": \"adjective\", \"sentence_cn\": \"它是一个英勇的努力。\"}", "latency_ms": 240.01}
+{"id": "eval-0364", "prediction": "{\"word\": \"消失\", \"word_cn\": \"消失\", \"pos\": \"verb\", \"sentence_cn\": \"那个身影瞬间消失得无影无踪。\"}", "latency_ms": 283.28}
+{"id": "eval-0365", "prediction": "{\"word\": \"坚决地\", \"word_cn\": \"坚决地\", \"pos\": \"adverb\", \"sentence_cn\": \"她坚定地摇了摇头。\"}", "latency_ms": 350.81}
+{"id": "eval-0366", "prediction": "{\"word\": \"vengeance\", \"word_cn\": \"复仇\", \"pos\": \"noun\", \"sentence_cn\": \"他发誓要报仇雪恨。\"}", "latency_ms": 326.31}
+{"id": "eval-0367", "prediction": "{\"word\": \"venture\", \"word_cn\": \"冒险\", \"pos\": \"verb\", \"sentence_cn\": \"他冒险进入黑暗的森林。\"}", "latency_ms": 276.6}
+{"id": "eval-0368", "prediction": "{\"word\": \"暴力的\", \"word_cn\": \"violent\", \"pos\": \"adjective\", \"sentence_cn\": \"反应非常暴力且迅速。\"}", "latency_ms": 306.57}
+{"id": "eval-0369", "prediction": "{\"word\": \"生动的\", \"word_cn\": \"生动的\", \"pos\": \"adjective\", \"sentence_cn\": \"他有生动的想象力。\"}", "latency_ms": 356.8}
+{"id": "eval-0370", "prediction": "{\"word\": \"volunteered\", \"word_cn\": \"自愿的\", \"pos\": \"verb\", \"sentence_cn\": \"‘我来做吧，’赫敏自愿地回答。\"}", "latency_ms": 319.53}
+{"id": "eval-0371", "prediction": "{\"word\": \"wandered\", \"word_cn\": \"漫步\", \"pos\": \"verb\", \"sentence_cn\": \"他漫无目的地在城堡里游荡。\"}", "latency_ms": 352.97}
+{"id": "eval-0372", "prediction": "{\"word\": \"小心翼翼地\", \"word_cn\": \"小心谨慎地\", \"pos\": \"adverb\", \"sentence_cn\": \"他小心翼翼地看着他们。\"}", "latency_ms": 327.19}
+{"id": "eval-0373", "prediction": "{\"word\": \"疲倦的\", \"word_cn\": \"疲倦的\", \"pos\": \"adjective\", \"sentence_cn\": \"他疲惫不堪且饥饿。\"}", "latency_ms": 296.16}
+{"id": "eval-0374", "prediction": "{\"word\": \"编织\", \"word_cn\": \"编织\", \"pos\": \"verb\", \"sentence_cn\": \"他穿梭在人群中。\"}", "latency_ms": 276.58}
+{"id": "eval-0375", "prediction": "{\"word\": \"whirled\", \"word_cn\": \"转圈\", \"pos\": \"verb\", \"sentence_cn\": \"他转圈走了。\"}", "latency_ms": 329.98}
+{"id": "eval-0376", "prediction": "{\"word\": \"邪恶的\", \"word_cn\": \"邪恶的\", \"pos\": \"adjective\", \"sentence_cn\": \"他脸上露出一个邪恶的笑容。\"}", "latency_ms": 283.61}
+{"id": "eval-0377", "prediction": "{\"word\": \"枯萎的\", \"word_cn\": \"枯萎的\", \"pos\": \"adjective\", \"sentence_cn\": \"那株植物枯萎了，最终凋谢了。\"}", "latency_ms": 316.32}
+{"id": "eval-0378", "prediction": "{\"word\": \"wobbled\", \"word_cn\": \"摇晃\", \"pos\": \"verb\", \"sentence_cn\": \"桌子摇晃。\"}", "latency_ms": 279.83}
+{"id": "eval-0379", "prediction": "{\"word\": \"渴望\", \"word_cn\": \"渴望\", \"pos\": \"verb\", \"sentence_cn\": \"他渴望回家。\"}", "latency_ms": 273.43}
+{"id": "eval-0380", "prediction": "{\"word\": \"yield\", \"word_cn\": \"放弃\", \"pos\": \"verb\", \"sentence_cn\": \"他不会放弃。\"}", "latency_ms": 306.6}
+{"id": "eval-0381", "prediction": "{\"word\": \"热情\", \"word_cn\": \"热情\", \"pos\": \"adjective\", \"sentence_cn\": \"她怀着热情开始工作。\"}", "latency_ms": 297.15}
+{"id": "eval-0382", "prediction": "{\"word\": \"gaze\", \"word_cn\": \"凝视\", \"pos\": \"verb\", \"sentence_cn\": \"他看着她。\"}", "latency_ms": 333.3}
+{"id": "eval-0383", "prediction": "{\"word\": \"手势\", \"word_cn\": \"手势\", \"pos\": \"phrase\", \"sentence_cn\": \"他向门口做了个手势。\"}", "latency_ms": 340.11}
+{"id": "eval-0384", "prediction": "{\"word\": \"发光\", \"word_cn\": \"发光\", \"pos\": \"verb\", \"sentence_cn\": \"温暖的光芒充满了房间。\"}", "latency_ms": 329.27}
+{"id": "eval-0385", "prediction": "{\"word\": \"呻吟\", \"word_cn\": \"呻吟\", \"pos\": \"verb\", \"sentence_cn\": \"他发出一声痛苦的呻吟。\"}", "latency_ms": 293.73}
+{"id": "eval-0386", "prediction": "{\"word\": \"锤击\", \"word_cn\": \"心跳加速\", \"pos\": \"verb\", \"sentence_cn\": \"他的心脏在怦怦跳动。\"}", "latency_ms": 309.58}
+{"id": "eval-0387", "prediction": "{\"word\": \"动\", \"word_cn\": \"动\", \"pos\": \"verb\", \"sentence_cn\": \"他示意他们跟随。\"}", "latency_ms": 330.34}
+{"id": "eval-0388", "prediction": "{\"word\": \"nudge\", \"word_cn\": \"推一把\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩给了他一个推一把。\"}", "latency_ms": 356.72}
+{"id": "eval-0389", "prediction": "{\"word\": \"恳求\", \"word_cn\": \"恳求\", \"pos\": \"verb\", \"sentence_cn\": \"'请', 她恳求。\"}", "latency_ms": 332.76}
+{"id": "eval-0390", "prediction": "{\"word\": \"刺痒的\", \"word_cn\": \"刺痒的\", \"pos\": \"adjective\", \"sentence_cn\": \"他有一种刺痒的感觉，觉得有些不对劲。\"}", "latency_ms": 380.19}
+{"id": "eval-0391", "prediction": "{\"word\": \"无尽的\", \"word_cn\": \"无尽的\", \"pos\": \"adjective\", \"sentence_cn\": \"雨下得没有尽头。\"}", "latency_ms": 336.69}
+{"id": "eval-0392", "prediction": "{\"word\": \"咆哮\", \"word_cn\": \"咆哮\", \"pos\": \"verb\", \"sentence_cn\": \"人群发出咆哮声。\"}", "latency_ms": 339.66}
+{"id": "eval-0393", "prediction": "{\"word\": \"大致地\", \"word_cn\": \"大致地\", \"pos\": \"adverb\", \"sentence_cn\": \"他粗暴地把他推开。\"}", "latency_ms": 284.02}
+{"id": "eval-0394", "prediction": "{\"word\": \"rumble\", \"word_cn\": \"轰鸣\", \"pos\": \"other\", \"sentence_cn\": \"洞穴中传来低沉的轰鸣声。\"}", "latency_ms": 346.36}
+{"id": "eval-0395", "prediction": "{\"word\": \"凶狠地\", \"word_cn\": \"凶狠地\", \"pos\": \"adverb\", \"sentence_cn\": \"他攻击蛋糕凶狠地。\"}", "latency_ms": 306.2}
+{"id": "eval-0396", "prediction": "{\"word\": \"scrambled\", \"word_cn\": \"混乱的\", \"pos\": \"adjective\", \"sentence_cn\": \"哈利慌忙站了起来。\"}", "latency_ms": 350.39}
+{"id": "eval-0397", "prediction": "{\"word\": \"推搡\", \"word_cn\": \"推搡\", \"pos\": \"verb\", \"sentence_cn\": \"人们在推搡和拥挤。\"}", "latency_ms": 313.35}
+{"id": "eval-0398", "prediction": "{\"word\": \"悄悄地\", \"word_cn\": \"悄悄地\", \"pos\": \"adverb\", \"sentence_cn\": \"他们悄无声息地沿着走廊走去。\"}", "latency_ms": 336.79}
+{"id": "eval-0399", "prediction": "{\"word\": \"滑倒\", \"word_cn\": \"滑倒\", \"pos\": \"verb\", \"sentence_cn\": \"他滑倒了。\"}", "latency_ms": 349.97}
+{"id": "eval-0400", "prediction": "{\"word\": \" slamming \", \"word_cn\": \"砰地关上\", \"pos\": \"phrase\", \"sentence_cn\": \"他重重地把门关上了。\"}", "latency_ms": 352.45}
+{"id": "eval-0401", "prediction": "{\"word\": \"sneering\", \"word_cn\": \"冷笑\", \"pos\": \"verb\", \"sentence_cn\": \"'好吧，好吧，'他冷笑地说。\"}", "latency_ms": 290.3}
+{"id": "eval-0402", "prediction": "{\"word\": \"sniggering\", \"word_cn\": \"窃笑\", \"pos\": \"adjective\", \"sentence_cn\": \"克拉布和戈德维尔在窃笑。\"}", "latency_ms": 319.56}
+{"id": "eval-0403", "prediction": "{\"word\": \"翱翔\", \"word_cn\": \"飞翔\", \"pos\": \"verb\", \"sentence_cn\": \"这只鸟飞得很高，像在天空中翱翔。\"}", "latency_ms": 263.38}
+{"id": "eval-0404", "prediction": "{\"word\": \"闪耀的\", \"word_cn\": \"闪耀的\", \"pos\": \"adjective\", \"sentence_cn\": \"那棵树上闪烁着小小的冰晶。\"}", "latency_ms": 310.24}
+{"id": "eval-0405", "prediction": "{\"word\": \"颗粒\", \"word_cn\": \"颗粒\", \"pos\": \"noun\", \"sentence_cn\": \"阳光中有一些灰尘的颗粒。\"}", "latency_ms": 303.66}
+{"id": "eval-0406", "prediction": "{\"word\": \"怨恨\", \"word_cn\": \"怨恨\", \"pos\": \"adjective\", \"sentence_cn\": \"他故意说出口，纯粹是出于怨恨。\"}", "latency_ms": 316.73}
+{"id": "eval-0407", "prediction": "{\"word\": \"溅\", \"word_cn\": \"溅\", \"pos\": \"verb\", \"sentence_cn\": \"水溅到了地板上。\"}", "latency_ms": 329.76}
+{"id": "eval-0408", "prediction": "{\"word\": \"spluttered\", \"word_cn\": \"喷出\", \"pos\": \"verb\", \"sentence_cn\": \"但我不明白！罗恩喷出了。\"}", "latency_ms": 343.59}
+{"id": "eval-0409", "prediction": "{\"word\": \"蜷缩\", \"word_cn\": \"蜷缩\", \"pos\": \"verb\", \"sentence_cn\": \"他躺在地上蜷缩着。\"}", "latency_ms": 319.36}
+{"id": "eval-0410", "prediction": "{\"word\": \"跳起来\", \"word_cn\": \"跳起来\", \"pos\": \"verb\", \"sentence_cn\": \"他跳了起来。\"}", "latency_ms": 283.33}
+{"id": "eval-0411", "prediction": "{\"word\": \"squeaked\", \"word_cn\": \"吱吱叫\", \"pos\": \"verb\", \"sentence_cn\": \"‘我不做它！’吱吱叫的多比说。\"}", "latency_ms": 376.87}
+{"id": "eval-0412", "prediction": "", "error": "Invalid JSON: Expecting ',' delimiter: line 5 column 29 (char 91); extracted={\n  \"word\": \"stammered\",\n  \"word_cn\": \"结巴地说\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"我——我不行的，\" 结巴地说。\n}", "latency_ms": 352.73}
+{"id": "eval-0413", "prediction": "{\"word\": \"盯着\", \"word_cn\": \"盯着\", \"pos\": \"verb\", \"sentence_cn\": \"哈利瞪大眼睛看着他，张着嘴。\"}", "latency_ms": 327.42}
+{"id": "eval-0414", "prediction": "{\"word\": \"惊吓的\", \"word_cn\": \"惊吓的\", \"pos\": \"adjective\", \"sentence_cn\": \"那声音把他给惊吓了。\"}", "latency_ms": 335.7}
+{"id": "eval-0415", "prediction": "{\"word\": \"step\", \"word_cn\": \"迈\", \"pos\": \"verb\", \"sentence_cn\": \"他向前迈步。\"}", "latency_ms": 324.04}
+{"id": "eval-0416", "prediction": "{\"word\": \"窒息\", \"word_cn\": \"憋住\", \"pos\": \"adverb\", \"sentence_cn\": \"他憋住了打哈欠的声音。\"}", "latency_ms": 360.05}
+{"id": "eval-0417", "prediction": "{\"word\": \"刺痛的\", \"word_cn\": \"刺痛的\", \"pos\": \"adjective\", \"sentence_cn\": \"冷风刺痛了他的脸。\"}", "latency_ms": 342.81}
+{"id": "eval-0418", "prediction": "{\"word\": \"踩\", \"word_cn\": \"踩\", \"pos\": \"verb\", \"sentence_cn\": \"她生气地跺了跺脚。\"}", "latency_ms": 272.99}
+{"id": "eval-0420", "prediction": "{\"word\": \"strained\", \"word_cn\": \"努力\", \"pos\": \"verb\", \"sentence_cn\": \"他费劲地听他们在说什么。\"}", "latency_ms": 299.98}
+{"id": "eval-0421", "prediction": "{\"word\": \"strangled\", \"word_cn\": \"窒息的\", \"pos\": \"adjective\", \"sentence_cn\": \"他发出了一种窒息的声音。\"}", "latency_ms": 337.29}
+{"id": "eval-0422", "prediction": "{\"word\": \"拉伸\", \"word_cn\": \"拉长\", \"pos\": \"verb\", \"sentence_cn\": \"他们前面的道路被拉长了。\"}", "latency_ms": 336.09}
+{"id": "eval-0423", "prediction": "{\"word\": \"迈步\", \"word_cn\": \"迈步\", \"pos\": \"verb\", \"sentence_cn\": \"他大步流星地向他们走来。\"}", "latency_ms": 336.65}
+{"id": "eval-0424", "prediction": "{\"word\": \"strolled\", \"word_cn\": \"漫步\", \"pos\": \"verb\", \"sentence_cn\": \"他们漫步穿过花园。\"}", "latency_ms": 345.38}
+{"id": "eval-0425", "prediction": "{\"word\": \"顽固的\", \"word_cn\": \"顽固的\", \"pos\": \"adjective\", \"sentence_cn\": \"他太顽固，不肯承认自己错了。\"}", "latency_ms": 324.71}
+{"id": "eval-0426", "prediction": "{\"word\": \"装进\", \"word_cn\": \"装进\", \"pos\": \"phrase\", \"sentence_cn\": \"罗恩把老鼠塞进了他的口袋。\"}", "latency_ms": 299.67}
+{"id": "eval-0427", "prediction": "{\"word\": \"震惊\", \"word_cn\": \"震惊\", \"pos\": \"adjective\", \"sentence_cn\": \"他站在那里，震惊不已。\"}", "latency_ms": 273.31}
+{"id": "eval-0428", "prediction": "{\"word\": \"结实的\", \"word_cn\": \"结实的\", \"pos\": \"adjective\", \"sentence_cn\": \"这张桌子结实。\"}", "latency_ms": 290.35}
+{"id": "eval-0429", "prediction": "{\"word\": \"压抑的\", \"word_cn\": \"压抑的\", \"pos\": \"adjective\", \"sentence_cn\": \"气氛压抑。\"}", "latency_ms": 333.8}
+{"id": "eval-0430", "prediction": "{\"word\": \"sulk\", \"word_cn\": \"生气\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩在生气。\"}", "latency_ms": 295.61}
+{"id": "eval-0431", "prediction": "{\"word\": \"阴沉的\", \"word_cn\": \"阴沉的\", \"pos\": \"adjective\", \"sentence_cn\": \"他给出一个阴沉的回答。\"}", "latency_ms": 350.01}
+{"id": "eval-0432", "prediction": "{\"word\": \"召唤\", \"word_cn\": \"被召唤\", \"pos\": \"verb\", \"sentence_cn\": \"她被召唤到办公室。\"}", "latency_ms": 347.53}
+{"id": "eval-0433", "prediction": "{\"word\": \"sunken\", \"word_cn\": \"凹陷的\", \"pos\": \"adjective\", \"sentence_cn\": \"他的眼睛凹陷且深邃。\"}", "latency_ms": 342.84}
+{"id": "eval-0434", "prediction": "{\"word\": \"冲涌\", \"word_cn\": \"冲涌\", \"pos\": \"verb\", \"sentence_cn\": \"愤怒像潮水一样涌了上来。\"}", "latency_ms": 343.16}
+{"id": "eval-0435", "prediction": "{\"word\": \"周围\", \"word_cn\": \"周围\", \"pos\": \"phrase\", \"sentence_cn\": \"周围的乡村景色非常美丽。\"}", "latency_ms": 299.83}
+{"id": "eval-0436", "prediction": "{\"word\": \"可疑的\", \"word_cn\": \"可疑的\", \"pos\": \"adjective\", \"sentence_cn\": \"他给了她一个可疑的眼神。\"}", "latency_ms": 280.32}
+{"id": "eval-0437", "prediction": "{\"word\": \"吞咽\", \"word_cn\": \"吞咽\", \"pos\": \"verb\", \"sentence_cn\": \"他紧张地吞咽着。\"}", "latency_ms": 303.32}
+{"id": "eval-0438", "prediction": "{\"word\": \"摇摆\", \"word_cn\": \"摇摆\", \"pos\": \"verb\", \"sentence_cn\": \"那棵树在摇摆。\"}", "latency_ms": 269.82}
+{"id": "eval-0439", "prediction": "{\"word\": \"扫开\", \"word_cn\": \"扫开\", \"pos\": \"verb\", \"sentence_cn\": \"他做出了一个扫开的举动。\"}", "latency_ms": 249.53}
+{"id": "eval-0440", "prediction": "{\"word\": \"迅速地\", \"word_cn\": \"swiftly\", \"pos\": \"adverb\", \"sentence_cn\": \"她迅速地穿过房间。\"}", "latency_ms": 290.32}
+{"id": "eval-0441", "prediction": "{\"word\": \"肿胀的\", \"word_cn\": \"肿胀的\", \"pos\": \"adjective\", \"sentence_cn\": \"他的脚踝肿胀了。\"}", "latency_ms": 316.49}
+{"id": "eval-0442", "prediction": "{\"word\": \"飞\", \"word_cn\": \"飞\", \"pos\": \"verb\", \"sentence_cn\": \"那只乌鸦俯冲下来。\"}", "latency_ms": 303.65}
+{"id": "eval-0443", "prediction": "{\"word\": \" tackling \", \"word_cn\": \"处理\", \"pos\": \"phrase\", \"sentence_cn\": \"他不知道如何处理这个问题。\"}", "latency_ms": 323.34}
+{"id": "eval-0444", "prediction": "{\"word\": \"纠缠的\", \"word_cn\": \"纠缠的\", \"pos\": \"other\", \"sentence_cn\": \"他的头发缠绕在一起。\"}", "latency_ms": 303.38}
+{"id": "eval-0446", "prediction": "{\"word\": \"温柔地\", \"word_cn\": \"温柔地\", \"pos\": \"adverb\", \"sentence_cn\": \"他轻轻地吻了她。\"}", "latency_ms": 273.19}
+{"id": "eval-0447", "prediction": "{\"word\": \"紧张的\", \"word_cn\": \"紧张的\", \"pos\": \"adjective\", \"sentence_cn\": \"他紧张地，准备跑。\"}", "latency_ms": 303.3}
+{"id": "eval-0448", "prediction": "{\"word\": \"terrified\", \"word_cn\": \"惊恐的\", \"pos\": \"adjective\", \"sentence_cn\": \"他非常惊恐。\"}", "latency_ms": 319.35}
+{"id": "eval-0449", "prediction": "{\"word\": \"thankfully\", \"word_cn\": \"幸运地\", \"pos\": \"adverb\", \"sentence_cn\": \"幸运的是，没有人受伤。\"}", "latency_ms": 326.57}
+{"id": "eval-0450", "prediction": "{\"word\": \"彻底地\", \"word_cn\": \"彻底地\", \"pos\": \"adverb\", \"sentence_cn\": \"他完全困惑了。\"}", "latency_ms": 313.51}
+{"id": "eval-0451", "prediction": "{\"word\": \"thrashed\", \"word_cn\": \"打\", \"pos\": \"verb\", \"sentence_cn\": \"那只生物在痛苦中挣扎。\"}", "latency_ms": 336.9}
+{"id": "eval-0452", "prediction": "{\"word\": \"威胁地\", \"word_cn\": \"威胁地\", \"pos\": \"adverb\", \"sentence_cn\": \"他向他威胁地走了过去。\"}", "latency_ms": 349.55}
+{"id": "eval-0453", "prediction": "{\"word\": \"thrilled\", \"word_cn\": \"激动的\", \"pos\": \"adjective\", \"sentence_cn\": \"她对她的礼物非常激动。\"}", "latency_ms": 350.64}
+{"id": "eval-0454", "prediction": "{\"word\": \"throbbing\", \"word_cn\": \"疼痛加剧\", \"pos\": \"adjective\", \"sentence_cn\": \"他的头在疼痛加剧。\"}", "latency_ms": 302.7}
+{"id": "eval-0455", "prediction": "{\"word\": \"thud\", \"word_cn\": \"咚\", \"pos\": \"other\", \"sentence_cn\": \"那有咚的一声。\"}", "latency_ms": 306.78}
+{"id": "eval-0456", "prediction": "{\"word\": \"倾斜的\", \"word_cn\": \"倾斜的\", \"pos\": \"adjective\", \"sentence_cn\": \"他歪着头。\"}", "latency_ms": 313.69}
+{"id": "eval-0457", "prediction": "{\"word\": \"tousled\", \"word_cn\": \"乱糟糟的\", \"pos\": \"adjective\", \"sentence_cn\": \"他坐起来，看起来很乱糟糟的。\"}", "latency_ms": 372.59}
+{"id": "eval-0458", "prediction": "{\"word\": \"践踏\", \"word_cn\": \"踩踏\", \"pos\": \"verb\", \"sentence_cn\": \"那朵花被踩踏了。\"}", "latency_ms": 353.76}
+{"id": "eval-0459", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"她的声音在颤抖。\"}", "latency_ms": 329.59}
+{"id": "eval-0460", "prediction": "{\"word\": \"胜利地\", \"word_cn\": \"胜利地\", \"pos\": \"adverb\", \"sentence_cn\": \"她得意洋洋地笑了。\"}", "latency_ms": 327.33}
+{"id": "eval-0461", "prediction": "{\"word\": \"trudged\", \"word_cn\": \"蹒跚地走\", \"pos\": \"verb\", \"sentence_cn\": \"他们蹒跚地走上山坡。\"}", "latency_ms": 323.87}
+{"id": "eval-0462", "prediction": "{\"word\": \"信任\", \"word_cn\": \"相信\", \"pos\": \"adjective\", \"sentence_cn\": \"他完全相信她。\"}", "latency_ms": 286.79}
+{"id": "eval-0463", "prediction": "{\"word\": \" tucked \", \"word_cn\": \"塞\", \"pos\": \"verb\", \"sentence_cn\": \"她把信塞进了她的口袋。\"}", "latency_ms": 276.96}
+{"id": "eval-0464", "prediction": "{\"word\": \"tugged\", \"word_cn\": \"拉\", \"pos\": \"verb\", \"sentence_cn\": \"他用力拉住了绳子。\"}", "latency_ms": 312.76}
+{"id": "eval-0465", "prediction": "{\"word\": \"滚落\", \"word_cn\": \"滚落\", \"pos\": \"verb\", \"sentence_cn\": \"水从岩石上滚落下来。\"}", "latency_ms": 327.49}
+{"id": "eval-0466", "prediction": "{\"word\": \"湍急的\", \"word_cn\": \"湍急的\", \"pos\": \"adjective\", \"sentence_cn\": \"天空乌云密布，天气非常湍急。\"}", "latency_ms": 375.76}
+{"id": "eval-0467", "prediction": "{\"word\": \"转动\", \"word_cn\": \"转动\", \"pos\": \"verb\", \"sentence_cn\": \"他不断地在脑海中转这个问题。\"}", "latency_ms": 340.65}
+{"id": "eval-0468", "prediction": "{\"word\": \"扭曲\", \"word_cn\": \"扭曲\", \"pos\": \"verb\", \"sentence_cn\": \"他的脚踝在下面扭了。\"}", "latency_ms": 349.27}
+{"id": "eval-0469", "prediction": "{\"word\": \"不安地\", \"word_cn\": \"uneasily\", \"pos\": \"adverb\", \"sentence_cn\": \"他不安地移动。\"}", "latency_ms": 300.54}
+{"id": "eval-0470", "prediction": "{\"word\": \"unexpected\", \"word_cn\": \"出乎意料的\", \"pos\": \"adjective\", \"sentence_cn\": \"一个出乎意料的访客来访了。\"}", "latency_ms": 352.96}
+{"id": "eval-0471", "prediction": "{\"word\": \"未察觉的\", \"word_cn\": \"未察觉的\", \"pos\": \"other\", \"sentence_cn\": \"他悄悄地溜出去了，没有人注意到。\"}", "latency_ms": 299.8}
+{"id": "eval-0472", "prediction": "{\"word\": \"unpacking\", \"word_cn\": \"拆箱\", \"pos\": \"noun\", \"sentence_cn\": \"他正在拆箱他的行李。\"}", "latency_ms": 343.17}
+{"id": "eval-0473", "prediction": "{\"word\": \"unsteady\", \"word_cn\": \"摇晃的\", \"pos\": \"adjective\", \"sentence_cn\": \"他走路不稳。\"}", "latency_ms": 276.75}
+{"id": "eval-0474", "prediction": "{\"word\": \"不愿意的\", \"word_cn\": \"不愿意的\", \"pos\": \"adjective\", \"sentence_cn\": \"他不愿意合作。\"}", "latency_ms": 296.48}
+{"id": "eval-0475", "prediction": "{\"word\": \"生气的\", \"word_cn\": \"生气的\", \"pos\": \"adjective\", \"sentence_cn\": \"她显然很生气。\"}", "latency_ms": 280.07}
+{"id": "eval-0476", "prediction": "{\"word\": \"紧急的\", \"word_cn\": \"急迫的\", \"pos\": \"adjective\", \"sentence_cn\": \"他收到了一个紧急的消息。\"}", "latency_ms": 299.99}
+{"id": "eval-0477", "prediction": "{\"word\": \"消失\", \"word_cn\": \"消失\", \"pos\": \"verb\", \"sentence_cn\": \"疼痛瞬间消失了。\"}", "latency_ms": 350.07}
+{"id": "eval-0478", "prediction": "{\"word\": \"vengeful\", \"word_cn\": \"报复的\", \"pos\": \"adjective\", \"sentence_cn\": \"他给了她一副报复的表情。\"}", "latency_ms": 313.9}
+{"id": "eval-0479", "prediction": "{\"word\": \"猛烈地\", \"word_cn\": \"猛烈地\", \"pos\": \"adverb\", \"sentence_cn\": \"他剧烈地颤抖着。\"}", "latency_ms": 336.1}
+{"id": "eval-0480", "prediction": "{\"word\": \"wailing\", \"word_cn\": \"号啕大哭\", \"pos\": \"verb\", \"sentence_cn\": \"警报器在号啕大哭。\"}", "latency_ms": 263.02}
+{"id": "eval-0481", "prediction": "{\"word\": \"wandered\", \"word_cn\": \"漫步\", \"pos\": \"verb\", \"sentence_cn\": \"他漫步穿过走廊。\"}", "latency_ms": 277.11}
+{"id": "eval-0482", "prediction": "{\"word\": \"警告地\", \"word_cn\": \"warningly\", \"pos\": \"adverb\", \"sentence_cn\": \"他举起手，警告地。\"}", "latency_ms": 322.89}
+{"id": "eval-0483", "prediction": "{\"word\": \"警惕的\", \"word_cn\": \"警惕的\", \"pos\": \"adjective\", \"sentence_cn\": \"他警惕地对待陌生人。\"}", "latency_ms": 306.53}
+{"id": "eval-0484", "prediction": "{\"word\": \"疲倦地\", \"word_cn\": \"疲倦地\", \"pos\": \"adverb\", \"sentence_cn\": \"她疲惫地叹了口气。\"}", "latency_ms": 343.97}
+{"id": "eval-0485", "prediction": "{\"word\": \" whimper\", \"word_cn\": \"呜咽\", \"pos\": \"verb\", \"sentence_cn\": \"他发出一声痛苦的呜咽。\"}", "latency_ms": 333.32}
+{"id": "eval-0486", "prediction": "{\"word\": \"whirled\", \"word_cn\": \"转圈\", \"pos\": \"verb\", \"sentence_cn\": \"哈利转着圈子跑来跑去，手里还抓着魔杖。\"}", "latency_ms": 373.18}
+{"id": "eval-0487", "prediction": "{\"word\": \" whispers \", \"word_cn\": \"低语\", \"pos\": \"phrase\", \"sentence_cn\": \"她低声说话。\"}", "latency_ms": 329.55}
+{"id": "eval-0488", "prediction": "{\"word\": \"萎蔫的\", \"word_cn\": \"萎蔫的\", \"pos\": \"adjective\", \"sentence_cn\": \"花朵在炎热中变得萎蔫了。\"}", "latency_ms": 296.48}
+{"id": "eval-0489", "prediction": "{\"word\": \"瘦弱的\", \"word_cn\": \"小而瘦弱的\", \"pos\": \"adjective\", \"sentence_cn\": \"那个男人身材矮小且身体纤细。\"}", "latency_ms": 304.37}
+{"id": "eval-0490", "prediction": "{\"word\": \"退出\", \"word_cn\": \"退出\", \"pos\": \"verb\", \"sentence_cn\": \"他决定退出。\"}", "latency_ms": 282.23}
+{"id": "eval-0491", "prediction": "{\"word\": \"withering\", \"word_cn\": \"冷眼\", \"pos\": \"adjective\", \"sentence_cn\": \"她给了他一个冷眼。\"}", "latency_ms": 339.81}
+{"id": "eval-0492", "prediction": "{\"word\": \"摇晃\", \"word_cn\": \"摇晃\", \"pos\": \"verb\", \"sentence_cn\": \"书堆摇晃得非常危险。\"}", "latency_ms": 300.15}
+{"id": "eval-0493", "prediction": "{\"word\": \"担心地\", \"word_cn\": \"worriedly\", \"pos\": \"adverb\", \"sentence_cn\": \"她担忧地看着他。\"}", "latency_ms": 240.19}
+{"id": "eval-0494", "prediction": "{\"word\": \"wrenched\", \"word_cn\": \"拧开\", \"pos\": \"verb\", \"sentence_cn\": \"他把门拧开了。\"}", "latency_ms": 236.72}
+{"id": "eval-0495", "prediction": "{\"word\": \"蠕动\", \"word_cn\": \"蠕动\", \"pos\": \"verb\", \"sentence_cn\": \"那条虫子在手里蠕动。\"}", "latency_ms": 316.26}
+{"id": "eval-0496", "prediction": "{\"word\": \"皱巴巴的\", \"word_cn\": \"皱巴巴的\", \"pos\": \"other\", \"sentence_cn\": \"他的脸是皱巴巴的，看起来很老。\"}", "latency_ms": 346.7}
+{"id": "eval-0497", "prediction": "{\"word\": \"渴望\", \"word_cn\": \"渴望\", \"pos\": \"adjective\", \"sentence_cn\": \"他有一种深深的渴望。\"}", "latency_ms": 296.48}
+{"id": "eval-0498", "prediction": "{\"word\": \"yelled\", \"word_cn\": \"大喊\", \"pos\": \"verb\", \"sentence_cn\": \"'Impedimenta!' 哈利大喊。\"}", "latency_ms": 313.28}
+{"id": "eval-0499", "prediction": "{\"word\": \"yank\", \"word_cn\": \"拉\", \"pos\": \"verb\", \"sentence_cn\": \"他拉开窗帘。\"}", "latency_ms": 313.28}
+{"id": "eval-0500", "prediction": "{\"word\": \"热情地\", \"word_cn\": \"热情地\", \"pos\": \"adverb\", \"sentence_cn\": \"她工作得非常热情。\"}", "latency_ms": 350.25}
+{"id": "eval-0501", "prediction": "", "error": "Invalid JSON: Expecting ',' delimiter: line 5 column 35 (char 97); extracted={\n  \"word\": \"whispered\",\n  \"word_cn\": \"低语\",\n  \"pos\": \"adverb\",\n  \"sentence_cn\": \"邓布利多认为伏地魔又变强了，\" \"罗恩小声说。\"\n}", "latency_ms": 377.03}
+{"id": "eval-0502", "prediction": "{\"word\": \"折磨\", \"word_cn\": \"折磨\", \"pos\": \"verb\", \"sentence_cn\": \"你可以想象一下这个想法会如何折磨他。\"}", "latency_ms": 316.05}
+{"id": "eval-0503", "prediction": "{\"word\": \"stared\", \"word_cn\": \"盯着\", \"pos\": \"verb\", \"sentence_cn\": \"他仰起头，盯着天空。\"}", "latency_ms": 297.2}
+{"id": "eval-0504", "prediction": "{\"word\": \"荒芜的\", \"word_cn\": \"荒废的\", \"pos\": \"adjective\", \"sentence_cn\": \"所以我们不得不找到一个荒废的沼泽地，尽可能多地设置反巫师防范措施。\"}", "latency_ms": 382.64}
+{"id": "eval-0505", "prediction": "{\"word\": \"绝望的\", \"word_cn\": \"绝望的\", \"pos\": \"adjective\", \"sentence_cn\": \"格兰芬多的皮特吉韦被谋杀，以及所有那些麻瓜都是一个受困和绝望的人所为。\"}", "latency_ms": 423.26}
+{"id": "eval-0506", "prediction": "", "error": "Unable to extract JSON from response: {\n  \"word\": \"喘息\",\n  \"word_cn\": \"喘息\",\n  \"pos\": \"verb\",\n  \"sentence_cn\": \"'不,\" 哈里回道，喘息。\"\n}", "latency_ms": 333.4}
+{"id": "eval-0507", "prediction": "{\"word\": \"颤抖\", \"word_cn\": \"颤抖\", \"pos\": \"verb\", \"sentence_cn\": \"他转身向森林深处骑马返回，留下哈利在他身后瑟缩着。\"}", "latency_ms": 343.19}
+{"id": "eval-0508", "prediction": "{\"word\": \" muttered\", \"word_cn\": \"嘀咕\", \"pos\": \"verb\", \"sentence_cn\": \"哈利嘟囔着说：‘光亮。'\"}", "latency_ms": 340.07}
+{"id": "eval-0509", "prediction": "{\"word\": \"utterly\", \"word_cn\": \"彻底地\", \"pos\": \"adverb\", \"sentence_cn\": \"哈利完全困惑了，他起来迎接他们。\"}", "latency_ms": 353.38}
+{"id": "eval-0510", "prediction": "{\"word\": \"leant\", \"word_cn\": \"蹲下\", \"pos\": \"verb\", \"sentence_cn\": \"赫奇帕奇先生蹲下他的铲子，但似乎并不想延长他们的谈话时间。\"}", "latency_ms": 386.81}
+{"id": "eval-0511", "prediction": "{\"word\": \"延长\", \"word_cn\": \"延长\", \"pos\": \"verb\", \"sentence_cn\": \"海格倚靠在铲子上，但似乎并不想延长他们的谈话时间。\"}", "latency_ms": 363.56}
+{"id": "eval-0512", "prediction": "{\"word\": \"滑\", \"word_cn\": \"滑\", \"pos\": \"verb\", \"sentence_cn\": \"他滑了一段相当长的距离，然后落在了感觉像石头滑道的地面，然后冰冷潮湿的土地上。\"}", "latency_ms": 356.56}
+{"id": "eval-0513", "prediction": "{\"word\": \"slouched\", \"word_cn\": \"斜靠\", \"pos\": \"verb\", \"sentence_cn\": \"克鲁姆斜靠着走，不久后就加入了他们。\"}", "latency_ms": 292.68}
+{"id": "eval-0514", "prediction": "{\"word\": \"venture\", \"word_cn\": \"冒险\", \"pos\": \"verb\", \"sentence_cn\": \"'也许这是陷阱，'罗恩冒险地说。\"}", "latency_ms": 336.82}
+{"id": "eval-0515", "prediction": "{\"word\": \"摸索\", \"word_cn\": \"摸索\", \"pos\": \"verb\", \"sentence_cn\": \"他摸黑沿着墙摸索。\"}", "latency_ms": 293.19}
+{"id": "eval-0516", "prediction": "{\"word\": \"耸了耸肩膀\", \"word_cn\": \"耸了耸肩膀\", \"pos\": \"verb\", \"sentence_cn\": \"'大概是因为你，不是吗？' 肯德基耸了耸肩膀。\"}", "latency_ms": 390.38}
+{"id": "eval-0517", "prediction": "{\"word\": \"凝视\", \"word_cn\": \"凝视\", \"pos\": \"verb\", \"sentence_cn\": \"哈利站在那里，凝视着那张神奇的地图。\"}", "latency_ms": 329.73}
+{"id": "eval-0518", "prediction": "{\"word\": \"inched\", \"word_cn\": \"挪动\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩和赫敏抓住他，他们慢慢地靠近那封信，眼睛盯着上面的一道暗影。\"}", "latency_ms": 423.64}
+{"id": "eval-0519", "prediction": "{\"word\": \"rolled\", \"word_cn\": \"翻转\", \"pos\": \"verb\", \"sentence_cn\": \"罗恩瞪大了眼睛，对着天花板翻了个白眼。\"}", "latency_ms": 343.33}
+{"id": "eval-0520", "prediction": "{\"word\": \"pacing\", \"word_cn\": \"踱步\", \"pos\": \"verb\", \"sentence_cn\": \"一个标记的点显示，邓布利多教授在书房里踱步。\"}", "latency_ms": 382.95}
+{"id": "eval-0521", "prediction": "{\"word\": \"crash\", \"word_cn\": \"砰\", \"pos\": \"other\", \"sentence_cn\": \"他们冲了出去，——砰。\"}", "latency_ms": 273.59}
+{"id": "eval-0522", "prediction": "{\"word\": \"singing\", \"word_cn\": \"唱歌\", \"pos\": \"verb\", \"sentence_cn\": \"一群水精灵在中间唱歌，召唤冠军们过来。\"}", "latency_ms": 351.47}
+{"id": "eval-0523", "prediction": "{\"word\": \"刺痛的\", \"word_cn\": \"刺痛的\", \"pos\": \"adjective\", \"sentence_cn\": \"冷风刺痛了他的脸。\"}", "latency_ms": 341.84}
+{"id": "eval-0524", "prediction": "{\"word\": \" gaping\", \"word_cn\": \"张大嘴巴\", \"pos\": \"verb\", \"sentence_cn\": \"哈利目瞪口呆地看着她。'她没想到德夫勒一家会回来，是吗？'他愣愣地问着罗恩。\"}", "latency_ms": 406.18}

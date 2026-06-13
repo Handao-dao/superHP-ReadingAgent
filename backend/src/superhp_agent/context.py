@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal, Mapping, Sequence
+from typing import Literal
 
 ContextRole = Literal["system", "user", "metadata"]
 _BLOCK_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
@@ -68,7 +69,7 @@ class ContextBundle:
     def render_role(self, role: ContextRole) -> str:
         return _render_role_blocks([*self.system_blocks, *self.user_blocks], role)
 
-    def with_blocks(self, *blocks: ContextBlock) -> "ContextBundle":
+    def with_blocks(self, *blocks: ContextBlock) -> ContextBundle:
         """Return a new bundle with additional blocks appended by role."""
         system_blocks = [*self.system_blocks]
         user_blocks = [*self.user_blocks]

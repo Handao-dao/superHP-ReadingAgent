@@ -1,5 +1,5 @@
-{"id":"eval-0001","word":"charge","sentence":"The creature made a sudden charge across the room.","gold":{"word_cn":"冲锋","pos":"noun","sentence_cn":"那个生物突然冲过房间。","difficulty":"medium"}}
-{"id":"eval-0002","word":"issue","sentence":"The publisher will issue a new edition next month.","gold":{"word_cn":"发行","pos":"verb","sentence_cn":"出版商将在下个月发行新版。","difficulty":"medium"}}
-{"id":"eval-0003","word":"fine","sentence":"The wand was made of fine yew wood.","gold":{"word_cn":"优质的","pos":"adjective","sentence_cn":"这根魔杖由优质紫杉木制成。","difficulty":"medium"}}
-{"id":"eval-0004","word":"fair","sentence":"It was only fair that everyone got a chance.","gold":{"word_cn":"公平的","pos":"adjective","sentence_cn":"每个人都有机会才算公平。","difficulty":"low"}}
-{"id":"eval-0005","word":"bound","sentence":"The book was bound in faded red leather.","gold":{"word_cn":"装订","pos":"verb","sentence_cn":"这本书用褪色的红色皮革装订。","difficulty":"high"}}
+{"id":"eval-0001","word":"charge","sentence":"The creature made a sudden charge across the room.","gold":{"word_cn":"冲锋","pos":"noun","sentence_cn":"那个生物突然冲过房间。"}}
+{"id":"eval-0002","word":"issue","sentence":"The publisher will issue a new edition next month.","gold":{"word_cn":"发行","pos":"verb","sentence_cn":"出版商将在下个月发行新版。"}}
+{"id":"eval-0003","word":"fine","sentence":"The wand was made of fine yew wood.","gold":{"word_cn":"优质的","pos":"adjective","sentence_cn":"这根魔杖由优质紫杉木制成。"}}
+{"id":"eval-0004","word":"fair","sentence":"It was only fair that everyone got a chance.","gold":{"word_cn":"公平的","pos":"adjective","sentence_cn":"每个人都有机会才算公平。"}}
+{"id":"eval-0005","word":"bound","sentence":"The book was bound in faded red leather.","gold":{"word_cn":"装订","pos":"verb","sentence_cn":"这本书用褪色的红色皮革装订。"}}

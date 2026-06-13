@@ -16,8 +16,13 @@ from superhp_agent.corpus import (
     ReadingUnitDocument,
 )
 from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.profiles import create_default_registry
 from superhp_agent.providers.factory import make_provider
-from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
+from superhp_agent.runtime import (
+    ReadingCardBuilder,
+    ReadingFlowRouter,
+    ReadingStateReader,
+)
 from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.schemas import (
     AddBookmarkRequest,
@@ -44,13 +49,16 @@ from superhp_agent.transport.reading_ws import ReadingSocketSession
 # These singletons are intentionally created at import time: they are cheap,
 # stateless or locally stateful, and FastAPI can reuse them across requests.
 settings = get_settings()
-corpus = CorpusStore(settings.corpus_dir)
+profile_registry = create_default_registry(settings.default_profile_id)
+default_profile = profile_registry.get()
+corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
 # LLM providers are lazy so the app can boot and serve corpus/memory endpoints
 # even when no API key has been configured yet.
 annotator_service = LazyAnnotatorService(
     lambda: make_provider(settings),
+    profile=default_profile,
     max_chunk_words=settings.annotation_max_chunk_words,
     max_concurrency=settings.annotation_max_concurrency,
 )
@@ -64,7 +72,7 @@ class LazyLookupService:
 
     def _get_service(self) -> WordLookupService:
         if self._service is None:
-            self._service = WordLookupService(make_provider(settings))
+            self._service = WordLookupService(make_provider(settings), profile=default_profile)
         return self._service
 
     async def lookup(self, word: str, sentence: str) -> dict:
@@ -73,7 +81,7 @@ class LazyLookupService:
 
 lookup_service = LazyLookupService()
 state_reader = ReadingStateReader(corpus, settings.annotated_dir, memory_store, db)
-flow_router = ReadingFlowRouter(state_reader)
+flow_router = ReadingFlowRouter(state_reader, card_builder=ReadingCardBuilder(default_profile.card_copy))
 
 app = FastAPI(title="SuperHP Agent Backend")
 
@@ -103,6 +111,7 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         has_annotated_copy=has_any_annotated_copy(settings.annotated_dir, unit.id),
         status="read" if is_read else "unread",
         vocab_count=db.count_vocabulary_for_unit(unit.id),
+        profile_id=unit.profile_id,
     )
 
 

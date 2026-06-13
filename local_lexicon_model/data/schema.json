@@ -33,10 +33,15 @@
         "sentence_cn": {
           "type": "string",
           "minLength": 1
-        },
-        "difficulty": {
-          "type": "string",
-          "enum": ["low", "medium", "high"]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
         }
       }
     }

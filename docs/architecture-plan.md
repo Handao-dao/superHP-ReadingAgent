@@ -2,16 +2,20 @@
 
 ## Summary
 
-SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单元驱动的《哈利波特》专门阅读助手”。当前主流程已经闭环：用户从目录选择章节，通过 guided cards 生成/打开译注或阅读原文，在固定纸面中伪分页阅读，并可查词、添加生词、复习本章生词、标记已读和进入下一章。
+SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“profile 化文本标注工作流”，当前默认场景仍是阅读单元驱动的《哈利波特》精读助手。主流程已经闭环：用户从目录选择章节，通过 guided cards 生成/打开译注或阅读原文，在固定纸面中伪分页阅读，并可查词、添加生词、复习本章生词、标记已读和进入下一章。
 
 后端采用明确分层：transport 负责 HTTP/WebSocket，runtime 负责 cards 与 action side effects，services 负责模型译注和查词，storage/memory/corpus 负责本地数据。Router 只决定“给用户什么选项”，Dispatcher 才执行“用户选择之后发生什么”。
+
+本轮抽象引入 profile registry：`english_novel` profile 持有原 HP prompt、marker parser、lookup prompt、card copy 和前端 renderer hint。核心 API、数据库表名和 WebSocket 事件仍保持原样，避免破坏现有 HP 实现。
 
 ## Completed Backend
 
 - `CorpusStore` 已支持扫描 `corpus/` Markdown、解析 YAML frontmatter、按 `unit_id` 安全读取正文，并拒绝路径越界与重复 id。
+- `CorpusStore` 已支持可选 `profile_id`；缺失时使用配置项 `default_profile_id=english_novel`。
+- Profile registry 已内置 `english_novel`，后续可接入文言文等新 profile。
 - Provider 抽象、OpenAI-compatible provider、模型重试与错误归一化已完成。
-- `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并从 `[[word|translation|pos]]` 中提取生词和词性。
-- `WordLookupService` 已支持上下文查词，返回 `word_cn/sentence_cn/pos`。
+- `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并委托当前 profile 解析学习项。
+- `WordLookupService` 已支持上下文查词，并委托当前 profile 构造 lookup prompt；默认返回 `word_cn/sentence_cn/pos`。
 - WebSocket reading session 已支持 `ready/cards.updated/chapter.loading/chapter.opened/annotation.* /unit.marked_read/error`。
 - Guided cards 已支持 start/complete 两个阶段：生成译注、打开译注、阅读原文、读下一章、复习生词、回看正文。
 - 标注副本已按 Density level 保存为 `{unit_id}.{level}.annotated.md`，legacy `{unit_id}.annotated.md` 作为 intermediate fallback。
@@ -30,6 +34,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 - 当前章节 id 持久化到 `localStorage`，刷新后可恢复卡片页的章节上下文和 summary。
 - 阅读页支持保存显式书签；侧边栏在章节下展示书签，并可直接打开对应原文/译注位置。
 - 渲染层支持普通英文词和已标注词点击查词；手动添加标注会写入生词库并即时重排当前正文。
+- 前端已通过 renderer registry 选择阅读文本渲染器；当前只注册 `english_novel`，未知 profile fallback 到该 renderer。
 - 生词表页面已支持全部/章节筛选、未掌握/已掌握、搜索、删除、重新学习、词性 badge。
 - `review_chapter_vocab` card action 已前端拦截，直接打开生词表并筛选当前章。
 - 阅读区域和 card 文案已基本英文化；侧边栏、顶部状态栏、查词与生词表仍保留部分中文。
@@ -57,6 +62,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“阅读单
 - 书签增强：选中文本锚点、书签备注、独立书签管理页或跨设备同步。
 - 自动译注词性校验：继续优化三段 marker 的 `pos` 准确率，必要时做后台补全。
 - 生词复习模式：在生词表之外增加 quiz/flashcard/spaced repetition。
+- 新增文言文 profile：复用文本标注工作流，生成重点字词、句式和现代汉语译文；当前尚未实现。
 - 前端英文化收尾：逐步英文化查词、生词表、状态栏或保留双语策略。
 - 更细的用户状态：后续可把 mastered/manual annotations/bookmarks 从本地单用户状态升级到用户维度。
 
@@ -80,3 +86,4 @@ npm run build
 - 首版不做开放问答，不做 RAG，不让 LLM 直接拥有执行权限。
 - 工具能力只通过受控 action 或后端 API 间接使用。
 - 当前实现默认单用户本地状态，暂不区分账号。
+- 本轮不迁移 `vocabulary`/`unit_vocabulary` 到通用 `annotation_items`；它们暂作为 `english_novel` 的学习项存储。

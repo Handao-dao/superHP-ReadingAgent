@@ -8,21 +8,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from superhp_agent.context import ContextBlock, ContextBundle
-from superhp_agent.prompts import (
-    build_annotator_base_context,
+from superhp_agent.profiles import (
+    AnnotationItem,
+    AnnotationProfile,
+    EnglishNovelProfile,
 )
 from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import EventSink, emit_backend_event
 
-
-@dataclass(frozen=True)
-class VocabItem:
-    """One vocabulary item extracted while annotating a reading unit."""
-
-    word: str
-    translation: str
-    context: str
-    pos: str = "other"
+VocabItem = AnnotationItem
 
 
 @dataclass(frozen=True)
@@ -30,7 +24,7 @@ class AnnotationResult:
     """Structured result consumed by storage and annotated-file rendering."""
 
     annotated_text: str
-    vocabulary: list[VocabItem]
+    vocabulary: list[AnnotationItem]
 
 
 @dataclass(frozen=True)
@@ -119,10 +113,12 @@ class AnnotatorService:
         self,
         provider: LLMProvider,
         *,
+        profile: AnnotationProfile | None = None,
         chunker: AnnotationChunker | None = None,
         max_concurrency: int = 100,
     ):
         self.provider = provider
+        self.profile = profile or EnglishNovelProfile()
         self.chunker = chunker or AnnotationChunker()
         self.max_concurrency = max(1, int(max_concurrency))
 
@@ -138,7 +134,11 @@ class AnnotatorService:
         chunks = self.chunker.split(text)
         if not chunks:
             raise ValueError("模型没有返回译注文本。")
-        base_context = build_annotator_base_context(mastered_words=mastered_words, level=level)
+        normalized_level = self.profile.normalize_level(level)
+        base_context = self.profile.build_annotator_base_context(
+            mastered_words=mastered_words,
+            level=normalized_level,
+        )
 
         if len(chunks) == 1:
             annotated_text = await self._annotate_chunk(
@@ -160,7 +160,7 @@ class AnnotatorService:
 
         return AnnotationResult(
             annotated_text=annotated_text,
-            vocabulary=self._vocabulary_from_annotation(annotated_text),
+            vocabulary=self.profile.parse_annotation_items(annotated_text),
         )
 
     async def _annotate_chunks(
@@ -238,8 +238,7 @@ class AnnotatorService:
     def _reader_text_block(text: str) -> ContextBlock:
         return ContextBlock("reader_text", text, role="user")
 
-    @staticmethod
-    def _text_from_response(response: LLMResponse, *, chunk_index: int | None = None) -> str:
+    def _text_from_response(self, response: LLMResponse, *, chunk_index: int | None = None) -> str:
         if response.is_error:
             raise RuntimeError(response.content or "LLM annotation request failed")
         if response.finish_reason == "length":
@@ -247,7 +246,7 @@ class AnnotatorService:
         if not response.content:
             raise ValueError("模型没有返回译注文本。")
 
-        annotated_text = AnnotatorService._normalize_annotated_text(response.content)
+        annotated_text = self.profile.normalize_annotated_text(response.content)
         if not annotated_text:
             raise ValueError("模型没有返回译注文本。")
         return annotated_text
@@ -286,36 +285,6 @@ class AnnotatorService:
 
         return on_retry_wait
 
-    @classmethod
-    def _normalize_annotated_text(cls, content: str) -> str:
-        text = _strip_code_fence(content).strip()
-        legacy_json_text = _extract_loose_annotated_text(text)
-        if legacy_json_text is not None:
-            text = legacy_json_text.strip()
-        return text
-
-    @staticmethod
-    def _vocabulary_from_annotation(text: str) -> list[VocabItem]:
-        seen: set[str] = set()
-        items: list[VocabItem] = []
-        for match in re.finditer(r"\[\[([^|\]]+)\|([^|\]]+)(?:\|([^|\]]+))?\]\]", text):
-            word = match.group(1).strip()
-            translation = match.group(2).strip()
-            pos = _normalize_marker_pos(match.group(3))
-            key = word.lower()
-            if not word or not translation or key in seen:
-                continue
-            seen.add(key)
-            items.append(
-                VocabItem(
-                    word=word,
-                    translation=translation,
-                    context=_annotation_context(text, match.start()),
-                    pos=pos,
-                )
-            )
-        return items
-
 
 class LazyAnnotatorService:
     """Build the real annotator only when an annotation action is executed."""
@@ -324,10 +293,12 @@ class LazyAnnotatorService:
         self,
         provider_factory: Callable[[], LLMProvider],
         *,
+        profile: AnnotationProfile | None = None,
         max_chunk_words: int = 1000,
         max_concurrency: int = 100,
     ):
         self.provider_factory = provider_factory
+        self.profile = profile or EnglishNovelProfile()
         self.max_chunk_words = max_chunk_words
         self.max_concurrency = max_concurrency
         self._service: AnnotatorService | None = None
@@ -336,6 +307,7 @@ class LazyAnnotatorService:
         if self._service is None:
             self._service = AnnotatorService(
                 self.provider_factory(),
+                profile=self.profile,
                 chunker=AnnotationChunker(max_chunk_words=self.max_chunk_words),
                 max_concurrency=self.max_concurrency,
             )
@@ -357,58 +329,3 @@ class LazyAnnotatorService:
             event_sink=event_sink,
             request_id=request_id,
         )
-
-
-def _strip_code_fence(text: str) -> str:
-    stripped = text.strip()
-    if not stripped.startswith("```"):
-        return stripped
-    lines = stripped.splitlines()
-    if len(lines) >= 2 and lines[-1].strip() == "```":
-        return "\n".join(lines[1:-1]).strip()
-    return stripped
-
-
-def _extract_loose_annotated_text(text: str) -> str | None:
-    marker = '"annotated_text"'
-    start = text.find(marker)
-    if start < 0:
-        return None
-    colon = text.find(":", start + len(marker))
-    if colon < 0:
-        return None
-    value = text[colon + 1 :].lstrip()
-    if value.startswith('"'):
-        value = value[1:]
-
-    vocab_marker = re.search(r'"\s*,\s*"extracted_vocabulary"\s*:', value)
-    if vocab_marker:
-        value = value[: vocab_marker.start()]
-    else:
-        value = re.sub(r'"\s*}\s*$', "", value, flags=re.DOTALL)
-        value = re.sub(r'"\s*,\s*}\s*$', "", value, flags=re.DOTALL)
-
-    value = value.strip()
-    if not value:
-        return None
-    return value.replace("\\n", "\n").replace('\\"', '"')
-
-
-def _annotation_context(text: str, index: int) -> str:
-    left = max(text.rfind(".", 0, index), text.rfind("!", 0, index), text.rfind("?", 0, index))
-    right_candidates = [pos for pos in (text.find(".", index), text.find("!", index), text.find("?", index)) if pos >= 0]
-    right = min(right_candidates) if right_candidates else min(len(text), index + 120)
-    start = left + 1 if left >= 0 else max(0, index - 60)
-    return re.sub(r"\s+", " ", text[start : right + 1]).strip()[:240]
-
-
-def _normalize_marker_pos(pos: str | None) -> str:
-    value = str(pos or "").strip().lower()
-    aliases = {
-        "n": "noun",
-        "v": "verb",
-        "adj": "adjective",
-        "adv": "adverb",
-    }
-    value = aliases.get(value, value)
-    return value if value in {"noun", "verb", "adjective", "adverb", "phrase", "other"} else "other"

@@ -1,0 +1,5 @@
+{"id": "eval-0001", "prediction": "{\"word\": \"charge\", \"word_cn\": \"冲\", \"pos\": \"verb\", \"sentence_cn\": \"那只生物突然冲进房间。\"}", "latency_ms": 20892.13}
+{"id": "eval-0002", "prediction": "{\"word\": \"issue\", \"word_cn\": \"发行\", \"pos\": \"noun\", \"sentence_cn\": \"出版社将在下个月发行新版本。\"}", "latency_ms": 327.37}
+{"id": "eval-0003", "prediction": "{\"word\": \"fine\", \"word_cn\": \"好的\", \"pos\": \"adjective\", \"sentence_cn\": \"这根魔杖是用好的松木做的。\"}", "latency_ms": 378.24}
+{"id": "eval-0004", "prediction": "{\"word\": \"公平的\", \"word_cn\": \"公平的\", \"pos\": \"adjective\", \"sentence_cn\": \"每个人都应该有机会，这是公平的。\"}", "latency_ms": 349.48}
+{"id": "eval-0005", "prediction": "{\"word\": \"bound\", \"word_cn\": \"书被装订\", \"pos\": \"phrase\", \"sentence_cn\": \"这本书是用褪色的红皮装订的。\"}", "latency_ms": 320.24}

@@ -13,6 +13,7 @@ book_title: "Harry Potter and the Philosopher's Stone"
 chapter_no: 3
 chapter_title: "The Letters from No One"
 summary: "Mysterious letters addressed to Harry arrive at Privet Drive..."
+# profile_id: english_novel
 ---
 ```
 
@@ -23,6 +24,7 @@ summary: "Mysterious letters addressed to Harry arrive at Privet Drive..."
 - `book_id` / `book_title`：所属书籍。
 - `chapter_no` / `chapter_title`：原小说章节信息。
 - `summary`：本章摘要，用于 guided card 和阅读前上下文。
+- `profile_id`：可选标注 profile。缺失时使用后端配置 `default_profile_id`，当前默认是 `english_novel`。
 
 ## Rules
 
@@ -30,4 +32,5 @@ summary: "Mysterious letters addressed to Harry arrive at Privet Drive..."
 - 原始文本保存在 `corpus/`。
 - 译注副本保存到 `backend/data/annotated_corpus/{unit_id}.annotated.md`。
 - 生词关联记录到 `unit_id` / `chapter_id`，二者在章节粒度下通常相同。
+- 当前 `english_novel` profile 使用生词表作为学习项存储；未来文言文等 profile 可扩展为更通用的 annotation items。
 - 正文内的精细定位后续通过书签系统实现，而不是继续拆分章节文件。

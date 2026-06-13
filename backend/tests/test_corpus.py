@@ -37,6 +37,32 @@ def test_lists_units_from_frontmatter(tmp_path):
     assert units[0].section_no == 1
     assert units[0].section_count == 1
     assert units[0].summary == "示例摘要"
+    assert units[0].profile_id == "english_novel"
+
+
+def test_unit_profile_id_can_override_default(tmp_path):
+    path = tmp_path / "hp01/hp01-ch01.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """---
+id: hp01-ch01
+chapter_id: hp01-ch01
+book_id: hp01
+book_title: "Harry Potter and the Philosopher's Stone"
+chapter_no: 1
+chapter_title: "The Boy Who Lived"
+profile_id: custom_profile
+---
+
+Body text.
+""",
+        encoding="utf-8",
+    )
+    store = CorpusStore(tmp_path, default_profile_id="english_novel")
+
+    units = store.list_units()
+
+    assert units[0].profile_id == "custom_profile"
 
 
 def test_get_unit_body(tmp_path):

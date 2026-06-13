@@ -1,0 +1,6 @@
+﻿id,source_path,word,sentence,gold_word_cn,pred_word_cn,gold_pos,pred_pos,gold_sentence_cn,pred_sentence_cn,json_valid,schema_complete,extra_text,pos_correct,word_cn_exact,sentence_cn_exact,error_kinds,latency_ms,provider_error,raw_prediction
+eval-0001,,charge,The creature made a sudden charge across the room.,冲锋,冲锋,noun,noun,那个生物突然冲过房间。,那个生物突然冲过房间。,1,1,0,1,1,1,,,,"{""word"":""charge"",""word_cn"":""冲锋"",""pos"":""noun"",""sentence_cn"":""那个生物突然冲过房间。""}"
+eval-0002,,issue,The publisher will issue a new edition next month.,发行,发行,verb,verb,出版商将在下个月发行新版。,出版商将在下个月发行新版。,1,1,0,1,1,1,,,,"{""word"":""issue"",""word_cn"":""发行"",""pos"":""verb"",""sentence_cn"":""出版商将在下个月发行新版。""}"
+eval-0003,,fine,The wand was made of fine yew wood.,优质的,优质的,adjective,adjective,这根魔杖由优质紫杉木制成。,这根魔杖由优质紫杉木制成。,1,1,0,1,1,1,,,,"{""word"":""fine"",""word_cn"":""优质的"",""pos"":""adjective"",""sentence_cn"":""这根魔杖由优质紫杉木制成。""}"
+eval-0004,,fair,It was only fair that everyone got a chance.,公平的,公平的,adjective,adjective,每个人都有机会才算公平。,每个人都有机会才算公平。,1,1,0,1,1,1,,,,"{""word"":""fair"",""word_cn"":""公平的"",""pos"":""adjective"",""sentence_cn"":""每个人都有机会才算公平。""}"
+eval-0005,,bound,The book was bound in faded red leather.,装订,装订,verb,verb,这本书用褪色的红色皮革装订。,这本书用褪色的红色皮革装订。,1,1,0,1,1,1,,,,"{""word"":""bound"",""word_cn"":""装订"",""pos"":""verb"",""sentence_cn"":""这本书用褪色的红色皮革装订。""}"

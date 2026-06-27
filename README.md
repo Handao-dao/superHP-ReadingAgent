@@ -2,7 +2,7 @@
 
 SuperHP Agent 当前是一个以《哈利波特》精读为默认场景的 profile 化文本标注工作流。它不再以自由粘贴文本为主入口，而是围绕本地 `corpus/` 章节语料、章节译注副本、生词本和选择驱动的 agent 会话卡片来组织阅读流程。
 
-核心抽象是：后端按阅读单元调用 LLM 生成 profile-specific 标注，前端按对应 renderer 渲染学习体验。当前内置默认 profile 是 `english_novel`，保留原有哈利波特行为；后续可增加文言文、古诗、论文等 profile。
+核心抽象是：后端按阅读单元调用 LLM 生成 profile-specific 标注，前端按对应 renderer 渲染学习体验。当前内置默认 profile 是 `english_novel`，保留原有哈利波特行为；同时已预置 `classical_chinese` profile，用于文言文重点字词、中文 pos 标签和现代汉语释义标注。
 
 ## 产品方向
 
@@ -65,4 +65,4 @@ Chapter body...
 2. 自动译注词性精度：批量标注可通过 `[[word|translation|pos]]` 写入词性，后续可继续优化模型选择与校验。
 3. 生词复习训练：在生词表之外增加 quiz/flashcard 等复习模式。
 4. 前端英文化收尾：当前侧边栏、顶部状态栏、查词和生词表仍保留部分中文。
-5. 新增文言文 profile：用同一工作流生成重点字词、句式和现代汉语翻译；本轮尚未实现。
+5. 文言文体验完善：`classical_chinese` profile 已有后端 prompt/parser，后续可补样例 corpus、专用 renderer 和复习页文案。

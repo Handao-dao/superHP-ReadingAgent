@@ -6,13 +6,13 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“profile �
 
 后端采用明确分层：transport 负责 HTTP/WebSocket，runtime 负责 cards 与 action side effects，services 负责模型译注和查词，storage/memory/corpus 负责本地数据。Router 只决定“给用户什么选项”，Dispatcher 才执行“用户选择之后发生什么”。
 
-本轮抽象引入 profile registry：`english_novel` profile 持有原 HP prompt、marker parser、lookup prompt、card copy 和前端 renderer hint。核心 API、数据库表名和 WebSocket 事件仍保持原样，避免破坏现有 HP 实现。
+本轮抽象引入 profile registry：`english_novel` profile 持有原 HP prompt、marker parser、lookup prompt、card copy 和前端 renderer hint；`classical_chinese` profile 复用 inline marker/output 形态，但第三段 `pos` 使用中文学习标签。核心 API、数据库表名和 WebSocket 事件仍保持原样，避免破坏现有 HP 实现。
 
 ## Completed Backend
 
 - `CorpusStore` 已支持扫描 `corpus/` Markdown、解析 YAML frontmatter、按 `unit_id` 安全读取正文，并拒绝路径越界与重复 id。
 - `CorpusStore` 已支持可选 `profile_id`；缺失时使用配置项 `default_profile_id=english_novel`。
-- Profile registry 已内置 `english_novel`，后续可接入文言文等新 profile。
+- Profile registry 已内置 `english_novel` 和 `classical_chinese`；默认仍为 `english_novel`。
 - Provider 抽象、OpenAI-compatible provider、模型重试与错误归一化已完成。
 - `AnnotatorService` 已支持段落完整分块、并发标注、模型重试、JSON 修复、截断检测、合并译注，并委托当前 profile 解析学习项。
 - `WordLookupService` 已支持上下文查词，并委托当前 profile 构造 lookup prompt；默认返回 `word_cn/sentence_cn/pos`。
@@ -62,7 +62,7 @@ SuperHP Agent 已从“粘贴文本的通用标注工具”升级为“profile �
 - 书签增强：选中文本锚点、书签备注、独立书签管理页或跨设备同步。
 - 自动译注词性校验：继续优化三段 marker 的 `pos` 准确率，必要时做后台补全。
 - 生词复习模式：在生词表之外增加 quiz/flashcard/spaced repetition。
-- 新增文言文 profile：复用文本标注工作流，生成重点字词、句式和现代汉语译文；当前尚未实现。
+- 文言文体验完善：补样例 corpus、专用 renderer 和更贴近“重点字词/句式”的复习页。
 - 前端英文化收尾：逐步英文化查词、生词表、状态栏或保留双语策略。
 - 更细的用户状态：后续可把 mastered/manual annotations/bookmarks 从本地单用户状态升级到用户维度。
 

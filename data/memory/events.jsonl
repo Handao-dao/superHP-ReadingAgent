@@ -1,0 +1,38 @@
+{"type": "session_started", "created_at": "2026-06-24T12:36:22.454737+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:22.456663+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:36:22.490905+00:00", "current_unit_id": "hp01-ch01", "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:22.491435+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:30.784174+00:00", "current_unit_id": null, "profile_id": "classical_chinese", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:31.201626+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:36:32.669876+00:00"}
+{"type": "session_started", "created_at": "2026-06-24T12:36:32.733512+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:32.734868+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:36:32.741844+00:00", "current_unit_id": null, "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:32.742322+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:36:51.942731+00:00"}
+{"type": "session_started", "created_at": "2026-06-24T12:36:52.042571+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:52.043583+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:36:52.047415+00:00", "current_unit_id": null, "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:52.047964+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:36:52.936223+00:00"}
+{"type": "session_started", "created_at": "2026-06-24T12:36:53.030191+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:53.031114+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:36:53.040945+00:00", "current_unit_id": null, "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:53.041526+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:36:54.540856+00:00"}
+{"type": "session_started", "created_at": "2026-06-24T12:36:54.615392+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:54.616425+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:36:54.624287+00:00", "current_unit_id": null, "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:54.624888+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:55.784296+00:00", "current_unit_id": null, "profile_id": "classical_chinese", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:36:56.198840+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:14.362397+00:00", "current_unit_id": null, "profile_id": "classical_chinese", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:14.749554+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:29.691851+00:00", "current_unit_id": null, "profile_id": "classical_chinese", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:30.126671+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:37:46.982914+00:00"}
+{"type": "session_started", "created_at": "2026-06-24T12:37:47.057132+00:00"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:47.059716+00:00", "current_unit_id": null, "profile_id": null, "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_hello", "created_at": "2026-06-24T12:37:47.065877+00:00", "current_unit_id": null, "profile_id": "english_novel"}
+{"type": "cards_shown", "created_at": "2026-06-24T12:37:47.066497+00:00", "current_unit_id": null, "profile_id": "english_novel", "phase": "start", "card_ids": ["empty-corpus"]}
+{"type": "session_disconnected", "created_at": "2026-06-24T12:37:52.828995+00:00"}

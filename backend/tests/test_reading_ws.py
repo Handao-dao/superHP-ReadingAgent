@@ -6,7 +6,12 @@ from fastapi.testclient import TestClient
 from superhp_agent.corpus import CorpusStore
 from superhp_agent.main import app
 from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.runtime import ReadingFlowRouter, ReadingStateReader
+from superhp_agent.profiles import create_default_registry
+from superhp_agent.runtime import (
+    ReadingCardBuilder,
+    ReadingFlowRouter,
+    ReadingStateReader,
+)
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
     MARK_CHAPTER_READ,
@@ -49,14 +54,40 @@ Body text.
     )
 
 
-def build_session(tmp_path, *, with_memory=False):
+def write_classical_unit(root: Path):
+    path = root / "classical_chinese" / "lunyu-xueer.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """---
+id: cc-lunyu-xueer-01
+chapter_id: cc-lunyu-xueer-01
+book_id: cc-lunyu
+book_title: "论语"
+chapter_no: 1
+chapter_title: "学而"
+summary: "Summary"
+profile_id: classical_chinese
+---
+
+学而时习之，不亦说乎？
+""",
+        encoding="utf-8",
+    )
+
+
+def build_session(tmp_path, *, with_memory=False, with_classical=False):
     write_unit(tmp_path)
+    if with_classical:
+        write_classical_unit(tmp_path)
     corpus = CorpusStore(tmp_path)
     memory = None
     if with_memory:
         memory = ReadingMemoryStore(tmp_path / "memory" / "reading_memory.json", tmp_path / "memory" / "events.jsonl")
     state_reader = ReadingStateReader(corpus, tmp_path / "annotated", memory)
-    router = ReadingFlowRouter(state_reader)
+    router = ReadingFlowRouter(
+        state_reader,
+        card_builder=ReadingCardBuilder(profile_registry=create_default_registry()),
+    )
     websocket = FakeWebSocket()
     return ReadingSocketSession(websocket=websocket, flow_router=router, corpus=corpus, memory_store=memory), websocket, memory
 
@@ -71,6 +102,23 @@ def test_socket_hello_sends_ready_and_cards(tmp_path):
         assert websocket.events[1]["type"] == "cards.updated"
         assert websocket.events[1]["cards"][0]["actions"][0]["id"] == GENERATE_ANNOTATION
         assert websocket.events[1]["cards"][0]["actions"][0]["payload"]["unit_id"] == "hp01-ch01"
+
+    asyncio.run(run_case())
+
+
+def test_socket_hello_can_select_profile_cards(tmp_path):
+    async def run_case():
+        session, websocket, _ = build_session(tmp_path, with_classical=True)
+
+        await session.handle_raw_message(
+            {"type": "hello", "request_id": "r-profile", "profile_id": "classical_chinese"}
+        )
+
+        assert websocket.events[1]["type"] == "cards.updated"
+        assert websocket.events[1]["profile_id"] == "classical_chinese"
+        assert websocket.events[1]["current_unit_id"] == "cc-lunyu-xueer-01"
+        assert websocket.events[1]["cards"][0]["title"] == "准备研读"
+        assert websocket.events[1]["cards"][0]["actions"][0]["label"] == "生成注释"
 
     asyncio.run(run_case())
 

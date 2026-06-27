@@ -34,6 +34,13 @@ class CardCopy:
     learning_item_singular: str = "word"
     learning_item_plural: str = "words"
     learning_item_scope: str = "vocabulary"
+    unit_body_template: str = "{prefix}: {book_title}, Chapter {chapter_no}, {chapter_title}."
+    review_body_template: str = "{prefix} This chapter currently has {count} {scope} {item_label}."
+    generate_annotation_label: str = "Generate"
+    open_annotated_label: str = "Annotated"
+    read_original_label: str = "Original"
+    review_items_label: str = "Vocab"
+    start_next_label: str = "Next"
 
 
 class AnnotationProfile(Protocol):
@@ -64,4 +71,3 @@ class AnnotationProfile(Protocol):
     def normalize_annotated_text(self, content: str) -> str: ...
 
     def parse_annotation_items(self, text: str) -> list[AnnotationItem]: ...
-

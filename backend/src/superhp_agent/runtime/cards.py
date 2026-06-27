@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from superhp_agent.profiles import CardCopy
+from superhp_agent.profiles import CardCopy, ProfileRegistry
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
     OPEN_ANNOTATED_COPY,
@@ -21,16 +21,18 @@ class ReadingCardBuilder:
     Keeping copy and action ids here makes it easier to refine the UX without
     touching WebSocket transport or action execution code.
     """
-    def __init__(self, card_copy: CardCopy | None = None):
+    def __init__(self, card_copy: CardCopy | None = None, *, profile_registry: ProfileRegistry | None = None):
         self.copy = card_copy or CardCopy()
+        self.profile_registry = profile_registry
 
-    def empty_corpus(self) -> list[AgentCard]:
+    def empty_corpus(self, profile_id: str | None = None) -> list[AgentCard]:
+        copy = self._copy_for_profile(profile_id)
         return [
             AgentCard(
                 id="empty-corpus",
                 type="setup",
-                title=self.copy.empty_title,
-                body=self.copy.empty_body,
+                title=copy.empty_title,
+                body=copy.empty_body,
                 actions=[],
             )
         ]
@@ -39,26 +41,32 @@ class ReadingCardBuilder:
         return self.start_unit(unit)
 
     def start_unit(self, unit: ReadingUnitState) -> list[AgentCard]:
+        copy = self._copy_for(unit)
         actions = []
         if unit.has_annotated_copy:
             actions.append(action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id))
+            actions[-1].label = copy.open_annotated_label
         else:
             actions.append(action(GENERATE_ANNOTATION, chapter_id=unit.id, unit_id=unit.id))
+            actions[-1].label = copy.generate_annotation_label
         actions.append(action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id))
+        actions[-1].label = copy.read_original_label
         if unit.has_annotated_copy and unit.vocab_count > 0:
             actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
+            actions[-1].label = copy.review_items_label
 
         return [
             AgentCard(
                 id=f"unit-{unit.id}-start",
                 type="reading",
-                title=self.copy.start_title,
-                body=self._unit_title(unit, self.copy.start_prefix),
+                title=copy.start_title,
+                body=self._unit_title(unit, copy.start_prefix, copy=copy),
                 actions=actions,
             )
         ]
 
     def complete_unit(self, unit: ReadingUnitState) -> list[AgentCard]:
+        copy = self._copy_for(unit)
         actions = []
         if unit.next_unit_id:
             actions.append(
@@ -69,24 +77,26 @@ class ReadingCardBuilder:
                     completed_unit_id=unit.id,
                 )
             )
+            actions[-1].label = copy.start_next_label
         if unit.vocab_count > 0:
             actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
+            actions[-1].label = copy.review_items_label
         if unit.has_annotated_copy:
             back_action = action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id)
-            back_action.label = self.copy.back_to_annotated_label
+            back_action.label = copy.back_to_annotated_label
             actions.append(back_action)
         else:
             back_action = action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id)
-            back_action.label = self.copy.back_to_source_label
+            back_action.label = copy.back_to_source_label
             actions.append(back_action)
 
-        title = self.copy.complete_title if unit.next_unit_id else self.copy.final_complete_title
+        title = copy.complete_title if unit.next_unit_id else copy.final_complete_title
         return [
             AgentCard(
                 id=f"unit-{unit.id}-complete",
                 type="progress",
                 title=title,
-                body=self._vocab_body(unit, self.copy.complete_prefix),
+                body=self._vocab_body(unit, copy.complete_prefix, copy=copy),
                 actions=actions,
             )
         ]
@@ -98,15 +108,30 @@ class ReadingCardBuilder:
         """Select the card variant from the user's progress on one unit."""
         return self.start_unit(unit)
 
-    @staticmethod
-    def _unit_title(unit: ReadingUnitState, prefix: str) -> str:
-        return (
-            f"{prefix}: {unit.book_title}, Chapter {unit.chapter_no}, "
-            f"{unit.chapter_title}."
+    def _unit_title(self, unit: ReadingUnitState, prefix: str, *, copy: CardCopy) -> str:
+        return copy.unit_body_template.format(
+            prefix=prefix,
+            book_title=unit.book_title,
+            chapter_no=unit.chapter_no,
+            chapter_title=unit.chapter_title,
+            unit_id=unit.id,
         )
 
-    def _vocab_body(self, unit: ReadingUnitState, prefix: str) -> str:
+    def _vocab_body(self, unit: ReadingUnitState, prefix: str, *, copy: CardCopy) -> str:
         if unit.vocab_count <= 0:
             return prefix
-        word_label = self.copy.learning_item_singular if unit.vocab_count == 1 else self.copy.learning_item_plural
-        return f"{prefix} This chapter currently has {unit.vocab_count} {self.copy.learning_item_scope} {word_label}."
+        word_label = copy.learning_item_singular if unit.vocab_count == 1 else copy.learning_item_plural
+        return copy.review_body_template.format(
+            prefix=prefix,
+            count=unit.vocab_count,
+            scope=copy.learning_item_scope,
+            item_label=word_label,
+        )
+
+    def _copy_for(self, unit: ReadingUnitState) -> CardCopy:
+        return self._copy_for_profile(unit.profile_id)
+
+    def _copy_for_profile(self, profile_id: str | None = None) -> CardCopy:
+        if self.profile_registry is None:
+            return self.copy
+        return self.profile_registry.get(profile_id).card_copy

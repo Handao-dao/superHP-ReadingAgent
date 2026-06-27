@@ -12,11 +12,11 @@ class VocabItem:
         self.pos = pos
 
 
-def write_unit(root: Path):
+def write_unit(root: Path, *, profile_id: str = "english_novel"):
     path = root / "hp01" / "ch01" / "01.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        """---
+        f"""---
 id: hp01-ch01
 chapter_id: hp01-ch01
 book_id: hp01
@@ -24,9 +24,31 @@ book_title: "Harry Potter and the Philosopher's Stone"
 chapter_no: 1
 chapter_title: "The Boy Who Lived"
 summary: "Summary"
+profile_id: {profile_id}
 ---
 
 Body text.
+""",
+        encoding="utf-8",
+    )
+
+
+def write_classical_unit(root: Path):
+    path = root / "classical_chinese" / "lunyu-xueer.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """---
+id: cc-lunyu-xueer-01
+chapter_id: cc-lunyu-xueer-01
+book_id: cc-lunyu
+book_title: "论语"
+chapter_no: 1
+chapter_title: "学而"
+summary: "Summary"
+profile_id: classical_chinese
+---
+
+学而时习之，不亦说乎？
 """,
         encoding="utf-8",
     )
@@ -116,6 +138,50 @@ def test_vocabulary_context_strips_annotation_markers(tmp_path):
 
     rows = db.list_vocabulary(unit_id="hp01-ch01")
     assert rows[0]["context"] == "half-exasperated, half-admiring."
+
+
+def test_vocabulary_accepts_classical_chinese_pos_labels(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("hp01-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    db.add_vocabulary_items(unit, [VocabItem(word="说", translation="同“悦”，愉快", pos="通假字")])
+
+    rows = db.list_vocabulary(unit_id="hp01-ch01")
+    assert rows[0]["pos"] == "通假字"
+
+
+def test_vocabulary_upgrades_chinese_other_pos_label(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_classical_unit(corpus_root)
+    unit = CorpusStore(corpus_root).get_unit("cc-lunyu-xueer-01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    db.add_vocabulary_items(unit, [VocabItem(word="说", translation="愉快", pos="其他")])
+    db.add_vocabulary_items(unit, [VocabItem(word="说", translation="同“悦”，愉快", pos="通假字")])
+
+    rows = db.list_vocabulary(unit_id="cc-lunyu-xueer-01")
+    assert rows[0]["pos"] == "通假字"
+
+
+def test_vocabulary_can_be_filtered_by_profile(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    write_classical_unit(corpus_root)
+    store = CorpusStore(corpus_root)
+    english_unit = store.get_unit("hp01-ch01").meta
+    classical_unit = store.get_unit("cc-lunyu-xueer-01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    db.add_vocabulary_items(english_unit, [VocabItem(word="wand", translation="魔杖", pos="noun")])
+    db.add_vocabulary_items(classical_unit, [VocabItem(word="说", translation="同“悦”，愉快", pos="通假字")])
+
+    english_rows = db.list_vocabulary(profile_id="english_novel")
+    classical_rows = db.list_vocabulary(profile_id="classical_chinese")
+
+    assert [row["word"] for row in english_rows] == ["wand"]
+    assert [row["word"] for row in classical_rows] == ["说"]
 
 
 def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):

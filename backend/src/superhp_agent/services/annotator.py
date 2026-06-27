@@ -12,6 +12,7 @@ from superhp_agent.profiles import (
     AnnotationItem,
     AnnotationProfile,
     EnglishNovelProfile,
+    ProfileRegistry,
 )
 from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import EventSink, emit_backend_event
@@ -130,6 +131,7 @@ class AnnotatorService:
         level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
+        profile_id: str | None = None,
     ) -> AnnotationResult:
         chunks = self.chunker.split(text)
         if not chunks:
@@ -294,24 +296,27 @@ class LazyAnnotatorService:
         provider_factory: Callable[[], LLMProvider],
         *,
         profile: AnnotationProfile | None = None,
+        profile_registry: ProfileRegistry | None = None,
         max_chunk_words: int = 1000,
         max_concurrency: int = 100,
     ):
         self.provider_factory = provider_factory
         self.profile = profile or EnglishNovelProfile()
+        self.profile_registry = profile_registry
         self.max_chunk_words = max_chunk_words
         self.max_concurrency = max_concurrency
-        self._service: AnnotatorService | None = None
+        self._services: dict[str, AnnotatorService] = {}
 
-    def _get_service(self) -> AnnotatorService:
-        if self._service is None:
-            self._service = AnnotatorService(
+    def _get_service(self, profile_id: str | None = None) -> AnnotatorService:
+        profile = self.profile_registry.get(profile_id) if self.profile_registry is not None else self.profile
+        if profile.id not in self._services:
+            self._services[profile.id] = AnnotatorService(
                 self.provider_factory(),
-                profile=self.profile,
+                profile=profile,
                 chunker=AnnotationChunker(max_chunk_words=self.max_chunk_words),
                 max_concurrency=self.max_concurrency,
             )
-        return self._service
+        return self._services[profile.id]
 
     async def annotate_text(
         self,
@@ -321,11 +326,13 @@ class LazyAnnotatorService:
         level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
+        profile_id: str | None = None,
     ) -> AnnotationResult:
-        return await self._get_service().annotate_text(
+        return await self._get_service(profile_id).annotate_text(
             text,
             mastered_words=mastered_words,
             level=level,
             event_sink=event_sink,
             request_id=request_id,
+            profile_id=profile_id,
         )

@@ -8,8 +8,11 @@ the code depend on named capabilities instead of hard-coded directories.
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 class Settings(BaseSettings):
@@ -17,8 +20,8 @@ class Settings(BaseSettings):
 
     # Mutable state lives under data_dir so it can be ignored by git and reset
     # without touching the source corpus.
-    data_dir: Path = Field(default=Path("./data"))
-    corpus_dir: Path = Field(default=Path("../corpus"))
+    data_dir: Path = Field(default=BACKEND_ROOT / "data")
+    corpus_dir: Path = Field(default=PROJECT_ROOT / "corpus")
     llm_provider: str = "deepseek"
     llm_model_id: str = "deepseek-v4-pro"
     llm_base_url: str = "https://api.deepseek.com"
@@ -30,7 +33,19 @@ class Settings(BaseSettings):
     annotation_max_concurrency: int = 100
     default_profile_id: str = "english_novel"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_ROOT / ".env",
+        env_file_encoding="utf-8",
+    )
+
+    @model_validator(mode="after")
+    def resolve_relative_paths(self) -> "Settings":
+        """Keep env-file paths stable regardless of the process cwd."""
+        if not self.data_dir.is_absolute():
+            self.data_dir = BACKEND_ROOT / self.data_dir
+        if not self.corpus_dir.is_absolute():
+            self.corpus_dir = BACKEND_ROOT / self.corpus_dir
+        return self
 
     @property
     def db_path(self) -> Path:

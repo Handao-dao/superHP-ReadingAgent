@@ -34,36 +34,38 @@ class ReadingFlowRouter:
         current_chapter_id: str | None = None,
         current_unit_id: str | None = None,
         phase: str = CARD_PHASE_START,
+        profile_id: str | None = None,
     ) -> list[AgentCard]:
         """Return the cards the frontend should offer next."""
         unit_id = current_unit_id or current_chapter_id
         if unit_id:
-            current = self.state_reader.get_state(unit_id)
+            current = self.state_reader.get_state(unit_id, profile_id=profile_id)
             if current is not None:
                 return self._cards_for_phase(current, phase)
 
-        current = self.state_reader.current_state()
+        current = self.state_reader.current_state(profile_id=profile_id)
         if current is not None:
             return self._cards_for_phase(current, phase)
 
-        first = self.state_reader.first_state()
+        first = self.state_reader.first_state(profile_id=profile_id)
         if first is None:
-            return self.card_builder.empty_corpus()
+            return self.card_builder.empty_corpus(profile_id=profile_id)
         return self.card_builder.start_reading(first)
 
     def resolve_unit_id(
         self,
         current_chapter_id: str | None = None,
         current_unit_id: str | None = None,
+        profile_id: str | None = None,
     ) -> str | None:
         """Return the unit id that inspect would use for cards."""
         unit_id = current_unit_id or current_chapter_id
-        if unit_id and self.state_reader.get_state(unit_id) is not None:
+        if unit_id and self.state_reader.get_state(unit_id, profile_id=profile_id) is not None:
             return unit_id
-        current = self.state_reader.current_state()
+        current = self.state_reader.current_state(profile_id=profile_id)
         if current is not None:
             return current.id
-        first = self.state_reader.first_state()
+        first = self.state_reader.first_state(profile_id=profile_id)
         return first.id if first is not None else None
 
     def cards_for_unit(self, unit: ReadingUnitState) -> list[AgentCard]:

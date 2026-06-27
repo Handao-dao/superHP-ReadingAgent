@@ -19,6 +19,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  profileId: {
+    type: String,
+    default: 'english_novel',
+  },
   refreshKey: {
     type: Number,
     default: 0,
@@ -40,12 +44,43 @@ const posLabels = {
   adverb: '副词',
   phrase: '短语',
   other: '其他',
+  重点实词: '重点实词',
+  重点虚词: '重点虚词',
+  通假字: '通假字',
+  古今异义: '古今异义',
+  词类活用: '词类活用',
+  虚词用法: '虚词用法',
+  特殊句式: '特殊句式',
+  其他: '其他',
 }
 
+const profileCopy = computed(() => {
+  if (props.profileId === 'classical_chinese') {
+    return {
+      eyebrow: 'Knowledge Points',
+      title: '文言重点',
+      allUnits: '全部篇目',
+      currentUnit: '当前篇目',
+      searchPlaceholder: '字词 / 释义 / 原文语境',
+      loading: '正在读取文言重点...',
+      empty: '这里暂时没有文言重点。',
+    }
+  }
+  return {
+    eyebrow: 'Vocabulary',
+    title: '生词表',
+    allUnits: '所有章节',
+    currentUnit: '当前章节',
+    searchPlaceholder: 'word / 译文 / context',
+    loading: '正在读取生词...',
+    empty: '这里暂时没有生词。',
+  }
+})
+
 const selectedChapterTitle = computed(() => {
-  if (!props.selectedUnitId) return '所有章节'
+  if (!props.selectedUnitId) return profileCopy.value.allUnits
   const chapter = props.chapters.find((item) => item.id === props.selectedUnitId)
-  if (!chapter) return props.currentTitle || '当前章节'
+  if (!chapter) return props.currentTitle || profileCopy.value.currentUnit
   return `${chapter.chapter_no}. ${chapter.chapter_title}`
 })
 
@@ -79,7 +114,7 @@ async function loadVocabulary() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const result = await fetchVocabulary()
+    const result = await fetchVocabulary({ profileId: props.profileId })
     items.value = result.items
   } catch (error) {
     errorMessage.value = error.message || '生词表加载失败'
@@ -109,6 +144,7 @@ async function removeItem(item) {
 }
 
 watch(() => props.refreshKey, loadVocabulary)
+watch(() => props.profileId, loadVocabulary)
 
 onMounted(loadVocabulary)
 </script>
@@ -117,8 +153,8 @@ onMounted(loadVocabulary)
   <section class="vocabulary-panel">
     <header class="vocabulary-header">
       <div>
-        <p class="small-label">Vocabulary</p>
-        <h2>生词表</h2>
+        <p class="small-label">{{ profileCopy.eyebrow }}</p>
+        <h2>{{ profileCopy.title }}</h2>
         <p>{{ selectedChapterTitle }}</p>
       </div>
       <div class="vocab-stats">
@@ -134,7 +170,7 @@ onMounted(loadVocabulary)
       </div>
       <label class="vocab-search">
         <span>搜索</span>
-        <input v-model="search" type="search" placeholder="word / 译文 / context" />
+        <input v-model="search" type="search" :placeholder="profileCopy.searchPlaceholder" />
       </label>
       <label class="chapter-select">
         <span>章节</span>
@@ -152,8 +188,8 @@ onMounted(loadVocabulary)
     </div>
 
     <p v-if="errorMessage" class="vocab-alert" role="status">{{ errorMessage }}</p>
-    <p v-else-if="loading" class="vocab-empty">正在读取生词...</p>
-    <p v-else-if="filteredItems.length === 0" class="vocab-empty">这里暂时没有生词。</p>
+    <p v-else-if="loading" class="vocab-empty">{{ profileCopy.loading }}</p>
+    <p v-else-if="filteredItems.length === 0" class="vocab-empty">{{ profileCopy.empty }}</p>
 
     <div v-else class="vocab-table">
       <article v-for="item in filteredItems" :key="item.id" class="vocab-row">

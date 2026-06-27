@@ -22,7 +22,7 @@ function userFacingError(message, fallback = '阅读会话发生错误。') {
   return compact.length > 96 ? `${compact.slice(0, 96)}...` : compact
 }
 
-export function useReadingSocket() {
+export function useReadingSocket(options = {}) {
   const cards = ref([])
   const activeChapter = ref(null)
   const currentChapterId = ref(localStorage.getItem(CURRENT_UNIT_STORAGE_KEY) || null)
@@ -39,6 +39,7 @@ export function useReadingSocket() {
   let intentionalClose = false
 
   const canSend = computed(() => connected.value && socket?.readyState === WebSocket.OPEN)
+  const selectedProfileId = () => options.profileId?.value || options.profileId || ''
 
   watch(currentChapterId, (unitId) => {
     if (unitId) {
@@ -69,6 +70,7 @@ export function useReadingSocket() {
         request_id: makeRequestId(),
         current_unit_id: currentChapterId.value,
         current_chapter_id: currentChapterId.value,
+        profile_id: selectedProfileId(),
       })
     })
 
@@ -134,6 +136,7 @@ export function useReadingSocket() {
       request_id: makeRequestId(),
       current_unit_id: targetUnitId,
       current_chapter_id: targetUnitId,
+      profile_id: selectedProfileId(),
       phase,
     })
     if (sent && targetUnitId) {

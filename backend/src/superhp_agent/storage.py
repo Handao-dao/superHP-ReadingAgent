@@ -16,7 +16,22 @@ from typing import Any
 from superhp_agent.corpus import ReadingUnit
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[([^|\]]+)\|[^|\]]+(?:\|[^|\]]+)?\]\]")
-VALID_POS = {"noun", "verb", "adjective", "adverb", "phrase", "other"}
+VALID_POS = {
+    "noun",
+    "verb",
+    "adjective",
+    "adverb",
+    "phrase",
+    "other",
+    "重点实词",
+    "重点虚词",
+    "通假字",
+    "古今异义",
+    "词类活用",
+    "虚词用法",
+    "特殊句式",
+    "其他",
+}
 VALID_BODY_KINDS = {"source", "annotated"}
 
 
@@ -27,7 +42,10 @@ def strip_annotation_markers(text: str) -> str:
 
 def normalize_pos(pos: str | None) -> str:
     """Normalize lightweight vocabulary part-of-speech labels."""
-    value = str(pos or "").strip().lower()
+    raw = str(pos or "").strip()
+    if raw in VALID_POS:
+        return raw
+    value = raw.lower()
     aliases = {
         "n": "noun",
         "v": "verb",
@@ -62,8 +80,8 @@ class AppDB:
                 """
                 INSERT INTO units (
                     id, chapter_id, book_id, book_title, chapter_no, chapter_title,
-                    section_no, section_count, summary, source_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    section_no, section_count, summary, source_path, profile_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     chapter_id=excluded.chapter_id,
                     book_id=excluded.book_id,
@@ -73,7 +91,8 @@ class AppDB:
                     section_no=excluded.section_no,
                     section_count=excluded.section_count,
                     summary=excluded.summary,
-                    source_path=excluded.source_path
+                    source_path=excluded.source_path,
+                    profile_id=excluded.profile_id
                 """,
                 (
                     unit.id,
@@ -86,6 +105,7 @@ class AppDB:
                     unit.section_count,
                     unit.summary,
                     str(unit.path),
+                    unit.profile_id,
                 ),
             )
             self._conn.commit()
@@ -109,7 +129,7 @@ class AppDB:
                     ON CONFLICT(word) DO UPDATE SET
                         translation=excluded.translation,
                         pos=CASE
-                            WHEN vocabulary.pos = 'other' THEN excluded.pos
+                            WHEN vocabulary.pos IN ('other', '其他') THEN excluded.pos
                             ELSE vocabulary.pos
                         END,
                         last_seen_at=datetime('now','localtime')
@@ -204,21 +224,34 @@ class AppDB:
             self._conn.commit()
             return cursor.rowcount > 0
 
-    def set_mastered_by_word(self, word: str, mastered: bool) -> bool:
+    def set_mastered_by_word(self, word: str, mastered: bool, *, profile_id: str | None = None) -> bool:
         """Mark vocabulary by word, used by inline reading actions."""
         normalized = word.strip().lower()
         if not normalized:
             return False
         with self._lock:
-            cursor = self._conn.execute(
+            profile_clause = ""
+            params: list[Any] = [1 if mastered else 0, 1 if mastered else 0, normalized]
+            if profile_id:
+                profile_clause = """
+                    AND EXISTS (
+                        SELECT 1
+                        FROM unit_vocabulary uv
+                        JOIN units u ON u.id = uv.unit_id
+                        WHERE uv.vocab_id = vocabulary.id AND u.profile_id = ?
+                    )
                 """
+                params.append(profile_id)
+            cursor = self._conn.execute(
+                f"""
                 UPDATE vocabulary
                 SET mastered = ?,
                     mastered_at = CASE WHEN ? THEN datetime('now','localtime') ELSE NULL END,
                     last_seen_at = datetime('now','localtime')
                 WHERE lower(word) = ?
+                {profile_clause}
                 """,
-                (1 if mastered else 0, 1 if mastered else 0, normalized),
+                params,
             )
             self._conn.commit()
             return cursor.rowcount > 0
@@ -262,6 +295,7 @@ class AppDB:
         *,
         unit_id: str | None = None,
         chapter_id: str | None = None,
+        profile_id: str | None = None,
     ) -> list[dict[str, Any]]:
         clauses: list[str] = []
         params: list[str] = []
@@ -271,6 +305,9 @@ class AppDB:
         if chapter_id:
             clauses.append("uv.chapter_id = ?")
             params.append(chapter_id)
+        if profile_id:
+            clauses.append("u.profile_id = ?")
+            params.append(profile_id)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         query = f"""
             SELECT
@@ -288,6 +325,7 @@ class AppDB:
                 uv.last_seen_at
             FROM unit_vocabulary uv
             JOIN vocabulary v ON v.id = uv.vocab_id
+            JOIN units u ON u.id = uv.unit_id
             {where}
             ORDER BY uv.last_seen_at DESC, lower(v.word)
         """
@@ -384,6 +422,7 @@ class AppDB:
                 section_no INTEGER NOT NULL DEFAULT 1,
                 section_count INTEGER NOT NULL DEFAULT 1,
                 summary TEXT DEFAULT '',
+                profile_id TEXT NOT NULL DEFAULT 'english_novel',
                 source_path TEXT NOT NULL,
                 annotated_path TEXT DEFAULT '',
                 status TEXT DEFAULT 'unread',
@@ -455,3 +494,10 @@ class AppDB:
         if "pos" not in columns:
             self._conn.execute("ALTER TABLE vocabulary ADD COLUMN pos TEXT NOT NULL DEFAULT 'other'")
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_vocab_pos ON vocabulary(pos)")
+        unit_columns = {
+            str(row["name"])
+            for row in self._conn.execute("PRAGMA table_info(units)").fetchall()
+        }
+        if "profile_id" not in unit_columns:
+            self._conn.execute("ALTER TABLE units ADD COLUMN profile_id TEXT NOT NULL DEFAULT 'english_novel'")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_units_profile ON units(profile_id)")

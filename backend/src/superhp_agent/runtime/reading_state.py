@@ -89,9 +89,11 @@ class ReadingStateReader:
         self.memory_store = memory_store
         self.db = db
 
-    def list_states(self) -> list[ReadingUnitState]:
+    def list_states(self, profile_id: str | None = None) -> list[ReadingUnitState]:
         """Build an ordered state list without mutating progress or files."""
         units = self.corpus.list_units()
+        if profile_id:
+            units = [unit for unit in units if unit.profile_id == profile_id]
         next_by_id = self._next_unit_ids(units)
         memory = self.memory_store.load() if self.memory_store else None
         read_ids = set(memory.read_unit_ids) if memory else set()
@@ -108,23 +110,23 @@ class ReadingStateReader:
             for unit in units
         ]
 
-    def get_state(self, unit_id: str) -> ReadingUnitState | None:
-        for state in self.list_states():
+    def get_state(self, unit_id: str, *, profile_id: str | None = None) -> ReadingUnitState | None:
+        for state in self.list_states(profile_id=profile_id):
             if state.id == unit_id:
                 return state
         return None
 
-    def current_state(self) -> ReadingUnitState | None:
+    def current_state(self, *, profile_id: str | None = None) -> ReadingUnitState | None:
         """Return the last opened unit, if memory has one."""
         if self.memory_store is None:
             return None
         current_unit_id = self.memory_store.load().current_unit_id
         if not current_unit_id:
             return None
-        return self.get_state(current_unit_id)
+        return self.get_state(current_unit_id, profile_id=profile_id)
 
-    def first_state(self) -> ReadingUnitState | None:
-        states = self.list_states()
+    def first_state(self, *, profile_id: str | None = None) -> ReadingUnitState | None:
+        states = self.list_states(profile_id=profile_id)
         return states[0] if states else None
 
     def _has_annotated_copy(self, unit_id: str) -> bool:

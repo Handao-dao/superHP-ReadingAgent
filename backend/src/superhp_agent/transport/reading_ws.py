@@ -36,6 +36,7 @@ class ReadingSocketMessage(BaseModel):
     action: AgentAction | None = None
     current_chapter_id: str | None = None
     current_unit_id: str | None = None
+    profile_id: str | None = None
     phase: str | None = None
 
 
@@ -78,6 +79,7 @@ class ReadingSocketSession:
         self.db = db
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
         self.current_unit_id: str | None = None
+        self.current_profile_id: str | None = None
 
     async def run(self) -> None:
         """Accept the socket, send initial cards, then process client messages."""
@@ -103,9 +105,15 @@ class ReadingSocketSession:
             return
 
         if message.type == "hello":
+            if message.profile_id:
+                self.current_profile_id = message.profile_id
             if message.current_unit_id or message.current_chapter_id:
                 self.current_unit_id = message.current_unit_id or message.current_chapter_id
-            self._log_event("session_hello", current_unit_id=self.current_unit_id)
+            self._log_event(
+                "session_hello",
+                current_unit_id=self.current_unit_id,
+                profile_id=self.current_profile_id,
+            )
             await self.send_ready(request_id=message.request_id)
             await self.send_cards(request_id=message.request_id)
             return
@@ -115,6 +123,8 @@ class ReadingSocketSession:
             return
 
         if message.type == "cards":
+            if message.profile_id:
+                self.current_profile_id = message.profile_id
             if message.current_unit_id or message.current_chapter_id:
                 self.current_unit_id = message.current_unit_id or message.current_chapter_id
             await self.send_cards(request_id=message.request_id, phase=message.phase or "start")
@@ -205,12 +215,20 @@ class ReadingSocketSession:
 
     async def send_cards(self, request_id: str | None = None, *, phase: str = "start") -> None:
         """Ask the deterministic router for fresh choices and push them down."""
-        resolved_unit_id = self.flow_router.resolve_unit_id(current_unit_id=self.current_unit_id)
-        cards = self.flow_router.inspect(current_unit_id=resolved_unit_id, phase=phase)
+        resolved_unit_id = self.flow_router.resolve_unit_id(
+            current_unit_id=self.current_unit_id,
+            profile_id=self.current_profile_id,
+        )
+        cards = self.flow_router.inspect(
+            current_unit_id=resolved_unit_id,
+            phase=phase,
+            profile_id=self.current_profile_id,
+        )
         self.current_unit_id = resolved_unit_id
         self._log_event(
             "cards_shown",
             current_unit_id=resolved_unit_id,
+            profile_id=self.current_profile_id,
             phase=phase,
             card_ids=[card.id for card in cards],
         )
@@ -219,6 +237,7 @@ class ReadingSocketSession:
             request_id=request_id,
             current_chapter_id=resolved_unit_id,
             current_unit_id=resolved_unit_id,
+            profile_id=self.current_profile_id,
             phase=phase,
             cards=[card.model_dump() for card in cards],
         )

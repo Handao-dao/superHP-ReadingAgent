@@ -1,9 +1,10 @@
 const BASE = '/api/vocabulary'
 
-export async function fetchVocabulary({ unitId = '', chapterId = '' } = {}) {
+export async function fetchVocabulary({ unitId = '', chapterId = '', profileId = '' } = {}) {
   const params = new URLSearchParams()
   if (unitId) params.set('unit_id', unitId)
   if (chapterId) params.set('chapter_id', chapterId)
+  if (profileId) params.set('profile_id', profileId)
   const query = params.toString()
   const response = await fetch(query ? `${BASE}?${query}` : BASE)
   if (!response.ok) throw new Error('生词表加载失败')
@@ -40,11 +41,11 @@ export async function setMastered(vocabId, mastered) {
   return response.json()
 }
 
-export async function setMasteredByWord(word, mastered) {
+export async function setMasteredByWord(word, mastered, profileId = '') {
   const response = await fetch(`${BASE}/mark-by-word`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ word, mastered }),
+    body: JSON.stringify({ word, mastered, profile_id: profileId || undefined }),
   })
   if (!response.ok) throw new Error('更新掌握状态失败')
   return response.json()

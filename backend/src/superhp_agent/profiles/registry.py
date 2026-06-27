@@ -21,14 +21,23 @@ class ProfileRegistry:
             return profile
         return self.profiles[self.default_profile_id]
 
+    def list_profiles(self) -> list[AnnotationProfile]:
+        """Return profiles with the default first, then stable id order."""
+        profiles = sorted(self.profiles.values(), key=lambda profile: profile.id)
+        return sorted(profiles, key=lambda profile: profile.id != self.default_profile_id)
+
 
 def create_default_registry(default_profile_id: str = "english_novel") -> ProfileRegistry:
+    from superhp_agent.profiles.classical_chinese import ClassicalChineseProfile
     from superhp_agent.profiles.english_novel import EnglishNovelProfile
 
+    classical_chinese = ClassicalChineseProfile()
     english_novel = EnglishNovelProfile()
-    profiles = {english_novel.id: english_novel}
+    profiles = {
+        classical_chinese.id: classical_chinese,
+        english_novel.id: english_novel,
+    }
     return ProfileRegistry(
         profiles=profiles,
         default_profile_id=default_profile_id if default_profile_id in profiles else english_novel.id,
     )
-

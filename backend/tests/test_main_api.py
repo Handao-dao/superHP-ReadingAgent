@@ -51,6 +51,10 @@ class FakeDB:
 class FakeCorpus:
     def __init__(self, unit: ReadingUnit):
         self.unit = unit
+        self.units = [unit]
+
+    def list_units(self):
+        return self.units
 
     def get_unit(self, unit_id: str):
         if unit_id != self.unit.id:
@@ -90,6 +94,58 @@ def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     assert meta.has_annotated_copy is True
     assert meta.vocab_count == 3
     assert meta.profile_id == "english_novel"
+
+
+def test_profile_api_lists_builtin_profiles():
+    with TestClient(main.app) as client:
+        response = client.get("/api/profiles")
+
+    assert response.status_code == 200
+    profile_ids = [item["id"] for item in response.json()]
+    assert "english_novel" in profile_ids
+    assert "classical_chinese" in profile_ids
+
+
+def test_list_units_can_filter_by_profile(tmp_path, monkeypatch):
+    english = ReadingUnit(
+        id="hp01-ch01",
+        chapter_id="hp01-ch01",
+        book_id="hp01",
+        book_title="Harry Potter and the Philosopher's Stone",
+        chapter_no=1,
+        chapter_title="The Boy Who Lived",
+        section_no=1,
+        section_count=1,
+        summary="Summary",
+        path=tmp_path / "hp01-ch01.md",
+        profile_id="english_novel",
+    )
+    classical = ReadingUnit(
+        id="cc-lunyu-xueer-01",
+        chapter_id="cc-lunyu-xueer-01",
+        book_id="cc-lunyu",
+        book_title="论语",
+        chapter_no=1,
+        chapter_title="学而",
+        section_no=1,
+        section_count=1,
+        summary="Summary",
+        path=tmp_path / "lunyu-xueer.md",
+        profile_id="classical_chinese",
+    )
+    fake_corpus = FakeCorpus(english)
+    fake_corpus.units = [english, classical]
+    monkeypatch.setattr(main, "corpus", fake_corpus)
+    monkeypatch.setattr(main, "memory_store", FakeMemoryStore())
+    monkeypatch.setattr(main, "db", FakeDB())
+    monkeypatch.setattr(main, "settings", FakeSettings(tmp_path / "annotated"))
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/units", params={"profile_id": "classical_chinese"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [item["id"] for item in payload] == ["cc-lunyu-xueer-01"]
 
 
 def test_bookmark_api_create_list_and_delete(tmp_path, monkeypatch):

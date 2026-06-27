@@ -3,14 +3,18 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { addBookmark, deleteBookmark, fetchBookmarks } from './api/bookmarks'
 import { listChapters } from './api/chapters'
 import { lookupWord } from './api/lookup'
+import { listProfiles } from './api/profiles'
 import { addVocabulary, setMasteredByWord } from './api/vocabulary'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { getReadingRenderer } from './renderers'
 
 const chapters = ref([])
+const profiles = ref([])
 const listLoading = ref(false)
 const listErrorMessage = ref('')
+const profileErrorMessage = ref('')
+const selectedProfileId = ref(localStorage.getItem('superhp_profile_id') || 'english_novel')
 const currentPage = ref(0)
 const completeCardsRequestedFor = ref('')
 const readingViewport = ref(null)
@@ -67,15 +71,30 @@ const {
   statusMessage,
   connect,
   sendAction,
-} = useReadingSocket()
+} = useReadingSocket({ profileId: selectedProfileId })
 
 const activeMeta = computed(() => activeChapter.value?.meta || null)
 const currentMeta = computed(() => {
-  if (activeMeta.value) return activeMeta.value
+  if (activeMeta.value?.profile_id === selectedProfileId.value) return activeMeta.value
   if (!currentChapterId.value) return null
   return chapters.value.find((unit) => unit.id === currentChapterId.value) || null
 })
-const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.profile_id))
+const currentProfile = computed(() => {
+  return profiles.value.find((profile) => profile.id === selectedProfileId.value) || {
+    id: selectedProfileId.value,
+    label: selectedProfileId.value === 'classical_chinese' ? '文言文阅读' : '英文小说阅读',
+    renderer_hint: selectedProfileId.value,
+  }
+})
+const profileOptions = computed(() => {
+  if (profiles.value.length > 0) return profiles.value
+  return [
+    { id: 'english_novel', label: '英文小说阅读' },
+    { id: 'classical_chinese', label: '文言文阅读' },
+  ]
+})
+const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.profile_id || selectedProfileId.value))
+const profileShellClass = computed(() => `profile-${selectedProfileId.value}`)
 
 const chaptersByBook = computed(() => {
   const groups = new Map()
@@ -151,6 +170,7 @@ const paperPageLabel = computed(() => {
 const chapterLabel = computed(() => {
   const meta = currentMeta.value
   if (!meta) return 'Waiting for unit'
+  if (meta.profile_id === 'classical_chinese') return `第 ${meta.chapter_no} 篇 ${meta.chapter_title}`
   return `Chapter ${meta.chapter_no} ${meta.chapter_title}`
 })
 
@@ -167,6 +187,7 @@ const currentTitle = computed(() => {
 const chapterDetailText = computed(() => {
   const meta = currentMeta.value
   if (!meta) return ''
+  if (meta.profile_id === 'classical_chinese') return `第 ${meta.chapter_no} 篇 · ${meta.chapter_title}`
   return `Chapter ${meta.chapter_no} · ${meta.chapter_title}`
 })
 
@@ -186,11 +207,27 @@ async function loadChapterList() {
   listLoading.value = true
   listErrorMessage.value = ''
   try {
-    chapters.value = await listChapters()
+    chapters.value = await listChapters(selectedProfileId.value)
+    if (currentChapterId.value && !chapters.value.some((unit) => unit.id === currentChapterId.value)) {
+      currentChapterId.value = null
+    }
   } catch (error) {
     listErrorMessage.value = error.message || '阅读单元列表加载失败'
   } finally {
     listLoading.value = false
+  }
+}
+
+async function loadProfileList() {
+  profileErrorMessage.value = ''
+  try {
+    const loaded = await listProfiles()
+    profiles.value = loaded
+    if (!loaded.some((profile) => profile.id === selectedProfileId.value)) {
+      selectedProfileId.value = loaded.find((profile) => profile.is_default)?.id || loaded[0]?.id || 'english_novel'
+    }
+  } catch (error) {
+    profileErrorMessage.value = error.message || '阅读场景列表加载失败'
   }
 }
 
@@ -236,6 +273,51 @@ function handleSelectChapter(chapter) {
   closeLookupBubble()
   const sent = requestCards('start', chapter.id)
   if (sent) sidebarOpen.value = false
+}
+
+function chapterNumberLabel(chapter) {
+  if (chapter.profile_id === 'classical_chinese') return String(chapter.chapter_no)
+  return String(chapter.chapter_no).padStart(2, '0')
+}
+
+function chapterNumberKicker(chapter) {
+  return chapter.profile_id === 'classical_chinese' ? '篇' : 'CH'
+}
+
+function bookUnitCount(book) {
+  const unit = selectedProfileId.value === 'classical_chinese' ? '篇' : 'chapters'
+  return `${book.chapters.length} ${unit}`
+}
+
+function chapterBadgeText(chapter, type) {
+  if (chapter.profile_id === 'classical_chinese') {
+    if (type === 'read') return '已读'
+    if (type === 'annotated') return '注释'
+    if (type === 'vocab') return `${chapter.vocab_count} 重点`
+    if (type === 'bookmark') return `${bookmarksByUnit.value.get(chapter.id)?.length || 0} 书签`
+  }
+  if (type === 'read') return 'Read'
+  if (type === 'annotated') return 'Annotated'
+  if (type === 'vocab') return `${chapter.vocab_count} words`
+  if (type === 'bookmark') return `${bookmarksByUnit.value.get(chapter.id)?.length || 0} marks`
+  return ''
+}
+
+async function handleSelectProfile(profileId) {
+  if (isGenerating.value || profileId === selectedProfileId.value) return
+  selectedProfileId.value = profileId
+  localStorage.setItem('superhp_profile_id', profileId)
+  activeView.value = 'reader'
+  activeChapter.value = null
+  cards.value = []
+  currentChapterId.value = null
+  currentPage.value = 0
+  totalReadingPages.value = 0
+  completeCardsRequestedFor.value = ''
+  selectedVocabularyUnitId.value = ''
+  closeLookupBubble()
+  await loadChapterList()
+  requestCards('start', '')
 }
 
 function cleanBookmarkExcerpt(text = '') {
@@ -383,7 +465,11 @@ function normalizeWord(word = '') {
 }
 
 function cleanWord(word = '') {
-  return String(word).replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')
+  const text = String(word).trim()
+  if (/[\u3400-\u9fff]/.test(text)) {
+    return text.replace(/^[\s，。！？、；：“”‘’（）《》【】]+|[\s，。！？、；：“”‘’（）《》【】]+$/g, '')
+  }
+  return text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')
 }
 
 function stripAnnotationMarkers(text = '') {
@@ -444,7 +530,7 @@ async function handleReadingClick(event) {
   lookupStyle.value = calcLookupStyle(target)
 
   try {
-    const result = await lookupWord(word, lookupSentence.value)
+    const result = await lookupWord(word, lookupSentence.value, currentMeta.value?.profile_id || selectedProfileId.value)
     if (!result.word_cn && lookupTranslation.value) result.word_cn = lookupTranslation.value
     lookupResult.value = result
   } catch (error) {
@@ -499,7 +585,7 @@ async function hideLookupAnnotation() {
   lookupError.value = ''
   const key = normalizeWord(lookupWordText.value)
   try {
-    await setMasteredByWord(lookupWordText.value, true)
+    await setMasteredByWord(lookupWordText.value, true, currentMeta.value?.profile_id || selectedProfileId.value)
     const nextManual = new Map(manualAnnotations.value)
     const nextHidden = new Set(hiddenAnnotations.value)
     nextManual.delete(key)
@@ -571,6 +657,10 @@ watch(cardsRevision, () => {
   loadChapterList()
 })
 
+watch(selectedProfileId, (profileId) => {
+  localStorage.setItem('superhp_profile_id', profileId)
+})
+
 watch(isGuidancePage, (isGuidance) => {
   const unitId = activeChapter.value?.meta?.id
   if (!isGuidance || !unitId || completeCardsRequestedFor.value === unitId) return
@@ -579,6 +669,7 @@ watch(isGuidancePage, (isGuidance) => {
 })
 
 onMounted(() => {
+  loadProfileList()
   loadChapterList()
   loadBookmarks()
   connect()
@@ -595,13 +686,26 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="reader-layout" :class="{ 'is-sidebar-open': sidebarOpen }">
+  <main class="reader-layout" :class="[{ 'is-sidebar-open': sidebarOpen }, profileShellClass]">
     <aside class="chapter-sidebar" aria-label="章节目录">
       <div class="sidebar-header">
         <p class="eyebrow">Library</p>
         <h2>目录</h2>
+        <div class="profile-switch" aria-label="阅读场景">
+          <button
+            v-for="profile in profileOptions"
+            :key="profile.id"
+            type="button"
+            :class="{ 'is-active': selectedProfileId === profile.id }"
+            :disabled="isGenerating"
+            @click="handleSelectProfile(profile.id)"
+          >
+            {{ profile.id === 'classical_chinese' ? '文言文' : '英文小说' }}
+          </button>
+        </div>
       </div>
 
+      <div v-if="profileErrorMessage" class="sidebar-error">{{ profileErrorMessage }}</div>
       <div v-if="listErrorMessage" class="sidebar-error">{{ listErrorMessage }}</div>
       <div v-else-if="listLoading" class="sidebar-loading">正在读取目录...</div>
       <div v-if="bookmarksLoading" class="sidebar-loading">正在读取书签...</div>
@@ -609,7 +713,10 @@ onBeforeUnmount(() => {
 
       <nav v-if="!listErrorMessage && !listLoading" class="book-list">
         <section v-for="book in chaptersByBook" :key="book.id" class="book-group">
-          <h3>{{ book.title }}</h3>
+          <div class="book-heading">
+            <h3>{{ book.title }}</h3>
+            <span>{{ bookUnitCount(book) }}</span>
+          </div>
           <div
             v-for="chapter in book.chapters"
             :key="chapter.id"
@@ -622,14 +729,17 @@ onBeforeUnmount(() => {
               :disabled="isGenerating"
               @click="handleSelectChapter(chapter)"
             >
-              <span class="chapter-number">{{ chapter.chapter_no }}</span>
+              <span class="chapter-number">
+                <span class="chapter-number-kicker">{{ chapterNumberKicker(chapter) }}</span>
+                <span class="chapter-number-value">{{ chapterNumberLabel(chapter) }}</span>
+              </span>
               <span class="chapter-main">
                 <span class="chapter-title">{{ chapter.chapter_title }}</span>
                 <span class="chapter-badges">
-                  <span v-if="chapter.status === 'read'">已读</span>
-                  <span v-if="chapter.has_annotated_copy">译注</span>
-                  <span v-if="chapter.vocab_count > 0">{{ chapter.vocab_count }} 词</span>
-                  <span v-if="bookmarksByUnit.get(chapter.id)?.length">{{ bookmarksByUnit.get(chapter.id).length }} bookmark</span>
+                  <span v-if="chapter.status === 'read'" class="badge-read">{{ chapterBadgeText(chapter, 'read') }}</span>
+                  <span v-if="chapter.has_annotated_copy" class="badge-annotated">{{ chapterBadgeText(chapter, 'annotated') }}</span>
+                  <span v-if="chapter.vocab_count > 0" class="badge-vocab">{{ chapterBadgeText(chapter, 'vocab') }}</span>
+                  <span v-if="bookmarksByUnit.get(chapter.id)?.length" class="badge-bookmark">{{ chapterBadgeText(chapter, 'bookmark') }}</span>
                 </span>
               </span>
             </button>
@@ -675,7 +785,7 @@ onBeforeUnmount(() => {
       <header class="reader-topbar">
       <div class="title-block">
         <p class="eyebrow">SuperHP Agent</p>
-        <h1>{{ currentMeta?.book_title || 'Harry Potter Reading Assistant' }}</h1>
+        <h1>{{ currentMeta?.book_title || currentProfile.label || 'Reading Assistant' }}</h1>
         <p class="chapter-line">
           <span>{{ currentMeta ? chapterLabel : 'Choose a reading action to begin' }}</span>
         </p>
@@ -803,7 +913,7 @@ onBeforeUnmount(() => {
           <div class="summary-page empty-state">
             <p class="small-label">Waiting</p>
             <h2>Choose a Reading Action</h2>
-            <p>This first reader flow uses guided buttons instead of free chat. {{ chapters.length }} reading units are available.</p>
+            <p>{{ currentProfile.label }}当前有 {{ chapters.length }} 个阅读单元。</p>
           </div>
         </template>
 
@@ -869,6 +979,7 @@ onBeforeUnmount(() => {
             :current-unit-id="currentChapterId"
             :current-title="currentTitle"
             :chapters="chapters"
+            :profile-id="selectedProfileId"
             :refresh-key="vocabularyRefreshKey"
             v-model:selected-unit-id="selectedVocabularyUnitId"
             @changed="handleVocabularyChanged"

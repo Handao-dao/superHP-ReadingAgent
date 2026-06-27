@@ -2,6 +2,24 @@
 
 这份文档只记录前端展示和前后端对接需要知道的内容。后端内部实现细节，例如 provider、corpus 扫描、memory/storage 写入、dispatcher 执行逻辑，不在这里展开。
 
+## 近期更新记录
+
+### 2026-06-14
+
+- 侧边栏顶部新增阅读场景切换：`英文小说` / `文言文`。
+- 前端通过 `/api/profiles` 读取场景列表，并将 `profile_id` 传给目录、cards、WebSocket、lookup 和 vocabulary 相关请求。
+- `localStorage.superhp_profile_id` 保存当前阅读场景；切换场景时清空当前阅读态并重新请求对应目录和起始卡片。
+- 新增 renderer registry，`english_novel` 与 `classical_chinese` 使用不同 renderer。
+- 新增 `renderers/classicalChinese/`：
+  - 文言文标注渲染为行内小注。
+  - 注释词使用靛青强调。
+  - 小注不换行，避免注释被拆成多行。
+  - 标题后方以内联小号文字显示作者，如 `师说  韩愈`。
+- 文言文阅读页使用独立样式包：暖纸色、墨色正文、中文宋体系字体优先、文言知识点 badge。
+- 词表页按当前 `profile_id` 请求数据；文言文显示为“文言重点”，英文小说仍为生词表。
+- 英文小说侧边栏目录优化：书籍分组显示章节数，章节编号显示 `CH 01`，状态 badge 分色，选中态和 hover 更清晰。
+- 文言文目录保持简洁文选风格，不展示摘要。
+
 ## 前端目标
 
 前端的核心不是自由聊天，而是一个受控阅读界面：

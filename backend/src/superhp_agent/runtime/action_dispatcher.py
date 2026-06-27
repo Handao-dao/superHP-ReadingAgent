@@ -44,6 +44,7 @@ class AnnotationService(Protocol):
         level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
+        profile_id: str | None = None,
     ) -> AnnotationResult: ...
 
 
@@ -294,6 +295,7 @@ class GenerateAnnotationHandler:
                 level=level,
                 event_sink=context.event_sink,
                 request_id=request_id,
+                profile_id=doc.meta.profile_id,
             )
         except Exception as exc:
             context.log_event("annotation_failed", unit_id=unit_id, error=str(exc))

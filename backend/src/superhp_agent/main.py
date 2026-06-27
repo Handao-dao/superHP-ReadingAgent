@@ -34,6 +34,7 @@ from superhp_agent.schemas import (
     ChapterMeta,
     MarkByWordRequest,
     MutationResponse,
+    ProfileMeta,
     ReadingUnitDetail,
     ReadingUnitMeta,
     SetMasteredRequest,
@@ -59,6 +60,7 @@ db = AppDB(settings.db_path)
 annotator_service = LazyAnnotatorService(
     lambda: make_provider(settings),
     profile=default_profile,
+    profile_registry=profile_registry,
     max_chunk_words=settings.annotation_max_chunk_words,
     max_concurrency=settings.annotation_max_concurrency,
 )
@@ -68,20 +70,24 @@ class LazyLookupService:
     """Build lookup only when the optional inline dictionary is used."""
 
     def __init__(self):
-        self._service: WordLookupService | None = None
+        self._services: dict[str, WordLookupService] = {}
 
-    def _get_service(self) -> WordLookupService:
-        if self._service is None:
-            self._service = WordLookupService(make_provider(settings), profile=default_profile)
-        return self._service
+    def _get_service(self, profile_id: str | None = None) -> WordLookupService:
+        profile = profile_registry.get(profile_id)
+        if profile.id not in self._services:
+            self._services[profile.id] = WordLookupService(make_provider(settings), profile=profile)
+        return self._services[profile.id]
 
-    async def lookup(self, word: str, sentence: str) -> dict:
-        return await self._get_service().lookup(word, sentence)
+    async def lookup(self, word: str, sentence: str, *, profile_id: str | None = None) -> dict:
+        return await self._get_service(profile_id).lookup(word, sentence)
 
 
 lookup_service = LazyLookupService()
 state_reader = ReadingStateReader(corpus, settings.annotated_dir, memory_store, db)
-flow_router = ReadingFlowRouter(state_reader, card_builder=ReadingCardBuilder(default_profile.card_copy))
+flow_router = ReadingFlowRouter(
+    state_reader,
+    card_builder=ReadingCardBuilder(default_profile.card_copy, profile_registry=profile_registry),
+)
 
 app = FastAPI(title="SuperHP Agent Backend")
 
@@ -158,9 +164,26 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/profiles", response_model=list[ProfileMeta])
+async def list_profiles():
+    return [
+        ProfileMeta(
+            id=profile.id,
+            label=profile.label,
+            renderer_hint=profile.renderer_hint,
+            is_default=profile.id == profile_registry.default_profile_id,
+        )
+        for profile in profile_registry.list_profiles()
+    ]
+
+
 @app.get("/api/units", response_model=list[ReadingUnitMeta])
-async def list_units():
-    return [_unit_meta(item) for item in corpus.list_units()]
+async def list_units(profile_id: str | None = None):
+    return [
+        _unit_meta(item)
+        for item in corpus.list_units()
+        if not profile_id or item.profile_id == profile_id
+    ]
 
 
 @app.get("/api/units/{unit_id}", response_model=ReadingUnitDetail)
@@ -188,8 +211,12 @@ async def get_chapter(chapter_id: str):
 async def list_vocabulary(
     unit_id: str | None = Query(default=None),
     chapter_id: str | None = Query(default=None),
+    profile_id: str | None = Query(default=None),
 ):
-    return [_vocabulary_entry(row) for row in db.list_vocabulary(unit_id=unit_id, chapter_id=chapter_id)]
+    return [
+        _vocabulary_entry(row)
+        for row in db.list_vocabulary(unit_id=unit_id, chapter_id=chapter_id, profile_id=profile_id)
+    ]
 
 
 @app.get("/api/bookmarks", response_model=list[BookmarkEntry])
@@ -237,7 +264,7 @@ async def lookup_word(payload: WordLookupRequest):
     if not word:
         raise HTTPException(status_code=400, detail="word is required")
     try:
-        return await lookup_service.lookup(word, payload.sentence.strip())
+        return await lookup_service.lookup(word, payload.sentence.strip(), profile_id=payload.profile_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -282,7 +309,7 @@ async def delete_vocabulary(vocab_id: int):
 
 @app.post("/api/vocabulary/mark-by-word", response_model=MutationResponse)
 async def mark_vocabulary_by_word(payload: MarkByWordRequest):
-    db.set_mastered_by_word(payload.word, payload.mastered)
+    db.set_mastered_by_word(payload.word, payload.mastered, profile_id=payload.profile_id)
     return MutationResponse(ok=True)
 
 
@@ -290,9 +317,15 @@ async def mark_vocabulary_by_word(payload: MarkByWordRequest):
 async def get_agent_cards(
     current_chapter_id: str | None = Query(default=None),
     current_unit_id: str | None = Query(default=None),
+    profile_id: str | None = None,
     phase: str = Query(default="start"),
 ):
-    return flow_router.inspect(current_chapter_id=current_chapter_id, current_unit_id=current_unit_id, phase=phase)
+    return flow_router.inspect(
+        current_chapter_id=current_chapter_id,
+        current_unit_id=current_unit_id,
+        profile_id=profile_id,
+        phase=phase,
+    )
 
 
 @app.websocket("/ws/reading")

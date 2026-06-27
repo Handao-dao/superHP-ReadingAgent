@@ -33,6 +33,13 @@ ChapterMeta = ReadingUnitMeta
 ChapterDetail = ReadingUnitDetail
 
 
+class ProfileMeta(BaseModel):
+    id: str
+    label: str
+    renderer_hint: str = "english_novel"
+    is_default: bool = False
+
+
 class VocabularyEntry(BaseModel):
     id: int
     word: str
@@ -51,6 +58,7 @@ class VocabularyEntry(BaseModel):
 class WordLookupRequest(BaseModel):
     word: str
     sentence: str = ""
+    profile_id: str | None = None
 
 
 class WordLookupResult(BaseModel):
@@ -83,6 +91,7 @@ class SetMasteredRequest(BaseModel):
 class MarkByWordRequest(BaseModel):
     word: str
     mastered: bool
+    profile_id: str | None = None
 
 
 class BookmarkEntry(BaseModel):

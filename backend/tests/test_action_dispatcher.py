@@ -26,6 +26,7 @@ class FakeAnnotator:
     def __init__(self):
         self.levels = []
         self.mastered_words = []
+        self.profile_ids = []
 
     async def annotate_text(
         self,
@@ -35,9 +36,11 @@ class FakeAnnotator:
         level="intermediate",
         event_sink=None,
         request_id=None,
+        profile_id=None,
     ):
         self.levels.append(level)
         self.mastered_words.append(mastered_words or [])
+        self.profile_ids.append(profile_id)
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
@@ -79,6 +82,29 @@ summary: "Summary"
 ---
 
 Second body.
+""",
+        encoding="utf-8",
+    )
+
+
+def write_classical_unit(root: Path):
+    path = root / "classical_chinese" / "lunyu-xueer.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """---
+id: cc-lunyu-xueer-01
+chapter_id: cc-lunyu-xueer-01
+book_id: cc-lunyu
+book_title: "论语"
+chapter_no: 1
+chapter_title: "学而"
+summary: "孔子谈学习、复习与朋友来访之乐。"
+profile_id: classical_chinese
+---
+
+学而时习之，不亦说乎？
+有朋自远方来，不亦乐乎？
+人不知而不愠，不亦君子乎？
 """,
         encoding="utf-8",
     )
@@ -231,6 +257,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert events[-1]["unit"]["body_kind"] == "annotated"
         assert annotator.levels == ["advanced"]
         assert annotator.mastered_words == [["known"]]
+        assert annotator.profile_ids == ["english_novel"]
         annotated_file = annotated_dir / "hp01-ch01.advanced.annotated.md"
         assert annotated_file.exists()
         annotated_text = annotated_file.read_text(encoding="utf-8")
@@ -239,6 +266,30 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert memory.load().annotated_unit_ids == ["hp01-ch01"]
         assert db.count_vocabulary_for_unit("hp01-ch01") == 1
         assert "text" in [row["word"] for row in db.list_vocabulary(unit_id="hp01-ch01")]
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_generate_annotation_passes_unit_profile_id(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_classical_unit(corpus_root)
+        annotator = FakeAnnotator()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            annotated_dir=tmp_path / "data" / "annotated",
+            annotator_service=annotator,
+        )
+        dispatcher = ActionDispatcher()
+
+        await dispatcher.dispatch(
+            AgentAction(id=GENERATE_ANNOTATION, label="生成注释", payload={"unit_id": "cc-lunyu-xueer-01"}),
+            context,
+        )
+
+        assert annotator.profile_ids == ["classical_chinese"]
+        annotated_file = tmp_path / "data" / "annotated" / "cc-lunyu-xueer-01.intermediate.annotated.md"
+        assert "profile_id: classical_chinese" in annotated_file.read_text(encoding="utf-8")
 
     asyncio.run(run_case())
 

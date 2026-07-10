@@ -8,6 +8,7 @@ import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
+import { useAnnotationDensity } from './composables/useAnnotationDensity'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -20,15 +21,12 @@ const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
-const densityOptions = [
-  { key: 'H', label: 'High', level: 'beginner' },
-  { key: 'M', label: 'Medium', level: 'intermediate' },
-  { key: 'L', label: 'Low', level: 'advanced' },
-]
-const selectedDensity = ref(localStorage.getItem('superhp_annotation_density') || 'M')
-if (!densityOptions.some((option) => option.key === selectedDensity.value)) {
-  selectedDensity.value = 'M'
-}
+const {
+  densityOptions,
+  selectDensity,
+  selectedDensity,
+  selectedLevel,
+} = useAnnotationDensity()
 const {
   chapters,
   chaptersByBook,
@@ -202,10 +200,6 @@ const surfaceTone = computed(() => ({
   'is-error': readerMode.value === 'error',
 }))
 
-const selectedLevel = computed(() => {
-  return densityOptions.find((option) => option.key === selectedDensity.value)?.level || 'intermediate'
-})
-
 async function loadChapterList() {
   const loaded = await loadChapterCatalog()
   if (loaded && currentChapterId.value && !loaded.some((unit) => unit.id === currentChapterId.value)) {
@@ -295,11 +289,6 @@ function handleReadingElements({ flow, viewport }) {
 
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
-}
-
-function selectDensity(key) {
-  selectedDensity.value = densityOptions.some((option) => option.key === key) ? key : 'M'
-  localStorage.setItem('superhp_annotation_density', selectedDensity.value)
 }
 
 function handleKeydown(event) {

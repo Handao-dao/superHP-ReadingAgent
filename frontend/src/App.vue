@@ -2,12 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { addBookmark, deleteBookmark, fetchBookmarks } from './api/bookmarks'
 import { listChapters } from './api/chapters'
-import { lookupWord } from './api/lookup'
 import { listProfiles } from './api/profiles'
-import { addVocabulary, setMasteredByWord } from './api/vocabulary'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingSocket } from './composables/useReadingSocket'
+import { useWordLookup } from './composables/useWordLookup'
 import { getReadingRenderer } from './renderers'
 
 const chapters = ref([])
@@ -38,19 +37,6 @@ const selectedDensity = ref(localStorage.getItem('superhp_annotation_density') |
 if (!densityOptions.some((option) => option.key === selectedDensity.value)) {
   selectedDensity.value = 'M'
 }
-const manualAnnotations = ref(new Map())
-const hiddenAnnotations = ref(new Set())
-const lookupVisible = ref(false)
-const lookupLoading = ref(false)
-const lookupSaving = ref(false)
-const lookupError = ref('')
-const lookupWordText = ref('')
-const lookupSentence = ref('')
-const lookupIsAnnotated = ref(false)
-const lookupTranslation = ref('')
-const lookupResult = ref(null)
-const lookupStyle = ref({})
-
 const {
   activeChapter,
   busy,
@@ -91,6 +77,32 @@ const profileOptions = computed(() => {
 })
 const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.profile_id || selectedProfileId.value))
 const profileShellClass = computed(() => `profile-${selectedProfileId.value}`)
+
+const {
+  addLookupAnnotation,
+  closeLookupBubble,
+  handleReadingClick,
+  hiddenAnnotations,
+  hideLookupAnnotation,
+  lookupError,
+  lookupIsAnnotated,
+  lookupLoading,
+  lookupResult,
+  lookupSaving,
+  lookupSentence,
+  lookupStyle,
+  lookupTranslation,
+  lookupVisible,
+  lookupWordText,
+  manualAnnotations,
+  resetLookupAnnotations,
+  stripAnnotationMarkers,
+} = useWordLookup({
+  getProfileId: () => currentMeta.value?.profile_id || selectedProfileId.value,
+  getReadingFlow: () => readingFlow.value,
+  getUnitId: () => activeChapter.value?.meta?.id || currentChapterId.value,
+  onVocabularyChanged: handleLookupVocabularyChanged,
+})
 
 const chaptersByBook = computed(() => {
   const groups = new Map()
@@ -458,153 +470,14 @@ function handleDocumentPointerdown(event) {
   densityMenuOpen.value = false
 }
 
-function normalizeWord(word = '') {
-  return String(word).trim().toLowerCase()
-}
-
-function cleanWord(word = '') {
-  const text = String(word).trim()
-  if (/[\u3400-\u9fff]/.test(text)) {
-    return text.replace(/^[\s，。！？、；：“”‘’（）《》【】]+|[\s，。！？、；：“”‘’（）《》【】]+$/g, '')
-  }
-  return text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, '')
-}
-
-function stripAnnotationMarkers(text = '') {
-  return String(text).replace(/\[\[(.+?)\|.+?\]\]/g, '$1')
-}
-
-function calcLookupStyle(target) {
-  const rect = target.getBoundingClientRect()
-  const width = 320
-  const left = Math.min(window.innerWidth - width - 16, Math.max(16, rect.left + rect.width / 2 - width / 2))
-  const top = Math.min(window.innerHeight - 260, rect.bottom + 12)
-  return {
-    left: `${left}px`,
-    top: `${Math.max(16, top)}px`,
-    width: `${width}px`,
-  }
-}
-
-function extractSentence(target) {
-  const block = target.closest('.reading-block')
-  const text = stripAnnotationMarkers(block?.innerText || target.textContent || '')
-    .replace(/\([^()]{1,16}\)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (!text) return ''
-  const word = cleanWord(target.dataset.word || target.textContent || '').toLowerCase()
-  const parts = text.match(/[^.!?。！？]+[.!?。！？]?/g) || [text]
-  return (parts.find((part) => part.toLowerCase().includes(word)) || text).trim()
-}
-
-function closeLookupBubble() {
-  lookupVisible.value = false
-  lookupLoading.value = false
-  lookupSaving.value = false
-  lookupError.value = ''
-  lookupResult.value = null
-}
-
-async function handleReadingClick(event) {
-  const target = event.target.closest?.('[data-word]')
-  if (!target || !readingFlow.value?.contains(target)) {
-    closeLookupBubble()
-    return
-  }
-
-  const word = cleanWord(target.dataset.word || target.textContent || '')
-  if (!word) return
-
-  lookupVisible.value = true
-  lookupLoading.value = true
-  lookupSaving.value = false
-  lookupError.value = ''
-  lookupWordText.value = word
-  lookupSentence.value = extractSentence(target)
-  lookupIsAnnotated.value = target.classList.contains('vocab-word')
-  lookupTranslation.value = target.dataset.translation || ''
-  lookupResult.value = null
-  lookupStyle.value = calcLookupStyle(target)
-
-  try {
-    const result = await lookupWord(word, lookupSentence.value, currentMeta.value?.profile_id || selectedProfileId.value)
-    if (!result.word_cn && lookupTranslation.value) result.word_cn = lookupTranslation.value
-    lookupResult.value = result
-  } catch (error) {
-    lookupError.value = error.message || '查词失败'
-    if (lookupTranslation.value) {
-      lookupResult.value = {
-        word,
-        word_cn: lookupTranslation.value,
-        sentence_cn: '',
-      }
-    }
-  } finally {
-    lookupLoading.value = false
-  }
-}
-
-async function addLookupAnnotation() {
-  const translation = lookupResult.value?.word_cn || lookupTranslation.value
-  const unitId = activeChapter.value?.meta?.id || currentChapterId.value
-  if (!unitId || !lookupWordText.value || !translation) return
-  lookupSaving.value = true
-  lookupError.value = ''
-  try {
-    await addVocabulary({
-      word: lookupWordText.value,
-      translation,
-      pos: lookupResult.value?.pos || 'other',
-      context: lookupSentence.value,
-      unitId,
-    })
-    const key = normalizeWord(lookupWordText.value)
-    const nextManual = new Map(manualAnnotations.value)
-    const nextHidden = new Set(hiddenAnnotations.value)
-    nextManual.set(key, translation)
-    nextHidden.delete(key)
-    manualAnnotations.value = nextManual
-    hiddenAnnotations.value = nextHidden
-    lookupIsAnnotated.value = true
-    vocabularyRefreshKey.value += 1
-    loadChapterList()
-    await recalculatePages()
-  } catch (error) {
-    lookupError.value = error.message || '添加标注失败'
-  } finally {
-    lookupSaving.value = false
-  }
-}
-
-async function hideLookupAnnotation() {
-  if (!lookupWordText.value) return
-  lookupSaving.value = true
-  lookupError.value = ''
-  const key = normalizeWord(lookupWordText.value)
-  try {
-    await setMasteredByWord(lookupWordText.value, true, currentMeta.value?.profile_id || selectedProfileId.value)
-    const nextManual = new Map(manualAnnotations.value)
-    const nextHidden = new Set(hiddenAnnotations.value)
-    nextManual.delete(key)
-    nextHidden.add(key)
-    manualAnnotations.value = nextManual
-    hiddenAnnotations.value = nextHidden
-    lookupIsAnnotated.value = false
-    vocabularyRefreshKey.value += 1
-    loadChapterList()
-    closeLookupBubble()
-    await recalculatePages()
-  } catch (error) {
-    lookupError.value = error.message || '取消标注失败'
-  } finally {
-    lookupSaving.value = false
-  }
-}
-
-function handleVocabularyChanged() {
+async function handleVocabularyChanged() {
   vocabularyRefreshKey.value += 1
-  loadChapterList()
+  await loadChapterList()
+}
+
+async function handleLookupVocabularyChanged() {
+  await handleVocabularyChanged()
+  await recalculatePages()
 }
 
 watch(
@@ -612,8 +485,7 @@ watch(
   () => {
     resetPagination()
     completeCardsRequestedFor.value = ''
-    manualAnnotations.value = new Map()
-    hiddenAnnotations.value = new Set()
+    resetLookupAnnotations()
     closeLookupBubble()
     recalculatePages()
   }

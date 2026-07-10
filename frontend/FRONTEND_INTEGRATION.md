@@ -2,6 +2,8 @@
 
 这份文档只记录前端展示和前后端对接需要知道的内容。后端内部实现细节，例如 provider、corpus 扫描、memory/storage 写入、dispatcher 执行逻辑，不在这里展开。
 
+`src/` 内部的解耦分层、依赖方向和扩展约定见 [`src/README.md`](src/README.md)。
+
 ## 近期更新记录
 
 ### 2026-06-14

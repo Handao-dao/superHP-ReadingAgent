@@ -217,12 +217,11 @@ contracts/
 
 ```text
 storage/
-├── corpus.py              # 不可变原始 Markdown 语料
-├── annotated_copies.py    # 模型生成的阅读产物
-├── reading_memory.py      # 当前进度和轻量事件日志
-├── database.py            # SQLite 连接和 migration
-└── repositories/
-    ├── units.py
+├── __init__.py            # AppDB 等历史入口兼容导出
+├── app_db.py              # 当前过渡门面，等待继续拆分
+├── database.py            # 目标：SQLite 连接与事务
+├── migrations.py          # 目标：schema 初始化和升级
+└── sqlite/                # 目标：Repository 的 SQLite 实现
     ├── vocabulary.py
     └── bookmarks.py
 ```
@@ -239,9 +238,9 @@ Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `Vocabulary
 书签 HTTP 入口通过 `ports/repositories/bookmarks.py` 中的 `BookmarkRepository` 访问书签；
 Composition Root 当前将同一个 `AppDB` 分别注入 Vocabulary 与 Bookmark 两个独立角色。
 
-当前先将 `AnnotatedCopyStore` 放在 `artifacts/`，强调它管理的是模型生成、可重建的阅读产物。
-阶段 4 再结合其他存储模块的迁移结果，决定是否统一归入 `storage/` package；上层只依赖 Store
-职责，不依赖它最终所在的目录布局。
+`CorpusStore`、`ReadingMemoryStore` 和 `AnnotatedCopyStore` 保持各自的数据生命周期，不因
+SQLite 实现进入 `storage/` package 就统一改称 Repository。上层分别依赖 Store 职责或
+Repository Port，不依赖最终文件布局。
 
 Contract 回答“模块之间交换什么数据”；Repository 回答“数据如何保存和读取”。
 
@@ -375,9 +374,9 @@ Transport
 ### 阶段 4：Storage Package
 
 - 已先稳定 Vocabulary 与 Bookmark Repository 的上层访问边界，SQLite 实现暂留 `AppDB`。
-- 将 `storage.py` 转成 package。
-- 先拆 Bookmark 与 Vocabulary Repository。
-- 再拆 database connection 和 migrations。
+- 已将 `storage.py` 转成 package，并通过 `storage/__init__.py` 保持旧 import。
+- 下一步拆 database connection 和 migrations。
+- 再拆 Vocabulary 与 Bookmark 的 SQLite Repository 实现。
 - Corpus、Memory、Annotated Copy 保持不同的数据生命周期。
 
 ### 阶段 5：Composition Root 与 HTTP Routers

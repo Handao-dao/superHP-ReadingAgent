@@ -1,8 +1,9 @@
-"""SQLite storage for reading units, progress, and vocabulary.
+"""Transitional all-in-one SQLite storage implementation.
 
-The JSON memory file is enough for simple flow decisions, but vocabulary needs a
-queryable store for review screens and cross-unit aggregation. AppDB owns that
-relational side of the local backend state.
+AppDB currently owns connection setup, migrations, unit metadata, vocabulary,
+and bookmarks. Repository Ports already hide it from upper layers; upcoming
+steps will extract these implementation responsibilities without changing the
+historical ``superhp_agent.storage.AppDB`` import.
 """
 
 from __future__ import annotations

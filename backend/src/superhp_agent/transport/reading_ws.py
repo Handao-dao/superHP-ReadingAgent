@@ -18,6 +18,7 @@ from superhp_agent.contracts import AgentAction, BackendEvent
 from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.ports.events import EventSink
+from superhp_agent.ports.repositories import VocabularyRepository
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -27,7 +28,6 @@ from superhp_agent.runtime.action_dispatcher import (
     UnsupportedActionError,
 )
 from superhp_agent.runtime.action_router import ReadingFlowRouter
-from superhp_agent.storage import AppDB
 
 
 class ReadingSocketMessage(BaseModel):
@@ -69,7 +69,7 @@ class ReadingSocketSession:
         annotated_dir: str | Path | None = None,
         annotated_copies: AnnotatedCopyStore | None = None,
         annotator_service: AnnotationService | None = None,
-        db: AppDB | None = None,
+        db: VocabularyRepository | None = None,
     ):
         self.websocket = websocket
         self.flow_router = flow_router

@@ -16,6 +16,7 @@ from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitM
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
+from superhp_agent.ports.repositories import VocabularyRepository
 from superhp_agent.prompts import normalize_level
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
@@ -29,7 +30,6 @@ from superhp_agent.runtime.events import (
     CallableEventSink,
 )
 from superhp_agent.services.annotator import AnnotationResult
-from superhp_agent.storage import AppDB
 
 
 class AnnotationService(Protocol):
@@ -79,7 +79,7 @@ class ActionContext:
     annotated_dir: Path | None = None
     annotated_copies: AnnotatedCopyStore | None = None
     annotator_service: AnnotationService | None = None
-    db: AppDB | None = None
+    db: VocabularyRepository | None = None
     current_unit_id: str | None = None
 
     def __post_init__(self) -> None:

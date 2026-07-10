@@ -8,7 +8,7 @@ from pathlib import Path
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusStore, ReadingUnit
 from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.storage import AppDB
+from superhp_agent.ports.repositories import VocabularyRepository
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,7 @@ class ReadingStateReader:
         corpus: CorpusStore,
         annotated_copies: AnnotatedCopyStore | str | Path,
         memory_store: ReadingMemoryStore | None = None,
-        db: AppDB | None = None,
+        db: VocabularyRepository | None = None,
     ):
         self.corpus = corpus
         self.annotated_copies = (

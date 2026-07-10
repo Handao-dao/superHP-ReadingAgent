@@ -249,14 +249,16 @@ Contract 回答“模块之间交换什么数据”；Repository 回答“数据
 
 ### Composition Root
 
-当前主要由 `main.py` 承担。目标上它负责：
+当前由 `application/container.py` 中的 `AppContainer` 和 `build_container()` 承担，负责：
 
 - 读取 Settings。
 - 创建 Stores、Repositories、Provider、Services、Profiles、Router 和 Dispatcher。
 - 将具体实现注入 Transport。
-- 创建 FastAPI app 并注册 routes。
+- 管理共享数据库资源的关闭入口。
 
-其他模块不应反向导入 Composition Root 或依赖其中的全局单例。
+`main.py` 当前从 Container 取得一组兼容别名，供尚未拆出的 HTTP routes 使用；后续 Router
+应显式接收 Container 或所需能力。其他模块不应反向导入 Composition Root 或依赖
+`main.py` 中的全局单例。
 
 ## 当前消息流
 
@@ -336,7 +338,7 @@ Transport
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
-2. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
+2. `main.py` 仍同时承担全部 HTTP routes 和 DTO mapper。
 3. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
 4. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
@@ -384,10 +386,11 @@ Transport
 - `AppDB` 现在只保留组合、连接生命周期和兼容转发，不再包含 SQL。
 - Corpus、Memory、Annotated Copy 保持不同的数据生命周期。
 
-### 阶段 5：Composition Root 与 HTTP Routers
+### 阶段 5：Composition Root 与 HTTP Routers（进行中）
 
-- 新建 `AppContainer` 或等价装配对象。
-- 移出 `LazyLookupService`。
+- 已新建 `AppContainer`，对象创建顺序移出 `main.py`。
+- 已将 `LazyLookupService` 移到独立 Service，并通过 provider factory 注入。
+- `main.py` 暂时保留 Container capability aliases，维持现有 routes 和测试兼容。
 - 按 profiles、units、bookmarks、vocabulary、cards 拆 HTTP routers。
 - `main.py` 最终只创建 app、装配 container 并注册 transport。
 

@@ -8,25 +8,14 @@ side effects to ``ReadingSocketSession`` and the runtime action dispatcher.
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from superhp_agent.artifacts import AnnotatedCopyStore
-from superhp_agent.config import get_settings
+from superhp_agent.application import build_container
 from superhp_agent.contracts import AgentCard, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.corpus import (
     CorpusError,
-    CorpusStore,
     ReadingUnit,
     ReadingUnitDocument,
 )
 from superhp_agent.domain.vocabulary import normalize_pos
-from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.ports.repositories import BookmarkRepository
-from superhp_agent.profiles import create_default_registry
-from superhp_agent.providers.factory import make_provider
-from superhp_agent.runtime import (
-    ReadingCardBuilder,
-    ReadingFlowRouter,
-    ReadingStateReader,
-)
 from superhp_agent.schemas import (
     AddBookmarkRequest,
     AddVocabularyRequest,
@@ -40,55 +29,26 @@ from superhp_agent.schemas import (
     WordLookupRequest,
     WordLookupResult,
 )
-from superhp_agent.services.annotator import LazyAnnotatorService
-from superhp_agent.services.lookup import WordLookupService
-from superhp_agent.storage import AppDB
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
 # These singletons are intentionally created at import time: they are cheap,
 # stateless or locally stateful, and FastAPI can reuse them across requests.
-settings = get_settings()
-profile_registry = create_default_registry(settings.default_profile_id)
-default_profile = profile_registry.get()
-corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
-memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
-db = AppDB(settings.db_path)
-vocabulary_repository = db.vocabulary_repository
-bookmark_repository: BookmarkRepository = db.bookmark_repository
-annotated_copies = AnnotatedCopyStore(settings.annotated_dir)
-# LLM providers are lazy so the app can boot and serve corpus/memory endpoints
-# even when no API key has been configured yet.
-annotator_service = LazyAnnotatorService(
-    lambda: make_provider(settings),
-    profile=default_profile,
-    profile_registry=profile_registry,
-    max_chunk_words=settings.annotation_max_chunk_words,
-    max_concurrency=settings.annotation_max_concurrency,
-)
-
-
-class LazyLookupService:
-    """Build lookup only when the optional inline dictionary is used."""
-
-    def __init__(self):
-        self._services: dict[str, WordLookupService] = {}
-
-    def _get_service(self, profile_id: str | None = None) -> WordLookupService:
-        profile = profile_registry.get(profile_id)
-        if profile.id not in self._services:
-            self._services[profile.id] = WordLookupService(make_provider(settings), profile=profile)
-        return self._services[profile.id]
-
-    async def lookup(self, word: str, sentence: str, *, profile_id: str | None = None) -> dict:
-        return await self._get_service(profile_id).lookup(word, sentence)
-
-
-lookup_service = LazyLookupService()
-state_reader = ReadingStateReader(corpus, annotated_copies, memory_store, vocabulary_repository)
-flow_router = ReadingFlowRouter(
-    state_reader,
-    card_builder=ReadingCardBuilder(default_profile.card_copy, profile_registry=profile_registry),
-)
+container = build_container()
+# Compatibility aliases keep existing route code and tests stable while HTTP
+# routers are moved to dependency-injected modules in later steps.
+settings = container.settings
+profile_registry = container.profile_registry
+default_profile = container.default_profile
+corpus = container.corpus
+memory_store = container.memory_store
+db = container.db
+vocabulary_repository = container.vocabulary_repository
+bookmark_repository = container.bookmark_repository
+annotated_copies = container.annotated_copies
+annotator_service = container.annotator_service
+lookup_service = container.lookup_service
+state_reader = container.state_reader
+flow_router = container.flow_router
 
 app = FastAPI(title="SuperHP Agent Backend")
 

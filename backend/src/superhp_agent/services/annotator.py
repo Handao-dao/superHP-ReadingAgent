@@ -146,20 +146,12 @@ class AnnotatorService:
             level=normalized_level,
         )
 
-        if len(chunks) == 1:
-            annotated_text = await self._annotate_chunk(
-                chunks[0],
-                base_context=base_context,
-                event_sink=event_sink,
-                request_id=request_id,
-            )
-        else:
-            annotated_text = await self._annotate_chunks(
-                chunks,
-                base_context=base_context,
-                event_sink=event_sink,
-                request_id=request_id,
-            )
+        annotated_text = await self._annotate_chunks(
+            chunks,
+            base_context=base_context,
+            event_sink=event_sink,
+            request_id=request_id,
+        )
 
         if not annotated_text:
             raise ValueError("模型没有返回译注文本。")

@@ -230,9 +230,38 @@ def test_annotator_service_emits_model_retry_event():
         result = await service.annotate_text("ok", event_sink=events, request_id="r-retry")
 
         assert result.annotated_text == "a [[wand|魔杖]] on the table"
-        assert events.events[0].type == "annotation.model_retry"
-        assert events.events[0].request_id == "r-retry"
-        assert "retrying" in events.events[0].payload["message"]
+        retry_event = next(
+            event for event in events.events if event.type == "annotation.model_retry"
+        )
+        assert retry_event.request_id == "r-retry"
+        assert "retrying" in retry_event.payload["message"]
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_emits_consistent_progress_for_one_chunk():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content="a [[wand|魔杖]] on the table")
+        ])
+        events = EventCollector()
+        service = AnnotatorService(provider)
+
+        await service.annotate_text(
+            "a wand on the table",
+            event_sink=events,
+            request_id="r-one-chunk",
+        )
+
+        progress = [
+            event.payload
+            for event in events.events
+            if event.type == "annotation.progress"
+        ]
+        assert [(item["current"], item["total"]) for item in progress] == [
+            (0, 1),
+            (1, 1),
+        ]
 
     asyncio.run(run_case())
 

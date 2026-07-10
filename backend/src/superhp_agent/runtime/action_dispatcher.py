@@ -318,6 +318,7 @@ class GenerateAnnotationHandler:
         # back, return the readable source text without recording a fake
         # annotated copy, so the user can retry later.
         persisted = not result.fully_degraded
+        status = "degraded" if result.issues else "completed"
         stored_vocabulary_count = 0
         if persisted:
             context.require_annotated_copies().write(
@@ -325,6 +326,9 @@ class GenerateAnnotationHandler:
                 annotated_text=result.annotated_text,
                 vocabulary=result.vocabulary,
                 level=level,
+                status=status,
+                validated_chunk_count=result.validated_chunk_count,
+                total_chunk_count=result.total_chunk_count,
             )
             if context.db:
                 stored_vocabulary_count = context.db.add_vocabulary_items(
@@ -334,7 +338,6 @@ class GenerateAnnotationHandler:
             if context.memory_store:
                 context.memory_store.mark_annotated(unit_id)
 
-        status = "degraded" if result.issues else "completed"
         provider_error_count = sum(
             issue.category == "provider" for issue in result.issues
         )

@@ -8,6 +8,9 @@ call models, update reading progress, or emit transport events.
 
 from __future__ import annotations
 
+import hashlib
+import os
+import tempfile
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -15,6 +18,9 @@ from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnitDocument
+
+ANNOTATION_FORMAT_VERSION = 1
+VALID_ANNOTATION_STATUSES = {"completed", "degraded"}
 
 
 @dataclass(frozen=True)
@@ -73,19 +79,29 @@ class AnnotatedCopyStore:
         annotated_text: str,
         vocabulary: Iterable[Any],
         level: str,
+        status: str = "completed",
+        validated_chunk_count: int = 1,
+        total_chunk_count: int = 1,
     ) -> Path:
-        """Serialize and persist one canonical density-specific copy."""
+        """Atomically persist one canonical density-specific copy."""
+        if status not in VALID_ANNOTATION_STATUSES:
+            raise ValueError(f"Invalid annotation status: {status!r}")
+        validated_chunk_count = int(validated_chunk_count)
+        total_chunk_count = int(total_chunk_count)
+        if not 0 <= validated_chunk_count <= total_chunk_count:
+            raise ValueError("validated_chunk_count must be between 0 and total_chunk_count")
         path = self.path_for(document.meta.id, level)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            self._render_markdown(
-                document,
-                annotated_text=annotated_text,
-                vocabulary=vocabulary,
-                level=level,
-            ),
-            encoding="utf-8",
+        rendered = self._render_markdown(
+            document,
+            annotated_text=annotated_text,
+            vocabulary=vocabulary,
+            level=level,
+            status=status,
+            validated_chunk_count=validated_chunk_count,
+            total_chunk_count=total_chunk_count,
         )
+        self._atomic_write(path, rendered)
         return path
 
     @staticmethod
@@ -95,6 +111,9 @@ class AnnotatedCopyStore:
         annotated_text: str,
         vocabulary: Iterable[Any],
         level: str,
+        status: str,
+        validated_chunk_count: int,
+        total_chunk_count: int,
     ) -> str:
         vocab_lines = "\n".join(
             f"# - {item.word}: {item.translation} ({getattr(item, 'pos', 'other')})"
@@ -102,6 +121,7 @@ class AnnotatedCopyStore:
             if item.word or item.translation
         )
         annotated_at = datetime.now(UTC).isoformat()
+        source_hash = hashlib.sha256(document.body.encode("utf-8")).hexdigest()
         return (
             "---\n"
             f"source_unit_id: {document.meta.id}\n"
@@ -111,11 +131,39 @@ class AnnotatedCopyStore:
             f"profile_id: {document.meta.profile_id}\n"
             f"level: {level}\n"
             "body_kind: annotated\n"
+            f"source_hash: {source_hash}\n"
+            f"annotation_format_version: {ANNOTATION_FORMAT_VERSION}\n"
+            f"status: {status}\n"
+            f"validated_chunk_count: {validated_chunk_count}\n"
+            f"total_chunk_count: {total_chunk_count}\n"
             f"annotated_at: {annotated_at}\n"
             "---\n\n"
             f"<!-- extracted_vocabulary\n{vocab_lines}\n-->\n\n"
             f"{annotated_text.strip()}\n"
         )
+
+    @staticmethod
+    def _atomic_write(path: Path, content: str) -> None:
+        """Replace the target only after a complete same-directory write."""
+        temp_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                temp_path = Path(handle.name)
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temp_path.replace(path)
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
 
     @staticmethod
     def _split_markdown(raw: str) -> tuple[str, str]:

@@ -51,7 +51,7 @@ SQLite `units` 只为 vocabulary、bookmark 等关系数据提供元数据索引
 hp01-ch01.intermediate.annotated.md
 ```
 
-标注文件 frontmatter 目标上应记录：
+标注文件 frontmatter 当前记录：
 
 ```yaml
 source_unit_id: hp01-ch01
@@ -68,7 +68,7 @@ annotated_at: <UTC timestamp>
 `source_hash` 用于发现原文修改后已经过期的译注。`status` 和 chunk 计数用于说明混合降级结果，
 但“译注是否存在”仍以文件实际存在为准，不在 Memory 或 SQLite 维护第二份布尔状态。
 
-文件写入应使用临时文件加原子替换。标注文件是权威生成产物；SQLite 中的 vocabulary encounter
+文件写入使用同目录临时文件加原子替换。标注文件是权威生成产物；SQLite 中的 vocabulary encounter
 只是可重建查询索引，因此不要求伪造跨文件系统和 SQLite 的事务。
 
 ## 单词：VocabularyRepository
@@ -166,7 +166,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 
 ## 渐进迁移顺序
 
-1. 为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
+1. （已完成）为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
 2. 从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
 3. 新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
 4. 保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。

@@ -82,6 +82,12 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 这里的 `ReadingUnit` 是阅读体验中的最小单元，不一定等同于完整章节。`chapter_id` 用来把同一章切分后的多个 unit 重新关联起来。
 
+### `src/superhp_agent/artifacts/annotated_copies.py`
+
+`AnnotatedCopyStore` 保存生成后的完整译注 Markdown。它使用同目录临时文件和原子替换，避免写入
+中断时破坏已有副本；frontmatter 记录原文 hash、格式版本、完成/降级状态和 chunk 校验计数。
+译注正文只保存在 Artifact 文件中，不复制进 SQLite。
+
 ### `src/superhp_agent/memory.py`
 
 `ReadingMemoryStore` 负责轻量用户状态，使用 JSON 和 JSONL 文件保存。
@@ -96,7 +102,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 这个模块适合存“当前流程需要立刻知道”的状态，不适合复杂查询。
 
-### `src/superhp_agent/storage.py`
+### `src/superhp_agent/storage/`
 
 `AppDB` 是 SQLite 网关，负责更适合查询和聚合的数据。
 

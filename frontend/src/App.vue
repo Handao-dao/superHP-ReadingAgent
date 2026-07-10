@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
+import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
@@ -591,32 +592,17 @@ onBeforeUnmount(() => {
         </template>
 
         <template v-else-if="readerMode === 'guidance'">
-          <div class="guidance-page">
-            <section class="guidance-hero">
-              <p class="small-label">Reading Flow</p>
-              <h2>{{ hasActiveReading ? 'Chapter Complete' : 'Ready to Read' }}</h2>
-              <div v-if="currentMeta" class="chapter-context">
-                <p>{{ currentMeta.book_title }}</p>
-                <p>{{ chapterDetailText }}</p>
-              </div>
-              <p class="guidance-summary">{{ summaryText }}</p>
-            </section>
-
-            <div class="guide-action-panel">
-              <p class="small-label">{{ guideActionTitle }}</p>
-              <article v-for="card in cards" :key="card.id" class="guide-card">
-                <div class="actions">
-                  <button
-                    v-for="action in card.actions"
-                    :key="`${card.id}-${action.id}`"
-                    type="button"
-                    :disabled="!canSend || busy"
-                    @click="handleAction(action)"
-                  >{{ action.label }}</button>
-                </div>
-              </article>
-            </div>
-          </div>
+          <GuidancePanel
+            :busy="busy"
+            :can-send="canSend"
+            :cards="cards"
+            :chapter-detail="chapterDetailText"
+            :current-meta="currentMeta"
+            :has-active-reading="hasActiveReading"
+            :summary="summaryText"
+            :title="guideActionTitle"
+            @action="handleAction"
+          />
         </template>
 
         <template v-else-if="readerMode === 'error'">

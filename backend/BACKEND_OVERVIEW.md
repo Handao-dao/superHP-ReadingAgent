@@ -231,6 +231,7 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 ### `src/superhp_agent/services/annotator.py`
 
 `AnnotatorService` 负责译注生成。它把“单块模型标注能力”和“长文本分块并发流程”放在同一服务边界内，对外仍然只暴露 `annotate_text()`。
+完整的 Service 错误分类、chunk 降级和持久化边界见 [`src/superhp_agent/services/README.md`](src/superhp_agent/services/README.md)。
 
 当前流程：
 

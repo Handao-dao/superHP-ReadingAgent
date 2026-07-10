@@ -1,0 +1,67 @@
+# Service 层说明
+
+本文记录 `services/` 内业务服务的职责边界和运行语义。项目整体分层见上一级
+[`README.md`](../README.md)，后端功能总览见 [`BACKEND_OVERVIEW.md`](../../../BACKEND_OVERVIEW.md)。
+
+## 职责边界
+
+Service 负责完成一个明确的后端业务任务，例如译注生成和上下文查词。它可以组合
+Profile、Context 和 Provider Port，但不负责：
+
+- 接收 HTTP 或 WebSocket 消息。
+- 决定阅读流程和前端 Cards。
+- 直接操作 SQLite、Memory 或译注文件。
+- 把模型返回错误直接拼成 Transport 协议。
+
+Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责判断最终模型结果在当前业务中
+是否可用，并以 Contracts 中的结构化结果向上层传递状态。
+
+## AnnotatorService 的两层兜底
+
+译注以单个 chunk 为独立模型任务。每个 chunk 的处理流程如下：
+
+```text
+单个 chunk
+    ↓
+Provider 调用与 retry
+    ├── 最终失败 → 原文回退，provider 类警告
+    └── 返回内容
+            ↓
+        格式和原文校验
+            ├── 不合规 → 原文回退，validation 类警告
+            └── 合规 → 使用译注
+```
+
+第一层由 Provider 提供，解决网络超时、限流和临时服务错误。重试耗尽后，Service 不让一个
+chunk 阻断整章，而是使用该 chunk 的原文，并生成：
+
+```text
+category = provider
+code = provider_failed
+```
+
+第二层由 Profile 校验器提供，解决模型虽然成功返回、但内容不可信的问题。校验器要求新生成
+结果使用三字段 `[[原文|翻译|pos]]` 标记，将所有标记还原成左侧原文，并与输入 chunk 精确比较。
+标记损坏、POS 非法、输出为空或截断、正文被增删改时，Service 同样回退原文，并生成
+`validation` 类问题，例如：
+
+```text
+malformed_marker
+invalid_pos
+source_mismatch
+empty_output
+truncated_output
+```
+
+降级信息使用 `contracts/annotation.py` 中的 `ServiceIssue`、`AnnotationChunkOutcome` 和
+`AnnotationResult` 传递。Service 同时发送 `annotation.degraded` 事件，事件包含稳定的
+`category`、`code` 和 `chunk_index`；前端不应依赖可变的错误文案判断类型。
+
+## 合并与持久化
+
+- 校验通过和降级后的 chunk 都按原始 `index` 合并，因此前端始终能获得完整可读文本。
+- 部分 chunk 降级时，Dispatcher 可以保存混合译注，并把完成状态标为 `degraded`。
+- 全部 chunk 降级时，只向前端返回原文，不创建译注副本，也不标记为已译注，便于用户稍后重试。
+- 取消请求和未分类的程序异常不属于业务降级，仍然向上抛出，并取消、等待其余并行任务退出。
+
+这里的原则是：模型或格式问题不能破坏阅读体验，但程序错误也不能被宽泛异常捕获静默隐藏。

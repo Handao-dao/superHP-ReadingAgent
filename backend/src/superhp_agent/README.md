@@ -113,6 +113,7 @@ Dispatcher 本身不应继续承载译注文件路径、Markdown 序列化、API
 ### Service
 
 当前对应 `services/annotator.py` 和 `services/lookup.py`。
+Service 的局部职责、译注校验和降级流程见 [`services/README.md`](services/README.md)。
 
 Service 负责一个明确的后端业务能力，例如：
 

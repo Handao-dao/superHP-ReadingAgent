@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from superhp_agent.config import Settings
-from superhp_agent.providers.base import GenerationSettings, LLMProvider
+from superhp_agent.ports.llm import LLMProvider
+from superhp_agent.providers.base import GenerationSettings
 from superhp_agent.providers.openai_compat import OpenAICompatProvider
 from superhp_agent.providers.registry import find_by_name, match_by_model
 

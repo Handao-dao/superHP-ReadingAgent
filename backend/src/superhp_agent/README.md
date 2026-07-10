@@ -152,7 +152,8 @@ Profile 不负责调用 Provider、访问数据库、保存文件、发送 WebSo
 
 ### Provider
 
-当前位于 `providers/`。
+具体实现位于 `providers/`；应用层接口位于 `ports/llm.py`，厂商无关响应位于
+`contracts/llm.py`。
 
 Provider 是模型基础设施适配器，负责：
 
@@ -161,6 +162,8 @@ Provider 是模型基础设施适配器，负责：
 - 重试、错误归一化和 provider 元数据。
 
 Provider 回答“怎样调用模型”；Service 回答“为了完成业务任务，模型应怎样被使用”。
+Service 只依赖最小 `LLMProvider` Protocol。`BaseLLMProvider` 负责 generation 默认值和重试，
+OpenAI-compatible Adapter 继承该实现基类；旧的 `providers.base.LLMProvider` 名称仅作为兼容别名。
 
 ### Contracts
 
@@ -336,6 +339,7 @@ Transport
 - 已完成第一刀：抽出 `contracts/actions.py` 中的 `AgentAction`。
 - 已完成第二刀：抽出 `contracts/reading.py` 中的阅读单元和 Card 只读模型。
 - 已完成第三刀：抽出 `contracts/events.py` 中的 `BackendEvent`。
+- 已完成第四刀：抽出 `contracts/llm.py` 中厂商无关的 `LLMResponse`。
 - 后续单独拆分 Transport Event DTO，不直接改变现有 WebSocket 消息。
 - 保留 `schemas.py` 兼容 re-export。
 - 逐步区分 Transport DTO、Command、Query 和 Event。
@@ -344,7 +348,7 @@ Transport
 ### 阶段 3：通用 Ports（进行中）
 
 - 已将 EventSink 移到 `ports/events.py`，Service 不再依赖 Runtime 事件模块。
-- 将 Provider Protocol 视为 LLM Port。
+- 已在 `ports/llm.py` 建立最小 LLMProvider Protocol，Service 不再依赖 Provider 实现包。
 - 为 Repository 建立最小 Protocol，只暴露 Handler / Service 真正需要的方法。
 
 ### 阶段 4：Storage Package

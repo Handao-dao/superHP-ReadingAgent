@@ -8,14 +8,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from superhp_agent.context import ContextBlock, ContextBundle
+from superhp_agent.contracts.llm import LLMResponse
 from superhp_agent.ports.events import EventSink, emit_backend_event
+from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.profiles import (
     AnnotationItem,
     AnnotationProfile,
     EnglishNovelProfile,
     ProfileRegistry,
 )
-from superhp_agent.providers.base import LLMProvider, LLMResponse
 
 VocabItem = AnnotationItem
 

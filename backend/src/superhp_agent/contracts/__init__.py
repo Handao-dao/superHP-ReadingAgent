@@ -2,6 +2,7 @@
 
 from superhp_agent.contracts.actions import AgentAction
 from superhp_agent.contracts.events import BackendEvent
+from superhp_agent.contracts.llm import LLMResponse
 from superhp_agent.contracts.reading import (
     AgentCard,
     ReadingUnitDetail,
@@ -12,6 +13,7 @@ __all__ = [
     "AgentAction",
     "AgentCard",
     "BackendEvent",
+    "LLMResponse",
     "ReadingUnitDetail",
     "ReadingUnitMeta",
 ]

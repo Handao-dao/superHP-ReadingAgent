@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from superhp_agent.providers.base import LLMProvider, LLMResponse
+from superhp_agent.contracts.llm import LLMResponse
+from superhp_agent.providers.base import BaseLLMProvider
 from superhp_agent.providers.registry import ProviderSpec
 
 AsyncOpenAI: Any = None
@@ -16,7 +17,7 @@ _THINKING_STYLE_MAP = {
 }
 
 
-class OpenAICompatProvider(LLMProvider):
+class OpenAICompatProvider(BaseLLMProvider):
     """Adapter for vendors that expose an OpenAI-compatible chat API."""
     def __init__(
         self,
@@ -278,7 +279,7 @@ class OpenAICompatProvider(LLMProvider):
             finish_reason="error",
             error_status_code=int(status_code) if status_code is not None else None,
             error_kind=self._error_kind(exc),
-            error_retry_after_s=LLMProvider.extract_retry_after_from_headers(headers),
+            error_retry_after_s=BaseLLMProvider.extract_retry_after_from_headers(headers),
         )
 
     @staticmethod

@@ -1,8 +1,8 @@
-"""Base LLM provider contract.
+"""Shared implementation base for retry-aware LLM provider adapters.
 
-This is intentionally smaller than nanobot's production provider layer, but it
-keeps the same core idea: application services depend on LLMProvider and
-LLMResponse, not on any vendor SDK.
+Application services depend on ``ports.llm.LLMProvider``. This module owns
+generation defaults, retry behavior, and provider implementation helpers while
+retaining the historical ``LLMProvider`` class name as a compatibility alias.
 """
 
 from __future__ import annotations
@@ -11,9 +11,11 @@ import asyncio
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from typing import Any
+
+from superhp_agent.contracts.llm import LLMResponse
 
 
 @dataclass(frozen=True)
@@ -24,28 +26,8 @@ class GenerationSettings:
     reasoning_effort: str | None = None
 
 
-@dataclass
-class LLMResponse:
-    """Provider-neutral response envelope returned to application services."""
-    content: str | None
-    finish_reason: str = "stop"
-    usage: dict[str, int] = field(default_factory=dict)
-    reasoning_content: str | None = None
-    retry_after: float | None = None
-    error_status_code: int | None = None
-    error_kind: str | None = None
-    error_type: str | None = None
-    error_code: str | None = None
-    error_retry_after_s: float | None = None
-    error_should_retry: bool | None = None
-
-    @property
-    def is_error(self) -> bool:
-        return self.finish_reason == "error"
-
-
-class LLMProvider(ABC):
-    """Abstract base class that hides vendor SDK details from the app."""
+class BaseLLMProvider(ABC):
+    """Reusable implementation base for concrete provider adapters."""
     _SENTINEL = object()
     _RETRY_DELAYS = (1.0, 2.0, 4.0)
     _RETRYABLE_STATUS_CODES = frozenset({408, 409, 429})
@@ -311,3 +293,10 @@ class LLMProvider(ABC):
         if dt.tzinfo is None:
             return 0.1
         return max(0.1, (dt - dt.now(dt.tzinfo)).total_seconds())
+
+
+# Compatibility alias: new Services use the Protocol in ``ports.llm`` while
+# existing provider subclasses may continue inheriting this historical name.
+LLMProvider = BaseLLMProvider
+
+__all__ = ["BaseLLMProvider", "GenerationSettings", "LLMProvider", "LLMResponse"]

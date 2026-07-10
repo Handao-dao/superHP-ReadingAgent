@@ -49,6 +49,8 @@ class AnnotationTruncatedError(RuntimeError):
 class AnnotationChunker:
     """Estimate paragraph sizes and pack complete paragraphs for annotation."""
 
+    # This is a rough sizing rule, not a model tokenizer: count each English
+    # word, CJK character, or remaining non-whitespace symbol as one unit.
     _UNIT_RE = re.compile(
         r"[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*"
         r"|[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]"

@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus")
+CORPUS = Path(__file__).resolve().parents[3] / "corpus"
 
 
 def split_chapter(ch_file):

@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus\hp03")
+CORPUS = Path(__file__).resolve().parents[3] / "corpus" / "hp03"
 
 SUMMARIES = {
     1: "Harry spends the summer doing homework while the Dursleys ignore him. On his birthday, he receives gifts from Ron, Hermione, and Hagrid, including a copy of the Daily Prophet revealing that Arthur Weasley won the annual Grand Prize Galleon Draw. The Weasley family uses the money to visit Egypt, and Ron sends Harry a magical Pocket Sneakoscope.",

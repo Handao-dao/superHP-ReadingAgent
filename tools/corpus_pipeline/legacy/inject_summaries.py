@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus\hp01")
+CORPUS = Path(__file__).resolve().parents[3] / "corpus" / "hp01"
 
 SUMMARIES = {
     1: "The Dursleys, a perfectly normal family, witness strange occurrences as the wizarding world celebrates Voldemort's downfall. Dumbledore, McGonagall, and Hagrid leave the infant Harry Potter on the Dursleys' doorstep with a letter explaining his parents' murder and his survival of the Killing Curse.",

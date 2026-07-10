@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus\hp04")
+CORPUS = Path(__file__).resolve().parents[3] / "corpus" / "hp04"
 
 SUMMARIES = {
     1: "In the village of Little Hangleton, the Riddle House caretaker Frank Bryce overhears Wormtail and Lord Voldemort plotting in the old Riddle manor. Voldemort discusses a plan involving Harry Potter and kills Frank when he is discovered.",

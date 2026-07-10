@@ -1,12 +1,17 @@
 """Generate English summaries for hp01 chapters using Proma Cloud API."""
+
+import argparse
+import json
 import os
-import re, json, sys, time
-from pathlib import Path
+import re
+import time
 import urllib.request
+from pathlib import Path
 
 API_KEY = os.getenv("PROMA_API_KEY", "")
 BASE_URL = "https://api.proma.cool/api/v1"
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus\hp01")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CORPUS_DIR = PROJECT_ROOT / "corpus" / "hp01"
 
 SYSTEM_PROMPT = """You are a literary summarizer. Read the provided chapter excerpt from Harry Potter and the Philosopher's Stone and write a concise 2-3 sentence summary in English.
 
@@ -92,15 +97,43 @@ def update_chapter(filepath):
     print(f"  OK {filepath.name}: {summary[:80]}...")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--corpus-dir",
+        type=Path,
+        default=DEFAULT_CORPUS_DIR,
+        help=f"chapter directory (default: {DEFAULT_CORPUS_DIR})",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="list chapters missing summaries without API requests or file writes",
+    )
+    parser.add_argument("--delay", type=float, default=0.5, help="delay between API calls")
+    return parser.parse_args()
+
+
 def main():
-    chapters = sorted(CORPUS.glob("hp01-ch*.md"))
+    args = parse_args()
+    chapters = sorted(args.corpus_dir.resolve().glob("hp01-ch*.md"))
     print(f"Processing {len(chapters)} chapters...\n")
+
+    if args.dry_run:
+        for chapter in chapters:
+            content = chapter.read_text(encoding="utf-8")
+            status = "skip: summary exists" if re.search(r"^summary:", content, re.MULTILINE) else "would summarize"
+            print(f"  {chapter.name}: {status}")
+        return
+
+    if not API_KEY:
+        raise SystemExit("PROMA_API_KEY is required unless --dry-run is used.")
 
     for i, ch in enumerate(chapters):
         print(f"[{i+1}/{len(chapters)}] {ch.name}")
         update_chapter(ch)
         if i < len(chapters) - 1:
-            time.sleep(0.5)  # Rate limit courtesy
+            time.sleep(max(0, args.delay))  # Rate limit courtesy
 
     print("\nDone.")
 

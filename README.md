@@ -38,7 +38,7 @@ superhp_Agent/
 ├── frontend/             # Vue guided reading UI skeleton
 ├── corpus/               # Local chapter markdown files
 ├── docs/                 # Architecture and implementation notes
-└── extract_chapters.py   # Existing EPUB extraction helper
+└── tools/corpus_pipeline # Offline EPUB extraction and corpus maintenance tools
 ```
 
 ## Corpus 文件格式

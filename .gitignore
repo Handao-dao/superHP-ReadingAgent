@@ -14,6 +14,7 @@ dist/
 
 # Local app data
 logs/
+/data/
 backend/data/
 *.sqlite
 *.sqlite3

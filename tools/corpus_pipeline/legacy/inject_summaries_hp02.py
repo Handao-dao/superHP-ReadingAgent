@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-CORPUS = Path(r"D:\d_Software\codeTrain\superhp_Agent\corpus\hp02")
+CORPUS = Path(__file__).resolve().parents[3] / "corpus" / "hp02"
 
 SUMMARIES = {
     1: "Harry spends a miserable summer at the Dursleys, who are entertaining an important dinner guest. Dobby the house-elf appears in Harry's room, warning him not to return to Hogwarts, and when Harry refuses, Dobby causes chaos by destroying a dessert — resulting in Harry being locked in his room.",

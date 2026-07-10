@@ -8,7 +8,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
-EPUB_PATH = Path(r"D:\d_Software\codeTrain\superhp_Agent")
+EPUB_PATH = Path(__file__).resolve().parents[3]
 CORPUS = EPUB_PATH / "corpus"
 NCX_NS = "http://www.daisy.org/z3986/2005/ncx/"
 

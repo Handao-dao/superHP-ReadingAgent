@@ -1,13 +1,20 @@
 """Universal Harry Potter epub extractor — handles 3 different epub formats."""
-import zipfile, xml.etree.ElementTree as ET, re, sys, warnings
+
+import argparse
+import re
+import warnings
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
+
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 from markdownify import markdownify as md
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-EPUB_PATH = Path(r"D:\d_Software\codeTrain\superhp_Agent")
-CORPUS = EPUB_PATH / "corpus"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_EPUB_DIR = PROJECT_ROOT
+DEFAULT_CORPUS_DIR = PROJECT_ROOT / "corpus"
 NCX_NS = "http://www.daisy.org/z3986/2005/ncx/"
 
 WORD_TO_NUM = {
@@ -89,7 +96,7 @@ def extract_chapter_title_from_html(soup):
 
     # Format C: Title follows the CHAPTER heading in a <p> (hp03)
     h_tags = soup.find_all(["h1", "h2", "h3", "h4"])
-    for i, h in enumerate(h_tags):
+    for h in h_tags:
         if h.get_text(strip=True).upper().startswith("CHAPTER"):
             # Next sibling with text
             for sibling in h.find_all_next(["p", "h3", "h2", "span", "div"], limit=5):
@@ -217,9 +224,8 @@ def html_to_markdown(html_content):
     return text.strip()
 
 
-def write_chapter(book_id, ch, book_title_map):
-    book_dir = CORPUS / book_id
-    book_dir.mkdir(parents=True, exist_ok=True)
+def write_chapter(book_id, ch, book_title_map, *, corpus_dir, dry_run=False):
+    book_dir = corpus_dir / book_id
     ch_no, ch_title = ch["number"], ch["title"]
     filename = f"{book_id}-ch{ch_no:02d}.md"
     filepath = book_dir / filename
@@ -235,6 +241,10 @@ chapter_title: "{ch_title}"
 
 {md_body}
 """
+    if dry_run:
+        print(f"  Would write: {filepath} ({len(md_body)} chars)")
+        return
+    book_dir.mkdir(parents=True, exist_ok=True)
     filepath.write_text(content, encoding="utf-8")
     print(f"  Wrote: {filepath} ({len(md_body)} chars)")
 
@@ -250,18 +260,34 @@ BOOK_TITLES = {
 }
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("epubs", nargs="*", type=Path, help="EPUB files to import")
+    parser.add_argument(
+        "--corpus-dir",
+        type=Path,
+        default=DEFAULT_CORPUS_DIR,
+        help=f"output corpus directory (default: {DEFAULT_CORPUS_DIR})",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="parse EPUB files and report outputs without writing corpus files",
+    )
+    return parser.parse_args()
+
+
 def main():
-    if len(sys.argv) > 1:
-        epubs = [Path(p) for p in sys.argv[1:]]
-    else:
-        epubs = sorted(EPUB_PATH.glob("*.epub"))
+    args = parse_args()
+    epubs = args.epubs or sorted(DEFAULT_EPUB_DIR.glob("*.epub"))
 
     if not epubs:
-        print("No epub found!"); sys.exit(1)
+        raise SystemExit("No EPUB files found. Pass one or more EPUB paths explicitly.")
 
     for epub_file in epubs:
         if not epub_file.exists():
-            print(f"Not found: {epub_file}"); continue
+            print(f"Not found: {epub_file}")
+            continue
         print(f"\n{'='*60}")
         print(f"Processing: {epub_file.name}")
         print(f"{'='*60}")
@@ -272,9 +298,15 @@ def main():
             book_title = BOOK_TITLES.get(book_id, f"Harry Potter {book_id}")
             print(f"\nBook: {book_title} ({len(book_chapters)} chapters)")
             for ch in book_chapters:
-                write_chapter(book_id, ch, BOOK_TITLES)
+                write_chapter(
+                    book_id,
+                    ch,
+                    BOOK_TITLES,
+                    corpus_dir=args.corpus_dir.resolve(),
+                    dry_run=args.dry_run,
+                )
 
-        print(f"\nSUMMARY")
+        print("\nSUMMARY")
         for book_id in sorted(chapters.keys()):
             count = len(chapters[book_id])
             print(f"  {book_id}: {count} chapters ({BOOK_TITLES.get(book_id, '?')})")

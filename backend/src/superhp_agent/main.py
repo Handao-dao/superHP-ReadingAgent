@@ -40,7 +40,7 @@ settings = container.settings
 profile_registry = container.profile_registry
 default_profile = container.default_profile
 corpus = container.corpus
-memory_store = container.memory_store
+event_log_store = container.event_log_store
 reading_progress_repository = container.reading_progress_repository
 db = container.db
 vocabulary_repository = container.vocabulary_repository
@@ -304,7 +304,7 @@ async def reading_socket(websocket: WebSocket):
         websocket=websocket,
         flow_router=flow_router,
         corpus=corpus,
-        memory_store=memory_store,
+        event_log_store=event_log_store,
         progress_repository=reading_progress_repository,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
@@ -313,5 +313,5 @@ async def reading_socket(websocket: WebSocket):
     try:
         await session.run()
     except WebSocketDisconnect:
-        memory_store.log_event("session_disconnected")
+        event_log_store.log_event("session_disconnected")
         return

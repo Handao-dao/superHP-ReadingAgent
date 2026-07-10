@@ -145,7 +145,12 @@ def test_dispatch_open_unit_emits_events_and_updates_context(tmp_path):
             events.append({"type": event_type, **payload})
 
         memory = memory_store(tmp_path)
-        context = ActionContext(corpus=CorpusStore(corpus_root), emit=emit, memory_store=memory)
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            event_log_store=memory,
+            progress_repository=memory,
+        )
         dispatcher = ActionDispatcher()
 
         await dispatcher.dispatch(
@@ -175,7 +180,8 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             emit=emit,
-            memory_store=memory,
+            event_log_store=memory,
+            progress_repository=memory,
             current_unit_id="hp01-ch01",
         )
         dispatcher = ActionDispatcher()
@@ -203,7 +209,12 @@ def test_dispatch_start_next_marks_completed_and_selects_next_unit(tmp_path):
             events.append({"type": event_type, **payload})
 
         memory = memory_store(tmp_path)
-        context = ActionContext(corpus=CorpusStore(corpus_root), emit=emit, memory_store=memory)
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            event_log_store=memory,
+            progress_repository=memory,
+        )
         dispatcher = ActionDispatcher()
 
         await dispatcher.dispatch(
@@ -254,7 +265,8 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         context = ActionContext(
             corpus=corpus,
             emit=emit,
-            memory_store=memory,
+            event_log_store=memory,
+            progress_repository=memory,
             annotated_dir=annotated_dir,
             annotator_service=annotator,
             db=db,
@@ -331,7 +343,8 @@ def test_dispatch_returns_original_without_persisting_fully_degraded_result(tmp_
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             emit=emit,
-            memory_store=memory,
+            event_log_store=memory,
+            progress_repository=memory,
             annotated_dir=annotated_dir,
             annotator_service=FullyDegradedAnnotator(),
         )

@@ -17,6 +17,12 @@ class EventSink(Protocol):
     async def emit_event(self, event: BackendEvent) -> None: ...
 
 
+class EventLogger(Protocol):
+    """Capability required by code that records append-only behavior events."""
+
+    def log_event(self, event_type: str, **payload: Any) -> None: ...
+
+
 EventEmitter = Callable[..., Awaitable[None]]
 
 

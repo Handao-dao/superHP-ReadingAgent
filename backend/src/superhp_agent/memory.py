@@ -1,8 +1,8 @@
-"""File-backed reading memory and append-only event log.
+"""Legacy JSON reading-memory compatibility module.
 
-Memory captures product state that is useful for choosing the next card: current
-unit, opened units, and read units. Annotated-copy existence belongs to the
-artifact store. The JSONL event log remains separate from the current snapshot.
+The application runtime no longer imports this module: reading progress lives in
+SQLite and event logging lives in ``event_log.py``. The old implementation stays
+temporarily available for migration tooling and compatibility tests.
 """
 
 from __future__ import annotations

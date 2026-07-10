@@ -16,8 +16,7 @@ from pydantic import BaseModel, ValidationError
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, BackendEvent
 from superhp_agent.corpus import CorpusError, CorpusStore
-from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.ports.events import EventSink
+from superhp_agent.ports.events import EventLogger, EventSink
 from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
     VocabularyRepository,
@@ -68,7 +67,7 @@ class ReadingSocketSession:
         websocket: WebSocket,
         flow_router: ReadingFlowRouter,
         corpus: CorpusStore,
-        memory_store: ReadingMemoryStore | None = None,
+        event_log_store: EventLogger | None = None,
         progress_repository: ReadingProgressRepository | None = None,
         action_dispatcher: ActionDispatcher | None = None,
         annotated_dir: str | Path | None = None,
@@ -79,7 +78,7 @@ class ReadingSocketSession:
         self.websocket = websocket
         self.flow_router = flow_router
         self.corpus = corpus
-        self.memory_store = memory_store
+        self.event_log_store = event_log_store
         self.progress_repository = progress_repository
         self.action_dispatcher = action_dispatcher or ActionDispatcher()
         self.annotated_dir = Path(annotated_dir) if annotated_dir is not None else None
@@ -169,7 +168,7 @@ class ReadingSocketSession:
         context = ActionContext(
             corpus=self.corpus,
             event_sink=self.event_sink,
-            memory_store=self.memory_store,
+            event_log_store=self.event_log_store,
             progress_repository=self.progress_repository,
             annotated_dir=self.annotated_dir,
             annotated_copies=self.annotated_copies,
@@ -282,5 +281,5 @@ class ReadingSocketSession:
         await self.event_sink.emit_event(BackendEvent(type=event_type, request_id=request_id, payload=payload))
 
     def _log_event(self, event_type: str, **payload: Any) -> None:
-        if self.memory_store:
-            self.memory_store.log_event(event_type, **payload)
+        if self.event_log_store:
+            self.event_log_store.log_event(event_type, **payload)

@@ -107,9 +107,8 @@ UNIQUE(profile_id, normalized_word)
 
 ## 阅读进度：ReadingProgressRepository
 
-生产运行时现在以 SQLite 为 current/opened/read 状态的唯一来源。启动时如果 SQLite 进度表为空，
-Composition Root 会从旧 `reading_memory.json` 导入一次；SQLite 已有状态时不会重复覆盖。
-旧文件中的 `annotated_unit_ids` 会被忽略。
+生产运行时现在以 SQLite 为 current/opened/read 状态的唯一来源。旧 `reading_memory.json` 已从
+应用启动和日常读写链路移除；`memory.py` 只暂时保留为离线迁移与兼容测试模块。
 
 当前结构为：
 
@@ -132,13 +131,13 @@ unit_progress
 - 是否存在译注来自 `AnnotatedCopyStore`，不保存 `annotated_unit_ids`。
 - `units` 只保留 Corpus 元数据，不保存可变阅读状态。
 
-`reading_memory.json` 已退出日常状态读写，只保留下一步要移除的一次性兼容导入入口。
 `units.status/read_at/annotated_at/annotated_path` 仍是未使用旧列，最后统一停止在新 schema 中创建。
 
 ## 行为日志：EventLogStore
 
-`events.jsonl` 继续作为追加式诊断记录，适合调试和审计。它不参与当前 Cards、阅读状态或译注存在性
-计算，也不用于重建用户状态。只有出现复杂查询需求时，才考虑迁入独立 SQLite events 表。
+`EventLogStore` 把 `events.jsonl` 作为追加式诊断记录，适合调试和审计。它不参与当前 Cards、
+阅读状态或译注存在性计算，也不用于重建用户状态。只有出现复杂查询需求时，才考虑迁入独立
+SQLite events 表。
 
 ## Store 与 Repository 命名
 
@@ -170,7 +169,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 1. （已完成）为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
 2. （已完成）从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
 3. （已完成）新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
-4. 保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
+4. （已完成）保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
 5. 为 vocabulary 增加 `profile_id + normalized_word` 作用域。
 6. 为 bookmarks 增加译注 level 和更稳定的文本定位字段。
 7. 最后停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，

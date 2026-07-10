@@ -63,10 +63,6 @@ class Settings(BaseSettings):
         return self.data_dir / "memory"
 
     @property
-    def reading_memory_path(self) -> Path:
-        return self.memory_dir / "reading_memory.json"
-
-    @property
     def event_log_path(self) -> Path:
         return self.memory_dir / "events.jsonl"
 

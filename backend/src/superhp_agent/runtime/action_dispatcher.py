@@ -15,8 +15,12 @@ from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
-from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
+from superhp_agent.ports.events import (
+    EventEmitter,
+    EventLogger,
+    EventSink,
+    emit_backend_event,
+)
 from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
     VocabularyRepository,
@@ -78,7 +82,7 @@ class ActionContext:
     corpus: CorpusStore
     emit: EventEmitter | None = None
     event_sink: EventSink | None = None
-    memory_store: ReadingMemoryStore | None = None
+    event_log_store: EventLogger | None = None
     progress_repository: ReadingProgressRepository | None = None
     annotated_dir: Path | None = None
     annotated_copies: AnnotatedCopyStore | None = None
@@ -91,10 +95,6 @@ class ActionContext:
             self.event_sink = CallableEventSink(self.emit)
         if self.annotated_copies is None and self.annotated_dir is not None:
             self.annotated_copies = AnnotatedCopyStore(self.annotated_dir)
-        # Compatibility for tests and older composition code during the JSON
-        # to SQLite transition. Production injects the new repository.
-        if self.progress_repository is None and self.memory_store is not None:
-            self.progress_repository = self.memory_store
 
     async def emit_event(
         self,
@@ -107,8 +107,8 @@ class ActionContext:
             await emit_backend_event(self.event_sink, event_type, request_id=request_id, **payload)
 
     def log_event(self, event_type: str, **payload: Any) -> None:
-        if self.memory_store:
-            self.memory_store.log_event(event_type, **payload)
+        if self.event_log_store:
+            self.event_log_store.log_event(event_type, **payload)
 
     def require_annotated_copies(self) -> AnnotatedCopyStore:
         """Return the artifact capability or raise the existing action error."""

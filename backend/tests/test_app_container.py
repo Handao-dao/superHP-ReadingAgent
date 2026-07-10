@@ -16,6 +16,8 @@ def test_build_container_wires_shared_capabilities(tmp_path):
     try:
         assert isinstance(container, AppContainer)
         assert container.settings is settings
+        assert container.event_log_store.event_log_path == settings.event_log_path
+        assert not (settings.memory_dir / "reading_memory.json").exists()
         assert container.vocabulary_repository is container.db.vocabulary_repository
         assert container.bookmark_repository is container.db.bookmark_repository
         assert (

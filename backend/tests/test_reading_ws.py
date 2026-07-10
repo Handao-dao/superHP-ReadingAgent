@@ -89,7 +89,17 @@ def build_session(tmp_path, *, with_memory=False, with_classical=False):
         card_builder=ReadingCardBuilder(profile_registry=create_default_registry()),
     )
     websocket = FakeWebSocket()
-    return ReadingSocketSession(websocket=websocket, flow_router=router, corpus=corpus, memory_store=memory), websocket, memory
+    return (
+        ReadingSocketSession(
+            websocket=websocket,
+            flow_router=router,
+            corpus=corpus,
+            event_log_store=memory,
+            progress_repository=memory,
+        ),
+        websocket,
+        memory,
+    )
 
 
 def test_socket_hello_sends_ready_and_cards(tmp_path):

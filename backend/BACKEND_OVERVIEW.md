@@ -39,7 +39,7 @@ FastAPI 应用入口，也是后端的组合根。它负责创建并连接这些
 
 - `Settings`
 - `CorpusStore`
-- `ReadingMemoryStore`
+- `EventLogStore`
 - `AppDB`
 - `LazyAnnotatorService`
 - `ReadingStateReader`
@@ -54,7 +54,6 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - `corpus_dir`：原始 Markdown 小说文本目录。
 - `data_dir`：运行期数据目录。
 - `annotated_dir`：生成后的译注副本目录。
-- `reading_memory_path`：用户阅读进度 JSON 文件。
 - `event_log_path`：用户行为 JSONL 日志。
 - `db_path`：SQLite 数据库路径。
 - `llm_max_tokens`：单次模型输出 token 上限，默认 `8192`。
@@ -88,10 +87,12 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 中断时破坏已有副本；frontmatter 记录原文 hash、格式版本、完成/降级状态和 chunk 校验计数。
 译注正文只保存在 Artifact 文件中，不复制进 SQLite。
 
-### `src/superhp_agent/memory.py`
+### `src/superhp_agent/event_log.py`
 
-`ReadingMemoryStore` 目前只保留旧 JSON 进度的一次性兼容导入和 JSONL 行为日志。生产运行时的
-current/opened/read 状态已经由 SQLite `ReadingProgressRepository` 负责。
+`EventLogStore` 只负责向 UTF-8 JSONL 文件追加诊断事件。它不读取阅读进度，也不参与 Cards
+计算。生产运行时的 current/opened/read 状态由 SQLite `ReadingProgressRepository` 负责。
+
+旧 `memory.py` 已退出应用运行主链路，只暂时保留给离线迁移工具和兼容测试。
 
 旧 JSON 曾记录：
 

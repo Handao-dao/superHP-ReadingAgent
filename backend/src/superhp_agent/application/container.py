@@ -11,9 +11,8 @@ from dataclasses import dataclass
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
-from superhp_agent.contracts.reading import ReadingProgressSnapshot
 from superhp_agent.corpus import CorpusStore
-from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.event_log import EventLogStore
 from superhp_agent.profiles import (
     AnnotationProfile,
     ProfileRegistry,
@@ -43,7 +42,7 @@ class AppContainer:
     profile_registry: ProfileRegistry
     default_profile: AnnotationProfile
     corpus: CorpusStore
-    memory_store: ReadingMemoryStore
+    event_log_store: EventLogStore
     db: AppDB
     vocabulary_repository: SQLiteVocabularyRepository
     bookmark_repository: SQLiteBookmarkRepository
@@ -68,22 +67,11 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         resolved_settings.corpus_dir,
         default_profile_id=resolved_settings.default_profile_id,
     )
-    memory_store = ReadingMemoryStore(
-        resolved_settings.reading_memory_path,
-        resolved_settings.event_log_path,
-    )
+    event_log_store = EventLogStore(resolved_settings.event_log_path)
     db = AppDB(resolved_settings.db_path)
     vocabulary_repository = db.vocabulary_repository
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
-    legacy_memory = memory_store.load()
-    reading_progress_repository.import_legacy(
-        ReadingProgressSnapshot(
-            current_unit_id=legacy_memory.current_unit_id,
-            opened_unit_ids=legacy_memory.opened_unit_ids,
-            read_unit_ids=legacy_memory.read_unit_ids,
-        )
-    )
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
 
     def provider_factory():
@@ -118,7 +106,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         profile_registry=profile_registry,
         default_profile=default_profile,
         corpus=corpus,
-        memory_store=memory_store,
+        event_log_store=event_log_store,
         db=db,
         vocabulary_repository=vocabulary_repository,
         bookmark_repository=bookmark_repository,

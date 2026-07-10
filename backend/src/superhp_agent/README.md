@@ -237,7 +237,7 @@ storage/
 - `CorpusStore`：扫描、解析并安全读取原始语料。
 - `AnnotatedCopyStore`：命名、兼容回退、读取和保存译注副本。
 - `ReadingProgressRepository`：通过 SQLite 保存当前、已打开和已读状态。
-- `ReadingMemoryStore`：暂时保留旧 JSON 的一次性导入读取和 JSONL 事件日志，等待下一步拆除兼容入口。
+- `EventLogStore`：只向 JSONL 追加诊断事件，不读取或重建业务状态。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。
 
 Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `VocabularyRepository` 使用
@@ -248,9 +248,9 @@ Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `Vocabulary
 `SQLiteBookmarkRepository` 实现该 Port 并拥有全部书签 SQL，Composition Root 直接注入该实现。
 `AppDB` 暂时保留同名转发方法兼容历史调用。
 
-`CorpusStore`、`ReadingMemoryStore` 和 `AnnotatedCopyStore` 保持各自的数据生命周期，不因
-SQLite 实现进入 `storage/` package 就统一改称 Repository。上层分别依赖 Store 职责或
-Repository Port，不依赖最终文件布局。
+`CorpusStore`、`AnnotatedCopyStore` 和 `EventLogStore` 保持各自的数据生命周期，不因 SQLite
+实现进入 `storage/` package 就统一改称 Repository。阅读进度则通过
+`ReadingProgressRepository` 访问。上层依赖职责边界，不依赖最终文件布局。
 
 Contract 回答“模块之间交换什么数据”；Repository 回答“数据如何保存和读取”。
 

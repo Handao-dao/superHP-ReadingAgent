@@ -26,11 +26,7 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             section_count INTEGER NOT NULL DEFAULT 1,
             summary TEXT DEFAULT '',
             profile_id TEXT NOT NULL DEFAULT 'english_novel',
-            source_path TEXT NOT NULL,
-            annotated_path TEXT DEFAULT '',
-            status TEXT DEFAULT 'unread',
-            annotated_at TEXT DEFAULT NULL,
-            read_at TEXT DEFAULT NULL
+            source_path TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS reading_progress (

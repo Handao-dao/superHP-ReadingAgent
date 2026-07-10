@@ -132,7 +132,8 @@ unit_progress
 - 是否存在译注来自 `AnnotatedCopyStore`，不保存 `annotated_unit_ids`。
 - `units` 只保留 Corpus 元数据，不保存可变阅读状态。
 
-`units.status/read_at/annotated_at/annotated_path` 仍是未使用旧列，最后统一停止在新 schema 中创建。
+新 schema 不再创建 `units.status/read_at/annotated_at/annotated_path`。旧数据库中已存在的冗余列
+保持原样，但不会再被运行时读取或写入。
 
 ## 行为日志：EventLogStore
 
@@ -173,7 +174,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 4. （已完成）保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
 5. （已完成）为 vocabulary 增加 `profile_id + normalized_word` 作用域。
 6. （已完成）为 bookmarks 增加译注 level 和更稳定的文本定位字段。
-7. 最后停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
+7. （已完成）停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
    不需要为删除空列执行高风险表重建。
 
 每一步都先建立新读取路径和兼容迁移，再移除旧来源，避免同一状态长期双写。

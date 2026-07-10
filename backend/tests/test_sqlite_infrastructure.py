@@ -40,6 +40,11 @@ def test_initialize_schema_creates_repository_tables(tmp_path):
             ).fetchall()
         }
         assert {"units", "vocabulary", "unit_vocabulary", "bookmarks"} <= tables
+        unit_columns = {
+            row["name"]
+            for row in database.connection.execute("PRAGMA table_info(units)").fetchall()
+        }
+        assert not {"status", "annotated_path", "annotated_at", "read_at"} & unit_columns
     finally:
         database.close()
 
@@ -101,6 +106,27 @@ def test_initialize_schema_upgrades_legacy_columns(tmp_path):
         assert {"profile_id", "normalized_word"} <= vocabulary_columns
         assert "profile_id" in unit_columns
         assert {"annotation_level", "paragraph_index"} <= bookmark_columns
+    finally:
+        database.close()
+
+
+def test_initialize_schema_preserves_legacy_unit_runtime_columns(tmp_path):
+    database = SQLiteDatabase(tmp_path / "legacy-units.db")
+
+    try:
+        initialize_schema(database.connection)
+        database.connection.execute("ALTER TABLE units ADD COLUMN status TEXT DEFAULT 'unread'")
+        database.connection.execute("ALTER TABLE units ADD COLUMN annotated_path TEXT DEFAULT ''")
+        database.connection.execute("ALTER TABLE units ADD COLUMN annotated_at TEXT DEFAULT NULL")
+        database.connection.execute("ALTER TABLE units ADD COLUMN read_at TEXT DEFAULT NULL")
+
+        initialize_schema(database.connection)
+
+        unit_columns = {
+            row["name"]
+            for row in database.connection.execute("PRAGMA table_info(units)").fetchall()
+        }
+        assert {"status", "annotated_path", "annotated_at", "read_at"} <= unit_columns
     finally:
         database.close()
 

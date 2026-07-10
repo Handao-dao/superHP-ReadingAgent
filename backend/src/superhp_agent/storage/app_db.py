@@ -1,21 +1,22 @@
 """Transitional all-in-one SQLite storage implementation.
 
-AppDB currently owns connection setup, migrations, unit metadata, vocabulary,
-and bookmarks. Repository Ports already hide it from upper layers; upcoming
-steps will extract these implementation responsibilities without changing the
-historical ``superhp_agent.storage.AppDB`` import.
+AppDB now composes the shared connection and migration boundaries, but still
+contains unit metadata, vocabulary, and bookmark SQL. Repository Ports already
+hide it from upper layers; upcoming steps will extract those query
+implementations without changing the historical ``superhp_agent.storage.AppDB``
+import.
 """
 
 from __future__ import annotations
 
 import re
-import sqlite3
-import threading
 from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
 from superhp_agent.domain.vocabulary import normalize_pos as normalize_pos
+from superhp_agent.storage.database import SQLiteDatabase
+from superhp_agent.storage.migrations import initialize_schema
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[([^|\]]+)\|[^|\]]+(?:\|[^|\]]+)?\]\]")
 VALID_BODY_KINDS = {"source", "annotated"}
@@ -29,19 +30,15 @@ def strip_annotation_markers(text: str) -> str:
 class AppDB:
     """Thin SQLite gateway used by services and API endpoints."""
     def __init__(self, db_path: str | Path):
-        self.path = Path(db_path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.path, check_same_thread=False, timeout=30)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA foreign_keys=ON")
-        # FastAPI and WebSocket handlers can interleave on the same process, so
-        # serialize access around the shared sqlite connection.
-        self._lock = threading.RLock()
-        self._init_tables()
+        self.database = SQLiteDatabase(db_path)
+        self.path = self.database.path
+        # Compatibility references while repository SQL remains in AppDB.
+        self._conn = self.database.connection
+        self._lock = self.database.lock
+        initialize_schema(self._conn)
 
     def close(self) -> None:
-        self._conn.close()
+        self.database.close()
 
     def sync_unit(self, unit: ReadingUnit) -> None:
         """Upsert corpus metadata so vocabulary rows can reference a unit."""
@@ -377,97 +374,3 @@ class AppDB:
             cursor = self._conn.execute("DELETE FROM bookmarks WHERE id = ?", (bookmark_id,))
             self._conn.commit()
             return cursor.rowcount > 0
-
-    def _init_tables(self) -> None:
-        """Create the local schema lazily so first run needs no setup command."""
-        self._conn.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS units (
-                id TEXT PRIMARY KEY,
-                chapter_id TEXT NOT NULL,
-                book_id TEXT NOT NULL,
-                book_title TEXT NOT NULL,
-                chapter_no INTEGER NOT NULL,
-                chapter_title TEXT NOT NULL,
-                section_no INTEGER NOT NULL DEFAULT 1,
-                section_count INTEGER NOT NULL DEFAULT 1,
-                summary TEXT DEFAULT '',
-                profile_id TEXT NOT NULL DEFAULT 'english_novel',
-                source_path TEXT NOT NULL,
-                annotated_path TEXT DEFAULT '',
-                status TEXT DEFAULT 'unread',
-                annotated_at TEXT DEFAULT NULL,
-                read_at TEXT DEFAULT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS reading_progress (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                current_unit_id TEXT DEFAULT '',
-                last_opened_at TEXT DEFAULT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS vocabulary (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word TEXT NOT NULL UNIQUE,
-                translation TEXT NOT NULL,
-                pos TEXT NOT NULL DEFAULT 'other',
-                mastered INTEGER DEFAULT 0,
-                mastered_at TEXT DEFAULT NULL,
-                first_seen_at TEXT DEFAULT (datetime('now','localtime')),
-                last_seen_at TEXT DEFAULT (datetime('now','localtime'))
-            );
-
-            CREATE TABLE IF NOT EXISTS unit_vocabulary (
-                unit_id TEXT NOT NULL,
-                chapter_id TEXT NOT NULL,
-                vocab_id INTEGER NOT NULL,
-                translation TEXT NOT NULL,
-                context TEXT DEFAULT '',
-                encounter_count INTEGER DEFAULT 1,
-                first_seen_at TEXT DEFAULT (datetime('now','localtime')),
-                last_seen_at TEXT DEFAULT (datetime('now','localtime')),
-                PRIMARY KEY (unit_id, vocab_id),
-                FOREIGN KEY (vocab_id) REFERENCES vocabulary(id) ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS bookmarks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                unit_id TEXT NOT NULL,
-                chapter_id TEXT NOT NULL,
-                body_kind TEXT NOT NULL,
-                page_index INTEGER NOT NULL DEFAULT 0,
-                progress_ratio REAL NOT NULL DEFAULT 0,
-                total_pages INTEGER NOT NULL DEFAULT 0,
-                label TEXT DEFAULT '',
-                excerpt TEXT DEFAULT '',
-                created_at TEXT DEFAULT (datetime('now','localtime'))
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
-                ON units(book_id, chapter_no, section_no);
-            CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
-            CREATE INDEX IF NOT EXISTS idx_vocab_mastered ON vocabulary(mastered);
-            CREATE INDEX IF NOT EXISTS idx_unit_vocab_unit ON unit_vocabulary(unit_id);
-            CREATE INDEX IF NOT EXISTS idx_unit_vocab_chapter ON unit_vocabulary(chapter_id);
-            CREATE INDEX IF NOT EXISTS idx_bookmarks_unit ON bookmarks(unit_id);
-            """
-        )
-        self._ensure_columns()
-        self._conn.commit()
-
-    def _ensure_columns(self) -> None:
-        """Apply tiny schema upgrades for existing local databases."""
-        columns = {
-            str(row["name"])
-            for row in self._conn.execute("PRAGMA table_info(vocabulary)").fetchall()
-        }
-        if "pos" not in columns:
-            self._conn.execute("ALTER TABLE vocabulary ADD COLUMN pos TEXT NOT NULL DEFAULT 'other'")
-        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_vocab_pos ON vocabulary(pos)")
-        unit_columns = {
-            str(row["name"])
-            for row in self._conn.execute("PRAGMA table_info(units)").fetchall()
-        }
-        if "profile_id" not in unit_columns:
-            self._conn.execute("ALTER TABLE units ADD COLUMN profile_id TEXT NOT NULL DEFAULT 'english_novel'")
-        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_units_profile ON units(profile_id)")

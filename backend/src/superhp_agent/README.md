@@ -219,8 +219,8 @@ contracts/
 storage/
 ├── __init__.py            # AppDB 等历史入口兼容导出
 ├── app_db.py              # 当前过渡门面，等待继续拆分
-├── database.py            # 目标：SQLite 连接与事务
-├── migrations.py          # 目标：schema 初始化和升级
+├── database.py            # SQLite 连接、锁与关闭
+├── migrations.py          # schema 初始化和增量升级
 └── sqlite/                # 目标：Repository 的 SQLite 实现
     ├── vocabulary.py
     └── bookmarks.py
@@ -332,7 +332,7 @@ Transport
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
 2. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
 3. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-4. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
+4. `AppDB` 仍同时负责 unit、vocabulary 和 bookmark SQL 及兼容门面。
 5. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
 6. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
@@ -375,8 +375,8 @@ Transport
 
 - 已先稳定 Vocabulary 与 Bookmark Repository 的上层访问边界，SQLite 实现暂留 `AppDB`。
 - 已将 `storage.py` 转成 package，并通过 `storage/__init__.py` 保持旧 import。
-- 下一步拆 database connection 和 migrations。
-- 再拆 Vocabulary 与 Bookmark 的 SQLite Repository 实现。
+- 已拆出 `SQLiteDatabase` connection boundary 和独立 migrations 模块。
+- 下一步拆 Vocabulary 与 Bookmark 的 SQLite Repository 实现。
 - Corpus、Memory、Annotated Copy 保持不同的数据生命周期。
 
 ### 阶段 5：Composition Root 与 HTTP Routers

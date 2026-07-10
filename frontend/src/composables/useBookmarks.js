@@ -120,14 +120,6 @@ export function useBookmarks({
     return Math.min(totalPages - 1, Math.max(0, targetPage))
   }
 
-  function formatBookmarkTime(value = '') {
-    if (!value) return ''
-    const normalized = String(value).replace(' ', 'T')
-    const date = new Date(normalized)
-    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-  }
-
   return {
     bookmarkError,
     bookmarksByUnit,
@@ -135,7 +127,6 @@ export function useBookmarks({
     bookmarkSaving,
     deleteBookmarkEntry,
     deletingBookmarkId,
-    formatBookmarkTime,
     loadBookmarks,
     queueBookmarkJump,
     resolvePendingBookmarkJump,

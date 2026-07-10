@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
@@ -139,7 +140,6 @@ const {
   bookmarkSaving,
   deleteBookmarkEntry: handleDeleteBookmark,
   deletingBookmarkId,
-  formatBookmarkTime,
   loadBookmarks,
   queueBookmarkJump,
   resolvePendingBookmarkJump,
@@ -239,34 +239,6 @@ function handleSelectChapter(chapter) {
   closeLookupBubble()
   const sent = requestCards('start', chapter.id)
   if (sent) sidebarOpen.value = false
-}
-
-function chapterNumberLabel(chapter) {
-  if (chapter.profile_id === 'classical_chinese') return String(chapter.chapter_no)
-  return String(chapter.chapter_no).padStart(2, '0')
-}
-
-function chapterNumberKicker(chapter) {
-  return chapter.profile_id === 'classical_chinese' ? '篇' : 'CH'
-}
-
-function bookUnitCount(book) {
-  const unit = selectedProfileId.value === 'classical_chinese' ? '篇' : 'chapters'
-  return `${book.chapters.length} ${unit}`
-}
-
-function chapterBadgeText(chapter, type) {
-  if (chapter.profile_id === 'classical_chinese') {
-    if (type === 'read') return '已读'
-    if (type === 'annotated') return '注释'
-    if (type === 'vocab') return `${chapter.vocab_count} 重点`
-    if (type === 'bookmark') return `${bookmarksByUnit.value.get(chapter.id)?.length || 0} 书签`
-  }
-  if (type === 'read') return 'Read'
-  if (type === 'annotated') return 'Annotated'
-  if (type === 'vocab') return `${chapter.vocab_count} words`
-  if (type === 'bookmark') return `${bookmarksByUnit.value.get(chapter.id)?.length || 0} marks`
-  return ''
 }
 
 async function handleSelectProfile(profileId) {
@@ -390,99 +362,25 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="reader-layout" :class="[{ 'is-sidebar-open': sidebarOpen }, profileShellClass]">
-    <aside class="chapter-sidebar" aria-label="章节目录">
-      <div class="sidebar-header">
-        <p class="eyebrow">Library</p>
-        <h2>目录</h2>
-        <div class="profile-switch" aria-label="阅读场景">
-          <button
-            v-for="profile in profileOptions"
-            :key="profile.id"
-            type="button"
-            :class="{ 'is-active': selectedProfileId === profile.id }"
-            :disabled="isGenerating"
-            @click="handleSelectProfile(profile.id)"
-          >
-            {{ profile.id === 'classical_chinese' ? '文言文' : '英文小说' }}
-          </button>
-        </div>
-      </div>
-
-      <div v-if="profileErrorMessage" class="sidebar-error">{{ profileErrorMessage }}</div>
-      <div v-if="listErrorMessage" class="sidebar-error">{{ listErrorMessage }}</div>
-      <div v-else-if="listLoading" class="sidebar-loading">正在读取目录...</div>
-      <div v-if="bookmarksLoading" class="sidebar-loading">正在读取书签...</div>
-      <div v-if="bookmarkError" class="sidebar-error">{{ bookmarkError }}</div>
-
-      <nav v-if="!listErrorMessage && !listLoading" class="book-list">
-        <section v-for="book in chaptersByBook" :key="book.id" class="book-group">
-          <div class="book-heading">
-            <h3>{{ book.title }}</h3>
-            <span>{{ bookUnitCount(book) }}</span>
-          </div>
-          <div
-            v-for="chapter in book.chapters"
-            :key="chapter.id"
-            class="chapter-entry"
-          >
-            <button
-              type="button"
-              class="chapter-item"
-              :class="{ 'is-active': chapter.id === currentChapterId, 'is-read': chapter.status === 'read' }"
-              :disabled="isGenerating"
-              @click="handleSelectChapter(chapter)"
-            >
-              <span class="chapter-number">
-                <span class="chapter-number-kicker">{{ chapterNumberKicker(chapter) }}</span>
-                <span class="chapter-number-value">{{ chapterNumberLabel(chapter) }}</span>
-              </span>
-              <span class="chapter-main">
-                <span class="chapter-title">{{ chapter.chapter_title }}</span>
-                <span class="chapter-badges">
-                  <span v-if="chapter.status === 'read'" class="badge-read">{{ chapterBadgeText(chapter, 'read') }}</span>
-                  <span v-if="chapter.has_annotated_copy" class="badge-annotated">{{ chapterBadgeText(chapter, 'annotated') }}</span>
-                  <span v-if="chapter.vocab_count > 0" class="badge-vocab">{{ chapterBadgeText(chapter, 'vocab') }}</span>
-                  <span v-if="bookmarksByUnit.get(chapter.id)?.length" class="badge-bookmark">{{ chapterBadgeText(chapter, 'bookmark') }}</span>
-                </span>
-              </span>
-            </button>
-
-            <div v-if="bookmarksByUnit.get(chapter.id)?.length" class="bookmark-list">
-              <div
-                v-for="bookmark in bookmarksByUnit.get(chapter.id)"
-                :key="bookmark.id"
-                class="bookmark-item"
-              >
-                <button
-                  type="button"
-                  class="bookmark-open"
-                  :disabled="isGenerating"
-                  @click="handleOpenBookmark(bookmark)"
-                >
-                  <span>{{ bookmark.label || `Page ${bookmark.page_index + 1}` }}</span>
-                  <small>{{ bookmark.body_kind === 'annotated' ? 'Annotated' : 'Original' }} · {{ formatBookmarkTime(bookmark.created_at) }}</small>
-                  <em v-if="bookmark.excerpt">{{ bookmark.excerpt }}</em>
-                </button>
-                <button
-                  type="button"
-                  class="bookmark-delete"
-                  :disabled="deletingBookmarkId === bookmark.id"
-                  aria-label="删除书签"
-                  @click="handleDeleteBookmark(bookmark)"
-                >×</button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </nav>
-    </aside>
-
-    <button
-      type="button"
-      class="sidebar-scrim"
-      aria-label="关闭目录"
-      @click="sidebarOpen = false"
-    ></button>
+    <ReadingSidebar
+      :bookmark-error="bookmarkError"
+      :bookmarks-by-unit="bookmarksByUnit"
+      :bookmarks-loading="bookmarksLoading"
+      :books="chaptersByBook"
+      :current-chapter-id="currentChapterId || ''"
+      :deleting-bookmark-id="deletingBookmarkId"
+      :is-generating="isGenerating"
+      :list-error="listErrorMessage"
+      :list-loading="listLoading"
+      :profile-error="profileErrorMessage"
+      :profile-options="profileOptions"
+      :selected-profile-id="selectedProfileId"
+      @close="sidebarOpen = false"
+      @delete-bookmark="handleDeleteBookmark"
+      @open-bookmark="handleOpenBookmark"
+      @select-chapter="handleSelectChapter"
+      @select-profile="handleSelectProfile"
+    />
 
     <section class="reader-shell">
       <ReadingTopbar

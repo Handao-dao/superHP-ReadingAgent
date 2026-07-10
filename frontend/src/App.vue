@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
+import LookupPopover from './components/reading/LookupPopover.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -634,39 +635,21 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <aside v-if="lookupVisible" class="lookup-bubble" :style="lookupStyle">
-          <div class="lookup-head">
-            <div>
-              <p class="small-label">Lookup</p>
-              <h3>{{ lookupWordText }}</h3>
-            </div>
-            <button type="button" class="icon-button" aria-label="关闭查词" @click="closeLookupBubble">×</button>
-          </div>
-
-          <p v-if="lookupLoading" class="lookup-muted">正在查词...</p>
-          <p v-else-if="lookupError" class="lookup-error">{{ lookupError }}</p>
-
-          <template v-if="lookupResult">
-            <p class="lookup-translation">{{ lookupResult.word_cn || lookupTranslation || '暂无译文' }}</p>
-            <p v-if="lookupSentence" class="lookup-sentence">{{ lookupSentence }}</p>
-            <p v-if="lookupResult.sentence_cn" class="lookup-sentence-cn">{{ lookupResult.sentence_cn }}</p>
-          </template>
-
-          <div class="lookup-actions">
-            <button
-              v-if="!lookupIsAnnotated"
-              type="button"
-              :disabled="lookupLoading || lookupSaving || !(lookupResult?.word_cn || lookupTranslation)"
-              @click="addLookupAnnotation"
-            >添加标注</button>
-            <button
-              v-else
-              type="button"
-              :disabled="lookupSaving"
-              @click="hideLookupAnnotation"
-            >取消标注</button>
-          </div>
-        </aside>
+        <LookupPopover
+          :error="lookupError"
+          :is-annotated="lookupIsAnnotated"
+          :loading="lookupLoading"
+          :result="lookupResult"
+          :saving="lookupSaving"
+          :sentence="lookupSentence"
+          :style="lookupStyle"
+          :translation="lookupTranslation"
+          :visible="lookupVisible"
+          :word="lookupWordText"
+          @add="addLookupAnnotation"
+          @close="closeLookupBubble"
+          @remove="hideLookupAnnotation"
+        />
 
         <footer class="paper-footer">
           <span>{{ activeChapter?.body_kind === 'annotated' ? 'Annotated' : 'Original' }}</span>

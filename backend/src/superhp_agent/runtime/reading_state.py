@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusStore, ReadingUnit
 from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.storage import AppDB
 
 
@@ -80,12 +80,16 @@ class ReadingStateReader:
     def __init__(
         self,
         corpus: CorpusStore,
-        annotated_dir: str | Path,
+        annotated_copies: AnnotatedCopyStore | str | Path,
         memory_store: ReadingMemoryStore | None = None,
         db: AppDB | None = None,
     ):
         self.corpus = corpus
-        self.annotated_dir = Path(annotated_dir)
+        self.annotated_copies = (
+            annotated_copies
+            if isinstance(annotated_copies, AnnotatedCopyStore)
+            else AnnotatedCopyStore(annotated_copies)
+        )
         self.memory_store = memory_store
         self.db = db
 
@@ -130,7 +134,7 @@ class ReadingStateReader:
         return states[0] if states else None
 
     def _has_annotated_copy(self, unit_id: str) -> bool:
-        return has_any_annotated_copy(self.annotated_dir, unit_id)
+        return self.annotated_copies.exists_any(unit_id)
 
     def _vocab_count(self, unit_id: str) -> int:
         if self.db is None:

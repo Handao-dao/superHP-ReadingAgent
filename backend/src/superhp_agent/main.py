@@ -8,6 +8,7 @@ side effects to ``ReadingSocketSession`` and the runtime action dispatcher.
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import get_settings
 from superhp_agent.corpus import (
     CorpusError,
@@ -23,7 +24,6 @@ from superhp_agent.runtime import (
     ReadingFlowRouter,
     ReadingStateReader,
 )
-from superhp_agent.runtime.action_dispatcher import has_any_annotated_copy
 from superhp_agent.schemas import (
     AddBookmarkRequest,
     AddVocabularyRequest,
@@ -55,6 +55,7 @@ default_profile = profile_registry.get()
 corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
+annotated_copies = AnnotatedCopyStore(settings.annotated_dir)
 # LLM providers are lazy so the app can boot and serve corpus/memory endpoints
 # even when no API key has been configured yet.
 annotator_service = LazyAnnotatorService(
@@ -83,7 +84,7 @@ class LazyLookupService:
 
 
 lookup_service = LazyLookupService()
-state_reader = ReadingStateReader(corpus, settings.annotated_dir, memory_store, db)
+state_reader = ReadingStateReader(corpus, annotated_copies, memory_store, db)
 flow_router = ReadingFlowRouter(
     state_reader,
     card_builder=ReadingCardBuilder(default_profile.card_copy, profile_registry=profile_registry),
@@ -114,7 +115,7 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         section_no=unit.section_no,
         section_count=unit.section_count,
         summary=unit.summary,
-        has_annotated_copy=has_any_annotated_copy(settings.annotated_dir, unit.id),
+        has_annotated_copy=annotated_copies.exists_any(unit.id),
         status="read" if is_read else "unread",
         vocab_count=db.count_vocabulary_for_unit(unit.id),
         profile_id=unit.profile_id,
@@ -335,7 +336,7 @@ async def reading_socket(websocket: WebSocket):
         flow_router=flow_router,
         corpus=corpus,
         memory_store=memory_store,
-        annotated_dir=settings.annotated_dir,
+        annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         db=db,
     )

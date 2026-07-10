@@ -13,6 +13,7 @@ from typing import Any
 from fastapi import WebSocket
 from pydantic import BaseModel, ValidationError
 
+from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.runtime.action_dispatcher import (
@@ -66,6 +67,7 @@ class ReadingSocketSession:
         memory_store: ReadingMemoryStore | None = None,
         action_dispatcher: ActionDispatcher | None = None,
         annotated_dir: str | Path | None = None,
+        annotated_copies: AnnotatedCopyStore | None = None,
         annotator_service: AnnotationService | None = None,
         db: AppDB | None = None,
     ):
@@ -75,6 +77,9 @@ class ReadingSocketSession:
         self.memory_store = memory_store
         self.action_dispatcher = action_dispatcher or ActionDispatcher()
         self.annotated_dir = Path(annotated_dir) if annotated_dir is not None else None
+        self.annotated_copies = annotated_copies or (
+            AnnotatedCopyStore(self.annotated_dir) if self.annotated_dir is not None else None
+        )
         self.annotator_service = annotator_service
         self.db = db
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
@@ -160,6 +165,7 @@ class ReadingSocketSession:
             event_sink=self.event_sink,
             memory_store=self.memory_store,
             annotated_dir=self.annotated_dir,
+            annotated_copies=self.annotated_copies,
             annotator_service=self.annotator_service,
             db=self.db,
             current_unit_id=self.current_unit_id,

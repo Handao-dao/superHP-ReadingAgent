@@ -1,8 +1,7 @@
-from pathlib import Path
-
 from fastapi.testclient import TestClient
 
 from superhp_agent import main
+from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusError, ReadingUnit, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemory
 
@@ -62,11 +61,6 @@ class FakeCorpus:
         return ReadingUnitDocument(meta=self.unit, body="Body")
 
 
-class FakeSettings:
-    def __init__(self, annotated_dir: Path):
-        self.annotated_dir = annotated_dir
-
-
 def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     annotated_dir = tmp_path / "annotated"
     annotated_dir.mkdir()
@@ -84,7 +78,7 @@ def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
         path=tmp_path / "hp01-ch01.md",
     )
 
-    monkeypatch.setattr(main, "settings", FakeSettings(annotated_dir))
+    monkeypatch.setattr(main, "annotated_copies", AnnotatedCopyStore(annotated_dir))
     monkeypatch.setattr(main, "memory_store", FakeMemoryStore())
     monkeypatch.setattr(main, "db", FakeDB())
 
@@ -138,7 +132,7 @@ def test_list_units_can_filter_by_profile(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "corpus", fake_corpus)
     monkeypatch.setattr(main, "memory_store", FakeMemoryStore())
     monkeypatch.setattr(main, "db", FakeDB())
-    monkeypatch.setattr(main, "settings", FakeSettings(tmp_path / "annotated"))
+    monkeypatch.setattr(main, "annotated_copies", AnnotatedCopyStore(tmp_path / "annotated"))
 
     with TestClient(main.app) as client:
         response = client.get("/api/units", params={"profile_id": "classical_chinese"})

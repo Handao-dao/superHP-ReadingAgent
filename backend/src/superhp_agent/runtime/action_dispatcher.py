@@ -8,10 +8,10 @@ like memory writes, annotation generation, and file creation easy to audit.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
+from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.prompts import normalize_level
@@ -79,6 +79,7 @@ class ActionContext:
     event_sink: EventSink | None = None
     memory_store: ReadingMemoryStore | None = None
     annotated_dir: Path | None = None
+    annotated_copies: AnnotatedCopyStore | None = None
     annotator_service: AnnotationService | None = None
     db: AppDB | None = None
     current_unit_id: str | None = None
@@ -86,6 +87,8 @@ class ActionContext:
     def __post_init__(self) -> None:
         if self.event_sink is None and self.emit is not None:
             self.event_sink = CallableEventSink(self.emit)
+        if self.annotated_copies is None and self.annotated_dir is not None:
+            self.annotated_copies = AnnotatedCopyStore(self.annotated_dir)
 
     async def emit_event(
         self,
@@ -100,6 +103,12 @@ class ActionContext:
     def log_event(self, event_type: str, **payload: Any) -> None:
         if self.memory_store:
             self.memory_store.log_event(event_type, **payload)
+
+    def require_annotated_copies(self) -> AnnotatedCopyStore:
+        """Return the artifact capability or raise the existing action error."""
+        if self.annotated_copies is None:
+            raise ActionExecutionError("annotated_dir_not_configured", "译注副本目录尚未配置。")
+        return self.annotated_copies
 
 
 class ActionHandler(Protocol):
@@ -179,8 +188,8 @@ class OpenAnnotatedUnitHandler:
         level = _payload_level(action.payload)
         # The annotated copy is the user's durable reading artifact; DB writes
         # are secondary indexes for vocabulary review.
-        annotated_path = _readable_annotated_path(context, unit_id, level)
-        if not annotated_path.exists():
+        annotated_copy = context.require_annotated_copies().read(unit_id, level)
+        if annotated_copy is None:
             await self.generator.handle(action, context, request_id=request_id)
             return
 
@@ -195,11 +204,10 @@ class OpenAnnotatedUnitHandler:
         context.current_unit_id = doc.meta.id
         if context.memory_store:
             context.memory_store.mark_opened(doc.meta.id)
-        _, body = _split_annotated_file(annotated_path.read_text(encoding="utf-8"))
         await _emit_opened_unit(
             context,
             doc,
-            body=body.strip(),
+            body=annotated_copy.body,
             body_kind="annotated",
             request_id=request_id,
             action_id=action.id,
@@ -310,9 +318,12 @@ class GenerateAnnotationHandler:
 
         # The annotated copy is the user's durable reading artifact; DB writes
         # are secondary indexes for vocabulary review.
-        annotated_path = _annotated_path(context, unit_id, level)
-        annotated_path.parent.mkdir(parents=True, exist_ok=True)
-        annotated_path.write_text(_render_annotated_markdown(doc, result, level=level), encoding="utf-8")
+        context.require_annotated_copies().write(
+            doc,
+            annotated_text=result.annotated_text,
+            vocabulary=result.vocabulary,
+            level=level,
+        )
         stored_vocabulary_count = 0
         if context.db:
             stored_vocabulary_count = context.db.add_vocabulary_items(doc.meta, result.vocabulary)
@@ -374,35 +385,6 @@ def _payload_level(payload: dict[str, Any]) -> str:
     return normalize_level(str(payload.get("level") or "intermediate"))
 
 
-def _annotated_path(context: ActionContext, unit_id: str, level: str) -> Path:
-    """Resolve generated-copy paths from ids, never from client filenames."""
-    if context.annotated_dir is None:
-        raise ActionExecutionError("annotated_dir_not_configured", "译注副本目录尚未配置。")
-    return context.annotated_dir / f"{unit_id}.{normalize_level(level)}.annotated.md"
-
-
-def _legacy_annotated_path(context: ActionContext, unit_id: str) -> Path:
-    if context.annotated_dir is None:
-        raise ActionExecutionError("annotated_dir_not_configured", "译注副本目录尚未配置。")
-    return context.annotated_dir / f"{unit_id}.annotated.md"
-
-
-def _readable_annotated_path(context: ActionContext, unit_id: str, level: str) -> Path:
-    annotated_path = _annotated_path(context, unit_id, level)
-    if annotated_path.exists():
-        return annotated_path
-    if normalize_level(level) == "intermediate":
-        legacy_path = _legacy_annotated_path(context, unit_id)
-        if legacy_path.exists():
-            return legacy_path
-    return annotated_path
-
-
-def has_any_annotated_copy(annotated_dir: str | Path, unit_id: str) -> bool:
-    root = Path(annotated_dir)
-    return (root / f"{unit_id}.annotated.md").exists() or any(root.glob(f"{unit_id}.*.annotated.md"))
-
-
 async def _emit_opened_unit(
     context: ActionContext,
     doc: ReadingUnitDocument,
@@ -438,36 +420,3 @@ async def _emit_opened_unit(
         chapter=detail.model_dump(),
         unit=detail.model_dump(),
     )
-
-
-def _render_annotated_markdown(doc: ReadingUnitDocument, result: AnnotationResult, *, level: str) -> str:
-    """Persist annotation output as Markdown with machine-readable metadata."""
-    vocab_lines = "\n".join(
-        f"# - {item.word}: {item.translation} ({getattr(item, 'pos', 'other')})"
-        for item in result.vocabulary
-        if item.word or item.translation
-    )
-    annotated_at = datetime.now(UTC).isoformat()
-    return (
-        "---\n"
-        f"source_unit_id: {doc.meta.id}\n"
-        f"chapter_id: {doc.meta.chapter_id}\n"
-        f"book_id: {doc.meta.book_id}\n"
-        f"chapter_no: {doc.meta.chapter_no}\n"
-        f"profile_id: {doc.meta.profile_id}\n"
-        f"level: {normalize_level(level)}\n"
-        "body_kind: annotated\n"
-        f"annotated_at: {annotated_at}\n"
-        "---\n\n"
-        f"<!-- extracted_vocabulary\n{vocab_lines}\n-->\n\n"
-        f"{result.annotated_text.strip()}\n"
-    )
-
-
-def _split_annotated_file(raw: str) -> tuple[str, str]:
-    if not raw.startswith("---"):
-        return "", raw
-    parts = raw.split("---", 2)
-    if len(parts) < 3:
-        return "", raw
-    return parts[1], parts[2]

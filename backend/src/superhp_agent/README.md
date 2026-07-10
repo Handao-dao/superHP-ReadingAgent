@@ -193,7 +193,8 @@ contracts/
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 
-它是只读聚合器，不应写入进度、生成文件或反向依赖 Dispatcher。
+它通过 `artifacts/annotated_copies.py` 中的 `AnnotatedCopyStore` 查询译注产物，
+是只读聚合器，不应写入进度、生成文件或反向依赖 Dispatcher。
 
 ### Storage / Repository / Artifact Store
 
@@ -215,6 +216,10 @@ storage/
 - `AnnotatedCopyStore`：命名、兼容回退、读取和保存译注副本。
 - `ReadingMemoryStore`：保存当前、已打开、已读、已译注状态和轻量事件日志。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。
+
+当前先将 `AnnotatedCopyStore` 放在 `artifacts/`，强调它管理的是模型生成、可重建的阅读产物。
+阶段 4 再结合其他存储模块的迁移结果，决定是否统一归入 `storage/` package；上层只依赖 Store
+职责，不依赖它最终所在的目录布局。
 
 Contract 回答“模块之间交换什么数据”；Repository 回答“数据如何保存和读取”。
 
@@ -289,21 +294,25 @@ Transport
 
 ## 已知边界问题
 
-以下问题按渐进方式修复，不要求一次移动所有目录：
+已解决：
 
-1. `ReadingStateReader` 从 `action_dispatcher.py` 导入 `has_any_annotated_copy`，形成只读状态层对执行层的反向依赖。
-2. `action_dispatcher.py` 同时负责分发、Handlers、译注文件、序列化和 API DTO 组装，职责偏多。
-3. `AnnotatorService` 依赖 `runtime.events`；EventSink 更适合作为通用 Port。
-4. `WordLookupService` 从 `storage.py` 导入 `normalize_pos`；POS 规范化属于领域规则。
-5. Runtime 为 WebSocket event 直接创建 Pydantic API DTO，应用事件与 Transport Contract 尚未分开。
-6. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-7. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
-8. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-9. `prompts.py` 已主要成为 English profile 的兼容包装层。
+- `ReadingStateReader` 和 Action Handlers 现在共同依赖 `AnnotatedCopyStore`，已消除
+  `ReadingStateReader → ActionDispatcher` 的反向依赖。
+
+以下问题继续按渐进方式修复，不要求一次移动所有目录：
+
+1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
+2. `AnnotatorService` 依赖 `runtime.events`；EventSink 更适合作为通用 Port。
+3. `WordLookupService` 从 `storage.py` 导入 `normalize_pos`；POS 规范化属于领域规则。
+4. Runtime 为 WebSocket event 直接创建 Pydantic API DTO，应用事件与 Transport Contract 尚未分开。
+5. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
+6. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
+7. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
+8. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
-### 阶段 1：AnnotatedCopyStore
+### 阶段 1：AnnotatedCopyStore（已完成）
 
 - 新建独立译注副本存储模块。
 - 移出路径解析、Legacy 回退、存在性判断、读取、写入和 Markdown 序列化。
@@ -311,6 +320,9 @@ Transport
 - 消除 `ReadingStateReader → ActionDispatcher`。
 
 外部 API、WebSocket 事件和文件格式保持不变。
+
+实现位于 `artifacts/annotated_copies.py`；Composition Root 创建同一个 Store，并注入
+`ReadingStateReader`、WebSocket Session 和 Action Context。旧的目录参数仍作为兼容入口，便于现有测试和调用方渐进迁移。
 
 ### 阶段 2：最小 Contracts
 

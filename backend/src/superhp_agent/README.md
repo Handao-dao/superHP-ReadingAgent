@@ -184,6 +184,9 @@ contracts/
 
 当前 `schemas.py` 混合了部分 HTTP DTO、WebSocket payload 和应用模型。迁移时保留 `schemas.py` 作为兼容 re-export，逐步修改 import，避免一次破坏所有 API 和测试。
 
+目前 `AgentAction` 已迁入 `contracts/actions.py`：Transport 与 Runtime 直接依赖新 Contract，
+`schemas.py` 保留同名 re-export。`AgentCard` 和其他阅读/API 模型暂不随这一刀移动。
+
 ### State / Read Model
 
 当前 `runtime/reading_state.py` 中的 `ReadingStateReader` 聚合：
@@ -324,9 +327,10 @@ Transport
 实现位于 `artifacts/annotated_copies.py`；Composition Root 创建同一个 Store，并注入
 `ReadingStateReader`、WebSocket Session 和 Action Context。旧的目录参数仍作为兼容入口，便于现有测试和调用方渐进迁移。
 
-### 阶段 2：最小 Contracts
+### 阶段 2：最小 Contracts（进行中）
 
-- 先拆 reading、actions 和 events 相关模型。
+- 已完成第一刀：抽出 `contracts/actions.py` 中的 `AgentAction`。
+- 后续再拆 reading 和 events 相关模型。
 - 保留 `schemas.py` 兼容 re-export。
 - 逐步区分 Transport DTO、Command、Query 和 Event。
 - 每次迁移一组 import，并运行全量测试。

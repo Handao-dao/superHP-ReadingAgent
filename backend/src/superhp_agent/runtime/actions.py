@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from superhp_agent.schemas import AgentAction
+from superhp_agent.contracts import AgentAction
 
 OPEN_CHAPTER: Final = "open_chapter"
 GENERATE_ANNOTATION: Final = "generate_annotation"

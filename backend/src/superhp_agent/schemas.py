@@ -1,6 +1,13 @@
-"""Shared API schemas."""
+"""Shared API schemas and compatibility exports.
+
+New cross-layer contracts live under ``superhp_agent.contracts``. This module
+keeps their historical import paths available while the remaining API models
+are migrated incrementally.
+"""
 
 from pydantic import BaseModel, Field
+
+from superhp_agent.contracts import AgentAction
 
 
 class ReadingUnitMeta(BaseModel):
@@ -119,12 +126,6 @@ class AddBookmarkRequest(BaseModel):
 
 class MutationResponse(BaseModel):
     ok: bool = True
-
-
-class AgentAction(BaseModel):
-    id: str
-    label: str
-    payload: dict = Field(default_factory=dict)
 
 
 class AgentCard(BaseModel):

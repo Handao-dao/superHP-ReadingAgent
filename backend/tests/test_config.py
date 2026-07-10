@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from superhp_agent.config import BACKEND_ROOT, PROJECT_ROOT, Settings
 
 
@@ -10,6 +13,7 @@ def test_settings_defaults_are_independent_of_cwd(monkeypatch, tmp_path):
 
     assert settings.data_dir == BACKEND_ROOT / "data"
     assert settings.corpus_dir == PROJECT_ROOT / "corpus"
+    assert settings.annotation_max_concurrency == 8
 
 
 def test_settings_resolves_relative_env_paths_from_backend_root(monkeypatch, tmp_path):
@@ -33,3 +37,11 @@ def test_settings_keeps_absolute_paths(monkeypatch, tmp_path):
 
     assert settings.data_dir == data_dir
     assert settings.corpus_dir == corpus_dir
+
+
+@pytest.mark.parametrize("value", ["0", "33"])
+def test_settings_rejects_unsafe_annotation_concurrency(monkeypatch, value):
+    monkeypatch.setenv("ANNOTATION_MAX_CONCURRENCY", value)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)

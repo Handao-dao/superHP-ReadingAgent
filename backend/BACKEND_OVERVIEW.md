@@ -57,7 +57,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - `db_path`：SQLite 数据库路径。
 - `llm_max_tokens`：单次模型输出 token 上限，默认 `8192`。
 - `annotation_max_chunk_words`：标注分块的目标词数，默认 `1000`；这是软阈值，chunk 会在达到或超过该值后封块。
-- `annotation_max_concurrency`：标注 chunk 并发数，默认 `100`。
+- `annotation_max_concurrency`：标注 chunk 并发数，默认 `8`，可通过环境变量在 `1` 到 `32` 之间调整。
 
 配置优先级遵循 `BaseSettings` 规则：真实环境变量高于 `.env`，`.env` 高于 `Settings` 类中的默认值。
 
@@ -235,7 +235,7 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - `AnnotationChunker` 先按自然段识别段落。
 - 按原文顺序拼接段落，直到当前 chunk 达到或超过 `annotation_max_chunk_words` 后封块。
 - `annotation_max_chunk_words` 是软阈值，不会为了满足词数而拆开段落。
-- 多个 chunk 通过 `annotation_max_concurrency` 控制并发，默认 `100`。
+- 多个 chunk 通过 `annotation_max_concurrency` 控制并发，默认 `8`，兼顾长章节生成速度与常规模型 API 的限流风险。
 - 每个 chunk 独立调用 provider，返回纯 annotated text。
 - 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。
 - 所有 chunk 成功后，后端按 `chunk.index` 排序合并完整译注。

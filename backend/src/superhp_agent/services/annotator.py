@@ -116,7 +116,7 @@ class AnnotatorService:
         *,
         profile: AnnotationProfile | None = None,
         chunker: AnnotationChunker | None = None,
-        max_concurrency: int = 100,
+        max_concurrency: int = 8,
     ):
         self.provider = provider
         self.profile = profile or EnglishNovelProfile()
@@ -298,7 +298,7 @@ class LazyAnnotatorService:
         profile: AnnotationProfile | None = None,
         profile_registry: ProfileRegistry | None = None,
         max_chunk_words: int = 1000,
-        max_concurrency: int = 100,
+        max_concurrency: int = 8,
     ):
         self.provider_factory = provider_factory
         self.profile = profile or EnglishNovelProfile()

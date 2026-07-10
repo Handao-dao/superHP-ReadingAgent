@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     llm_max_tokens: int = 8192
     annotation_max_chunk_words: int = 1000
-    annotation_max_concurrency: int = 100
+    annotation_max_concurrency: int = Field(default=8, ge=1, le=32)
     default_profile_id: str = "english_novel"
 
     model_config = SettingsConfigDict(

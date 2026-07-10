@@ -6,6 +6,7 @@ import LookupPopover from './components/reading/LookupPopover.vue'
 import ReaderStatePage from './components/reading/ReaderStatePage.vue'
 import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
+import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
@@ -286,6 +287,12 @@ function applyPendingBookmarkJump() {
   if (targetPage !== null) currentPage.value = targetPage
 }
 
+function handleReadingElements({ flow, viewport }) {
+  readingFlow.value = flow
+  readingViewport.value = viewport
+  if (flow && viewport) recalculatePages()
+}
+
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
@@ -420,18 +427,13 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-if="readerMode === 'reading'">
-          <div class="reading-page" :class="{ 'is-annotated': activeChapter?.body_kind === 'annotated' }">
-            <div ref="readingViewport" class="reading-viewport">
-              <div ref="readingFlow" class="reading-flow" :style="flowTransform" @click="handleReadingClick">
-                <div
-                  v-for="(html, index) in renderedBlocks"
-                  :key="index"
-                  class="reading-block"
-                  v-html="html"
-                ></div>
-              </div>
-            </div>
-          </div>
+          <ReadingTextPage
+            :annotated="activeChapter?.body_kind === 'annotated'"
+            :blocks="renderedBlocks"
+            :flow-transform="flowTransform"
+            @elements-change="handleReadingElements"
+            @reading-click="handleReadingClick"
+          />
         </template>
 
         <template v-else-if="readerMode === 'guidance'">

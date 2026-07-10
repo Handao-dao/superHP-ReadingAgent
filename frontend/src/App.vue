@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReaderStatePage from './components/reading/ReaderStatePage.vue'
 import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
@@ -418,15 +419,7 @@ onBeforeUnmount(() => {
           {{ errorMessage }}
         </div>
 
-        <template v-if="readerMode === 'generating'">
-          <div class="summary-page">
-            <p class="small-label">{{ progressMessage || noticeMessage || 'Generating annotations...' }}</p>
-            <h2>Chapter Summary</h2>
-            <p>{{ summaryText }}</p>
-          </div>
-        </template>
-
-        <template v-else-if="readerMode === 'reading'">
+        <template v-if="readerMode === 'reading'">
           <div class="reading-page" :class="{ 'is-annotated': activeChapter?.body_kind === 'annotated' }">
             <div ref="readingViewport" class="reading-viewport">
               <div ref="readingFlow" class="reading-flow" :style="flowTransform" @click="handleReadingClick">
@@ -455,21 +448,15 @@ onBeforeUnmount(() => {
           />
         </template>
 
-        <template v-else-if="readerMode === 'error'">
-          <div class="summary-page error-state">
-            <p class="small-label">Session Error</p>
-            <h2>Unable to Continue</h2>
-            <p>{{ errorMessage || listErrorMessage }}</p>
-          </div>
-        </template>
-
-        <template v-else>
-          <div class="summary-page empty-state">
-            <p class="small-label">Waiting</p>
-            <h2>Choose a Reading Action</h2>
-            <p>{{ currentProfile.label }}当前有 {{ chapters.length }} 个阅读单元。</p>
-          </div>
-        </template>
+        <ReaderStatePage
+          v-else
+          :error-message="errorMessage || listErrorMessage"
+          :mode="readerMode"
+          :profile-label="currentProfile.label"
+          :progress-text="progressMessage || noticeMessage"
+          :summary="summaryText"
+          :unit-count="chapters.length"
+        />
 
         <LookupPopover
           :error="lookupError"

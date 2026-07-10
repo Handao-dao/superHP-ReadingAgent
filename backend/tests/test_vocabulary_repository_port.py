@@ -2,6 +2,7 @@
 
 from superhp_agent.ports import VocabularyRepository
 from superhp_agent.storage import AppDB
+from superhp_agent.storage.sqlite import SQLiteVocabularyRepository
 
 
 def test_app_db_satisfies_vocabulary_repository_port(tmp_path):
@@ -9,6 +10,8 @@ def test_app_db_satisfies_vocabulary_repository_port(tmp_path):
 
     try:
         assert isinstance(db, VocabularyRepository)
+        assert isinstance(db.vocabulary_repository, SQLiteVocabularyRepository)
+        assert isinstance(db.vocabulary_repository, VocabularyRepository)
         assert db.list_mastered_words() == []
         assert db.count_vocabulary_for_unit("missing-unit") == 0
     finally:

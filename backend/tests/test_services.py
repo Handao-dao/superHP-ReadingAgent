@@ -234,6 +234,7 @@ def test_annotator_service_emits_model_retry_event():
             event for event in events.events if event.type == "annotation.model_retry"
         )
         assert retry_event.request_id == "r-retry"
+        assert retry_event.payload["chunk_index"] == 1
         assert "retrying" in retry_event.payload["message"]
 
     asyncio.run(run_case())
@@ -262,6 +263,9 @@ def test_annotator_service_emits_consistent_progress_for_one_chunk():
             (0, 1),
             (1, 1),
         ]
+        assert "chunk_index" not in progress[0]
+        assert progress[1]["chunk_index"] == 1
+        assert progress[1]["message"] == "Completed 1 of 1 sections."
 
     asyncio.run(run_case())
 
@@ -322,8 +326,14 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         ]
         assert progress_events[0].payload["current"] == 0
         assert progress_events[0].payload["total"] == 3
+        assert "chunk_index" not in progress_events[0].payload
         assert progress_events[-1].payload["current"] == 3
-        assert progress_events[-1].payload["message"] == "Annotating section 3 of 3..."
+        assert [event.payload["chunk_index"] for event in progress_events[1:]] == [
+            1,
+            2,
+            3,
+        ]
+        assert progress_events[-1].payload["message"] == "Completed 3 of 3 sections."
         user_prompts = [messages[1]["content"] for messages in provider.messages]
         stable_prefixes = [prompt.split("<reader_text>", 1)[0] for prompt in user_prompts]
         assert len(set(stable_prefixes)) == 1

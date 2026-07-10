@@ -176,7 +176,7 @@ class AnnotatorService:
             current=0,
             total=total,
             stage="chunking",
-            message=f"Annotating section 0 of {total}...",
+            message=f"Preparing {total} annotation sections...",
         )
 
         semaphore = asyncio.Semaphore(self.max_concurrency)
@@ -204,7 +204,8 @@ class AnnotatorService:
                     current=completed,
                     total=total,
                     stage="chunk",
-                    message=f"Annotating section {completed} of {total}...",
+                    message=f"Completed {completed} of {total} sections.",
+                    chunk_index=index,
                 )
         finally:
             # Never leave model requests running after this annotation call
@@ -232,7 +233,11 @@ class AnnotatorService:
         response = await self.provider.chat_with_retry(
             messages=context.to_messages(),
             on_retry_wait=(
-                self._retry_event_sink(event_sink, request_id=request_id)
+                self._retry_event_sink(
+                    event_sink,
+                    request_id=request_id,
+                    chunk_index=chunk.index,
+                )
                 if event_sink is not None
                 else None
             ),
@@ -265,26 +270,38 @@ class AnnotatorService:
         total: int,
         stage: str,
         message: str,
+        chunk_index: int | None = None,
     ) -> None:
         if event_sink is None:
             return
+        payload = {
+            "current": current,
+            "total": total,
+            "stage": stage,
+            "message": message,
+        }
+        if chunk_index is not None:
+            payload["chunk_index"] = chunk_index
         await emit_backend_event(
             event_sink,
             "annotation.progress",
             request_id=request_id,
-            current=current,
-            total=total,
-            stage=stage,
-            message=message,
+            **payload,
         )
 
     @staticmethod
-    def _retry_event_sink(event_sink: EventSink, *, request_id: str | None):
+    def _retry_event_sink(
+        event_sink: EventSink,
+        *,
+        request_id: str | None,
+        chunk_index: int,
+    ):
         async def on_retry_wait(message: str) -> None:
             await emit_backend_event(
                 event_sink,
                 "annotation.model_retry",
                 request_id=request_id,
+                chunk_index=chunk_index,
                 message=message,
             )
 

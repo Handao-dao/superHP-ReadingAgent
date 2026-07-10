@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -15,8 +16,6 @@ const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
-const densityMenuOpen = ref(false)
-const densityMenu = ref(null)
 const densityOptions = [
   { key: 'H', label: 'High', level: 'beginner' },
   { key: 'M', label: 'Medium', level: 'intermediate' },
@@ -317,20 +316,13 @@ function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
 
-function toggleDensityMenu() {
-  if (isGenerating.value) return
-  densityMenuOpen.value = !densityMenuOpen.value
-}
-
 function selectDensity(key) {
   selectedDensity.value = densityOptions.some((option) => option.key === key) ? key : 'M'
   localStorage.setItem('superhp_annotation_density', selectedDensity.value)
-  densityMenuOpen.value = false
 }
 
 function handleKeydown(event) {
   if (event.key === 'Escape') {
-    densityMenuOpen.value = false
     closeLookupBubble()
     return
   }
@@ -344,12 +336,6 @@ function handleKeydown(event) {
     event.preventDefault()
     prevPage()
   }
-}
-
-function handleDocumentPointerdown(event) {
-  if (!densityMenuOpen.value) return
-  if (densityMenu.value?.contains(event.target)) return
-  densityMenuOpen.value = false
 }
 
 async function handleVocabularyChanged() {
@@ -394,13 +380,11 @@ onMounted(() => {
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
-  document.addEventListener('pointerdown', handleDocumentPointerdown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', recalculatePages)
-  document.removeEventListener('pointerdown', handleDocumentPointerdown)
 })
 </script>
 
@@ -501,52 +485,19 @@ onBeforeUnmount(() => {
     ></button>
 
     <section class="reader-shell">
-      <header class="reader-topbar">
-      <div class="title-block">
-        <p class="eyebrow">SuperHP Agent</p>
-        <h1>{{ currentMeta?.book_title || currentProfile.label || 'Reading Assistant' }}</h1>
-        <p class="chapter-line">
-          <span>{{ currentMeta ? chapterLabel : 'Choose a reading action to begin' }}</span>
-        </p>
-      </div>
-
-      <div class="session-cluster">
-        <div class="view-switch" aria-label="页面切换">
-          <button type="button" :class="{ 'is-active': activeView === 'reader' }" @click="activeView = 'reader'">阅读</button>
-          <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="activeView = 'vocabulary'">生词表</button>
-        </div>
-        <div ref="densityMenu" class="density-menu">
-          <button
-            type="button"
-            class="density-trigger"
-            :class="{ 'is-open': densityMenuOpen }"
-            :disabled="isGenerating"
-            aria-haspopup="menu"
-            :aria-expanded="densityMenuOpen"
-            @click="toggleDensityMenu"
-          >
-            Density: {{ selectedDensity }}
-          </button>
-          <div v-if="densityMenuOpen" class="density-options" role="menu">
-            <button
-              v-for="option in densityOptions"
-              :key="option.key"
-              type="button"
-              role="menuitemradio"
-              :aria-checked="selectedDensity === option.key"
-              :class="{ 'is-active': selectedDensity === option.key }"
-              @click="selectDensity(option.key)"
-            >
-              <strong>{{ option.key }}</strong>
-              <span>{{ option.label }}</span>
-            </button>
-          </div>
-        </div>
-        <button type="button" class="catalog-toggle" @click="toggleSidebar">目录</button>
-        <span class="status-pill" :class="{ 'is-online': connected }">{{ connected ? '在线' : '离线' }}</span>
-        <span class="page-chip">{{ pageLabel }}</span>
-      </div>
-      </header>
+      <ReadingTopbar
+        :active-view="activeView"
+        :book-title="currentMeta?.book_title || currentProfile.label"
+        :chapter-label="currentMeta ? chapterLabel : ''"
+        :connected="connected"
+        :density-options="densityOptions"
+        :is-generating="isGenerating"
+        :page-label="pageLabel"
+        :selected-density="selectedDensity"
+        @select-density="selectDensity"
+        @toggle-sidebar="toggleSidebar"
+        @view-change="activeView = $event"
+      />
 
       <section v-if="activeView === 'reader'" class="book-stage">
       <button

@@ -202,27 +202,50 @@ def test_annotator_service_emits_model_retry_event():
 
 
 
-def test_annotation_chunker_preserves_long_paragraph_even_over_max_words():
+def test_annotation_chunker_hard_splits_long_english_paragraph():
     long_paragraph = " ".join(f"word{i}" for i in range(12))
-    chunks = AnnotationChunker(max_chunk_words=5).split(
-        f"{long_paragraph}\n\nshort ending."
-    )
+    source = f"{long_paragraph}\n\nshort ending."
+    chunks = AnnotationChunker(max_chunk_words=5).split(source)
 
-    assert len(chunks) == 2
-    assert chunks[0].text == long_paragraph
-    assert len(chunks[0].text.split()) == 12
-    assert chunks[1].text == "short ending."
+    assert [chunk.text for chunk in chunks] == [
+        " ".join(f"word{i}" for i in range(5)),
+        " ".join(f"word{i}" for i in range(5, 10)),
+        "word10 word11\n\nshort ending.",
+    ]
+    assert all(AnnotationChunker._measure(chunk.text) <= 5 for chunk in chunks)
+    assert chunks[0].text + "".join(
+        chunk.separator_before + chunk.text for chunk in chunks[1:]
+    ) == source
 
 
-def test_annotation_chunker_seals_chunk_after_crossing_max_words():
+def test_annotation_chunker_never_crosses_hard_limit_when_packing_paragraphs():
     paragraphs = [" ".join(f"p{idx}w{word}" for word in range(3)) for idx in range(5)]
     chunks = AnnotationChunker(max_chunk_words=7).split("\n\n".join(paragraphs))
 
     assert [chunk.text for chunk in chunks] == [
-        "\n\n".join(paragraphs[:3]),
-        "\n\n".join(paragraphs[3:]),
+        "\n\n".join(paragraphs[:2]),
+        "\n\n".join(paragraphs[2:4]),
+        paragraphs[4],
     ]
-    assert len(chunks[0].text.split()) == 9
+    assert all(AnnotationChunker._measure(chunk.text) <= 7 for chunk in chunks)
+
+
+def test_annotation_chunker_counts_chinese_characters_and_prefers_sentence_end():
+    source = "学而时习之。不亦说乎？"
+    chunks = AnnotationChunker(max_chunk_words=5).split(source)
+
+    assert [chunk.text for chunk in chunks] == ["学而时习之。", "不亦说乎？"]
+    assert all(AnnotationChunker._measure(chunk.text) <= 5 for chunk in chunks)
+    assert chunks[0].text + "".join(
+        chunk.separator_before + chunk.text for chunk in chunks[1:]
+    ) == source
+
+
+def test_annotation_chunker_hard_splits_unpunctuated_chinese_text():
+    chunks = AnnotationChunker(max_chunk_words=4).split("天地玄黄宇宙洪荒日月盈昃")
+
+    assert [chunk.text for chunk in chunks] == ["天地玄黄", "宇宙洪荒", "日月盈昃"]
+    assert "".join(chunk.text for chunk in chunks) == "天地玄黄宇宙洪荒日月盈昃"
 
 
 def test_annotator_service_chunks_long_text_and_merges_in_order():
@@ -235,7 +258,7 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         events = EventCollector()
         service = AnnotatorService(
             provider,
-            chunker=AnnotationChunker(max_chunk_words=1),
+            chunker=AnnotationChunker(max_chunk_words=2),
             max_concurrency=1,
         )
 

@@ -236,7 +236,7 @@ storage/
 
 - `CorpusStore`：扫描、解析并安全读取原始语料。
 - `AnnotatedCopyStore`：命名、兼容回退、读取和保存译注副本。
-- `ReadingMemoryStore`：保存当前、已打开、已读、已译注状态和轻量事件日志。
+- `ReadingMemoryStore`：暂时保存当前、已打开、已读状态和轻量事件日志；译注存在性只由 Artifact Store 判断。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。
 
 Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `VocabularyRepository` 使用

@@ -1,8 +1,8 @@
 """File-backed reading memory and append-only event log.
 
 Memory captures product state that is useful for choosing the next card: current
-unit, opened units, read units, and annotated units. The JSONL event log is kept
-separate so debugging/auditing events does not complicate the current state file.
+unit, opened units, and read units. Annotated-copy existence belongs to the
+artifact store. The JSONL event log remains separate from the current snapshot.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ class ReadingMemory:
     current_unit_id: str = ""
     opened_unit_ids: list[str] = field(default_factory=list)
     read_unit_ids: list[str] = field(default_factory=list)
-    annotated_unit_ids: list[str] = field(default_factory=list)
     updated_at: str = ""
 
     @classmethod
@@ -35,7 +34,6 @@ class ReadingMemory:
             current_unit_id=str(data.get("current_unit_id") or ""),
             opened_unit_ids=_string_list(data.get("opened_unit_ids")),
             read_unit_ids=_string_list(data.get("read_unit_ids")),
-            annotated_unit_ids=_string_list(data.get("annotated_unit_ids")),
             updated_at=str(data.get("updated_at") or ""),
         )
 
@@ -44,7 +42,6 @@ class ReadingMemory:
             "current_unit_id": self.current_unit_id,
             "opened_unit_ids": self.opened_unit_ids,
             "read_unit_ids": self.read_unit_ids,
-            "annotated_unit_ids": self.annotated_unit_ids,
             "updated_at": self.updated_at,
         }
 
@@ -98,14 +95,6 @@ class ReadingMemoryStore:
         memory.read_unit_ids = _append_unique(memory.read_unit_ids, unit_id)
         self.save(memory)
         self.log_event("unit_marked_read", unit_id=unit_id)
-        return memory
-
-    def mark_annotated(self, unit_id: str) -> ReadingMemory:
-        """Remember that an annotated Markdown copy exists for the unit."""
-        memory = self.load()
-        memory.annotated_unit_ids = _append_unique(memory.annotated_unit_ids, unit_id)
-        self.save(memory)
-        self.log_event("unit_marked_annotated", unit_id=unit_id)
         return memory
 
     def log_event(self, event_type: str, **payload: Any) -> None:

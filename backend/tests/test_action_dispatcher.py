@@ -284,7 +284,6 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         annotated_text = annotated_file.read_text(encoding="utf-8")
         assert "level: advanced" in annotated_text
         assert "Body [[text|文本]]." in annotated_text
-        assert memory.load().annotated_unit_ids == ["hp01-ch01"]
         assert db.count_vocabulary_for_unit("hp01-ch01") == 1
         assert "text" in [row["word"] for row in db.list_vocabulary(unit_id="hp01-ch01")]
 
@@ -355,7 +354,6 @@ def test_dispatch_returns_original_without_persisting_fully_degraded_result(tmp_
         assert opened["unit"]["body"] == "Body text."
         assert opened["unit"]["body_kind"] == "original"
         assert not annotated_dir.exists()
-        assert memory.load().annotated_unit_ids == []
 
     asyncio.run(run_case())
 

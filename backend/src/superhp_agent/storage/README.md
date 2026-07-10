@@ -107,7 +107,8 @@ UNIQUE(profile_id, normalized_word)
 
 ## 阅读进度：ReadingProgressRepository
 
-当前 `reading_memory.json` 保存 current/opened/read/annotated 状态，SQLite 又预留了
+当前 `reading_memory.json` 保存 current/opened/read 状态；旧文件中的 `annotated_unit_ids`
+会被兼容忽略，并在下一次保存时移除。SQLite 又预留了
 `reading_progress` 和 `units.status/read_at/annotated_at/annotated_path`，形成了重复设计。
 当前运行代码实际以 JSON Memory 为阅读状态来源，而上述 SQLite 运行状态字段没有有效数据。
 
@@ -167,7 +168,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 ## 渐进迁移顺序
 
 1. （已完成）为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
-2. 从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
+2. （已完成）从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
 3. 新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
 4. 保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
 5. 为 vocabulary 增加 `profile_id + normalized_word` 作用域。

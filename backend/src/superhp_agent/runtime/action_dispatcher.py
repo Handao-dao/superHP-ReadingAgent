@@ -335,9 +335,6 @@ class GenerateAnnotationHandler:
                     doc.meta,
                     result.vocabulary,
                 )
-            if context.memory_store:
-                context.memory_store.mark_annotated(unit_id)
-
         provider_error_count = sum(
             issue.category == "provider" for issue in result.issues
         )

@@ -35,3 +35,26 @@ def test_mark_read_is_idempotent(tmp_path):
 
     assert memory.opened_unit_ids == ["hp01-ch01"]
     assert memory.read_unit_ids == ["hp01-ch01"]
+
+
+def test_legacy_annotated_ids_are_ignored_and_removed_on_save(tmp_path):
+    memory_path = tmp_path / "reading_memory.json"
+    memory_path.write_text(
+        json.dumps(
+            {
+                "current_unit_id": "hp01-ch01",
+                "read_unit_ids": ["hp01-ch01"],
+                "annotated_unit_ids": ["hp01-ch01"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    store = ReadingMemoryStore(memory_path, tmp_path / "events.jsonl")
+
+    memory = store.load()
+    store.save(memory)
+    saved = json.loads(memory_path.read_text(encoding="utf-8"))
+
+    assert memory.current_unit_id == "hp01-ch01"
+    assert memory.read_unit_ids == ["hp01-ch01"]
+    assert "annotated_unit_ids" not in saved

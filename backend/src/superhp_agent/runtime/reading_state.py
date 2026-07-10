@@ -101,12 +101,11 @@ class ReadingStateReader:
         next_by_id = self._next_unit_ids(units)
         memory = self.memory_store.load() if self.memory_store else None
         read_ids = set(memory.read_unit_ids) if memory else set()
-        annotated_ids = set(memory.annotated_unit_ids) if memory else set()
 
         return [
             ReadingUnitState.from_unit(
                 unit,
-                has_annotated_copy=(unit.id in annotated_ids) or self._has_annotated_copy(unit.id),
+                has_annotated_copy=self._has_annotated_copy(unit.id),
                 is_read=unit.id in read_ids,
                 vocab_count=self._vocab_count(unit.id),
                 next_unit_id=next_by_id.get(unit.id),

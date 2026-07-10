@@ -38,6 +38,8 @@ class SQLiteBookmarkRepository:
         total_pages: int = 0,
         label: str = "",
         excerpt: str = "",
+        annotation_level: str = "",
+        paragraph_index: int = -1,
     ) -> int:
         """Store one explicit reading bookmark and return its id."""
         body_kind = str(body_kind or "").strip()
@@ -48,14 +50,18 @@ class SQLiteBookmarkRepository:
         progress_ratio = min(1, max(0, float(progress_ratio)))
         label = str(label or "").strip()
         excerpt = str(excerpt or "").strip()
+        annotation_level = (
+            str(annotation_level or "").strip() if body_kind == "annotated" else ""
+        )
+        paragraph_index = max(-1, int(paragraph_index))
         with self.database.lock:
             self.sync_unit(unit)
             cursor = self.database.connection.execute(
                 """
                 INSERT INTO bookmarks (
                     unit_id, chapter_id, body_kind, page_index, progress_ratio,
-                    total_pages, label, excerpt
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    total_pages, label, excerpt, annotation_level, paragraph_index
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     unit.id,
@@ -66,6 +72,8 @@ class SQLiteBookmarkRepository:
                     total_pages,
                     label,
                     excerpt,
+                    annotation_level,
+                    paragraph_index,
                 ),
             )
             self.database.connection.commit()
@@ -89,6 +97,8 @@ class SQLiteBookmarkRepository:
                 total_pages,
                 label,
                 excerpt,
+                annotation_level,
+                paragraph_index,
                 created_at
             FROM bookmarks
             {where}

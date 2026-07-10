@@ -82,6 +82,8 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             total_pages INTEGER NOT NULL DEFAULT 0,
             label TEXT DEFAULT '',
             excerpt TEXT DEFAULT '',
+            annotation_level TEXT DEFAULT '',
+            paragraph_index INTEGER NOT NULL DEFAULT -1,
             created_at TEXT DEFAULT (datetime('now','localtime'))
         );
 
@@ -118,6 +120,19 @@ def _ensure_columns(connection: sqlite3.Connection) -> None:
         _migrate_vocabulary_scope(connection, vocabulary_columns)
     connection.execute("CREATE INDEX IF NOT EXISTS idx_vocab_pos ON vocabulary(pos)")
     connection.execute("CREATE INDEX IF NOT EXISTS idx_vocab_profile ON vocabulary(profile_id)")
+
+    bookmark_columns = {
+        str(row["name"])
+        for row in connection.execute("PRAGMA table_info(bookmarks)").fetchall()
+    }
+    if "annotation_level" not in bookmark_columns:
+        connection.execute(
+            "ALTER TABLE bookmarks ADD COLUMN annotation_level TEXT DEFAULT ''"
+        )
+    if "paragraph_index" not in bookmark_columns:
+        connection.execute(
+            "ALTER TABLE bookmarks ADD COLUMN paragraph_index INTEGER NOT NULL DEFAULT -1"
+        )
 
 
 def _migrate_vocabulary_scope(

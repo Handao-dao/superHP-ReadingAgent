@@ -68,6 +68,18 @@ def test_initialize_schema_upgrades_legacy_columns(tmp_path):
                 translation TEXT NOT NULL,
                 mastered INTEGER DEFAULT 0
             );
+            CREATE TABLE bookmarks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                unit_id TEXT NOT NULL,
+                chapter_id TEXT NOT NULL,
+                body_kind TEXT NOT NULL,
+                page_index INTEGER NOT NULL DEFAULT 0,
+                progress_ratio REAL NOT NULL DEFAULT 0,
+                total_pages INTEGER NOT NULL DEFAULT 0,
+                label TEXT DEFAULT '',
+                excerpt TEXT DEFAULT '',
+                created_at TEXT
+            );
             """
         )
 
@@ -81,9 +93,14 @@ def test_initialize_schema_upgrades_legacy_columns(tmp_path):
             row["name"]
             for row in database.connection.execute("PRAGMA table_info(units)").fetchall()
         }
+        bookmark_columns = {
+            row["name"]
+            for row in database.connection.execute("PRAGMA table_info(bookmarks)").fetchall()
+        }
         assert "pos" in vocabulary_columns
         assert {"profile_id", "normalized_word"} <= vocabulary_columns
         assert "profile_id" in unit_columns
+        assert {"annotation_level", "paragraph_index"} <= bookmark_columns
     finally:
         database.close()
 

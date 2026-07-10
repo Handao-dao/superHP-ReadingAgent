@@ -22,6 +22,8 @@ export async function addBookmark({
   totalPages,
   label,
   excerpt,
+  annotationLevel,
+  paragraphIndex,
 }) {
   const response = await fetch(BASE, {
     method: 'POST',
@@ -34,6 +36,8 @@ export async function addBookmark({
       total_pages: totalPages,
       label,
       excerpt,
+      annotation_level: annotationLevel,
+      paragraph_index: paragraphIndex,
     }),
   })
   if (!response.ok) throw new Error(await readError(response, '保存书签失败'))

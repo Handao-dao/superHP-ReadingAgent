@@ -96,13 +96,13 @@ UNIQUE(profile_id, normalized_word)
 ## 书签：BookmarkRepository
 
 书签属于不可重建的用户数据，以 SQLite 为唯一来源。当前 `body_kind` 需要继续区分原文和译注；
-存在多个译注 level 时，还应保存 `annotation_level` 或等价的 artifact variant。
+存在多个译注 level 时，通过 `annotation_level` 保存对应的 artifact variant。
 
-`page_index` 和 `progress_ratio` 受窗口、字体和分页算法影响，只能作为快速恢复提示。稳定定位应逐步补充：
+`page_index` 和 `progress_ratio` 受窗口、字体和分页算法影响，只作为最后的恢复回退。当前稳定定位顺序为：
 
-- `excerpt`：附近文本锚点。
-- `source_offset` 或 `paragraph_index`：内容位置。
-- `annotation_level`：书签所对应的阅读版本。
+- `excerpt`：优先匹配附近文本锚点。
+- `paragraph_index`：文本未匹配时使用内容块位置。
+- `annotation_level`：打开书签所对应的译注版本。
 
 恢复时优先使用内容锚点，最后才回退到页码或比例。
 
@@ -172,7 +172,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 3. （已完成）新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
 4. （已完成）保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
 5. （已完成）为 vocabulary 增加 `profile_id + normalized_word` 作用域。
-6. 为 bookmarks 增加译注 level 和更稳定的文本定位字段。
+6. （已完成）为 bookmarks 增加译注 level 和更稳定的文本定位字段。
 7. 最后停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
    不需要为删除空列执行高风险表重建。
 

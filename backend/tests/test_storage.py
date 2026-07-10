@@ -233,6 +233,8 @@ def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):
         total_pages=8,
         label="Chapter 1 · Page 3",
         excerpt="Mr and Mrs Dursley...",
+        annotation_level="advanced",
+        paragraph_index=4,
     )
     second_id = db.add_bookmark(
         unit,
@@ -241,12 +243,18 @@ def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):
         progress_ratio=0.5,
         total_pages=8,
         label="Annotated page",
+        annotation_level="advanced",
+        paragraph_index=9,
     )
 
     rows = db.list_bookmarks(unit_id="hp01-ch01")
     assert [row["id"] for row in rows] == [second_id, first_id]
     assert rows[0]["body_kind"] == "annotated"
+    assert rows[0]["annotation_level"] == "advanced"
+    assert rows[0]["paragraph_index"] == 9
     assert rows[1]["excerpt"] == "Mr and Mrs Dursley..."
+    assert rows[1]["annotation_level"] == ""
+    assert rows[1]["paragraph_index"] == 4
 
     assert db.delete_bookmark(first_id)
     assert [row["id"] for row in db.list_bookmarks()] == [second_id]

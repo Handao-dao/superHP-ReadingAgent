@@ -23,6 +23,8 @@ class BookmarkRepository(Protocol):
         total_pages: int = 0,
         label: str = "",
         excerpt: str = "",
+        annotation_level: str = "",
+        paragraph_index: int = -1,
     ) -> int: ...
 
     def list_bookmarks(self, *, unit_id: str | None = None) -> list[dict[str, Any]]: ...

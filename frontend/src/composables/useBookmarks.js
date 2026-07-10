@@ -9,7 +9,10 @@ import { addBookmark, deleteBookmark, fetchBookmarks } from '../api/bookmarks'
 
 export function useBookmarks({
   getActiveChapter,
+  getAnnotationLevel,
   getCurrentPage,
+  getCurrentParagraphIndex,
+  getPageForParagraph,
   getParagraphs,
   getReaderMode,
   getTotalPages,
@@ -54,8 +57,10 @@ export function useBookmarks({
   function currentBookmarkExcerpt() {
     const paragraphs = getParagraphs?.() || []
     const currentPage = getCurrentPage?.() || 0
+    const paragraphIndex = getCurrentParagraphIndex?.() ?? -1
     const activeChapter = getActiveChapter?.()
-    const block = paragraphs[Math.min(currentPage, Math.max(0, paragraphs.length - 1))]
+    const fallbackIndex = Math.min(currentPage, Math.max(0, paragraphs.length - 1))
+    const block = paragraphs[paragraphIndex >= 0 ? paragraphIndex : fallbackIndex]
     return cleanBookmarkExcerpt(block || activeChapter?.body || '')
   }
 
@@ -77,6 +82,8 @@ export function useBookmarks({
         totalPages,
         label: `Chapter ${meta.chapter_no} · Page ${pageIndex + 1}`,
         excerpt: currentBookmarkExcerpt(),
+        annotationLevel: bodyKind === 'annotated' ? getAnnotationLevel?.() || '' : '',
+        paragraphIndex: getCurrentParagraphIndex?.() ?? -1,
       })
       bookmarks.value = [saved, ...bookmarks.value]
     } catch (error) {
@@ -108,14 +115,25 @@ export function useBookmarks({
     if (!bookmark || totalPages <= 0) return null
     if (bookmark.unit_id !== activeUnitId || bookmark.body_kind !== bodyKind) return null
 
+    const paragraphs = getParagraphs?.() || []
+    const excerpt = cleanBookmarkExcerpt(bookmark.excerpt || '')
+    let paragraphIndex = excerpt
+      ? paragraphs.findIndex((block) => cleanBookmarkExcerpt(block) === excerpt)
+      : -1
+    if (paragraphIndex < 0) paragraphIndex = Number(bookmark.paragraph_index)
+    const anchorPage = Number.isInteger(paragraphIndex) && paragraphIndex >= 0
+      ? getPageForParagraph?.(paragraphIndex)
+      : null
     const savedPage = Number(bookmark.page_index)
     const ratio = Number(bookmark.progress_ratio)
     const ratioPage = Number.isFinite(ratio)
       ? Math.round((totalPages - 1) * Math.min(1, Math.max(0, ratio)))
       : 0
-    const targetPage = Number.isInteger(savedPage) && savedPage >= 0 && savedPage < totalPages
-      ? savedPage
-      : ratioPage
+    const targetPage = Number.isInteger(anchorPage) && anchorPage >= 0 && anchorPage < totalPages
+      ? anchorPage
+      : Number.isInteger(savedPage) && savedPage >= 0 && savedPage < totalPages
+        ? savedPage
+        : ratioPage
     pendingBookmarkJump.value = null
     return Math.min(totalPages - 1, Math.max(0, targetPage))
   }

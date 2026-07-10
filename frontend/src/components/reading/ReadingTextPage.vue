@@ -41,6 +41,7 @@ onBeforeUnmount(() => {
           v-for="(html, index) in blocks"
           :key="index"
           class="reading-block"
+          :data-paragraph-index="index"
           v-html="html"
         ></div>
       </div>

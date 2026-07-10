@@ -118,6 +118,8 @@ def _bookmark_entry(row: dict) -> BookmarkEntry:
         total_pages=int(row["total_pages"]),
         label=str(row["label"] or ""),
         excerpt=str(row["excerpt"] or ""),
+        annotation_level=str(row["annotation_level"] or ""),
+        paragraph_index=int(row["paragraph_index"]),
         created_at=str(row["created_at"] or ""),
     )
 
@@ -205,6 +207,8 @@ async def add_bookmark(payload: AddBookmarkRequest):
             total_pages=payload.total_pages,
             label=payload.label,
             excerpt=payload.excerpt,
+            annotation_level=payload.annotation_level,
+            paragraph_index=payload.paragraph_index,
         )
     except CorpusError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

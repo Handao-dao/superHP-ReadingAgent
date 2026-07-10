@@ -106,10 +106,12 @@ const hasActiveReading = computed(() => Boolean(activeChapter.value && renderedB
 const {
   canGoNext,
   canGoPrev,
+  currentParagraphIndex,
   currentPage,
   flowTransform,
   isGuidancePage,
   nextPage,
+  pageForParagraph,
   prevPage,
   readingFlow,
   readingViewport,
@@ -147,7 +149,10 @@ const {
   saveCurrentBookmark,
 } = useBookmarks({
   getActiveChapter: () => activeChapter.value,
+  getAnnotationLevel: () => selectedLevel.value,
   getCurrentPage: () => currentPage.value,
+  getCurrentParagraphIndex: currentParagraphIndex,
+  getPageForParagraph: pageForParagraph,
   getParagraphs: () => paragraphs.value,
   getReaderMode: () => readerMode.value,
   getTotalPages: () => totalReadingPages.value,
@@ -265,7 +270,9 @@ function handleOpenBookmark(bookmark) {
     payload: {
       unit_id: bookmark.unit_id,
       chapter_id: bookmark.unit_id,
-      ...(bookmark.body_kind === 'annotated' ? { level: selectedLevel.value } : {}),
+      ...(bookmark.body_kind === 'annotated'
+        ? { level: bookmark.annotation_level || selectedLevel.value }
+        : {}),
     },
   }
   sendAction(action)

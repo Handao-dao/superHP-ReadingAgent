@@ -43,6 +43,38 @@ export function useReaderPagination({ hasActiveReading, renderedBlocks, onLayout
     if (canGoPrev.value) currentPage.value -= 1
   }
 
+  function currentParagraphIndex() {
+    const viewport = readingViewport.value
+    const flow = readingFlow.value
+    if (!viewport || !flow) return -1
+    const viewportRect = viewport.getBoundingClientRect()
+    const blocks = flow.querySelectorAll('[data-paragraph-index]')
+    for (const block of blocks) {
+      const visible = Array.from(block.getClientRects()).some((rect) => (
+        rect.right > viewportRect.left
+        && rect.left < viewportRect.right
+        && rect.bottom > viewportRect.top
+        && rect.top < viewportRect.bottom
+      ))
+      if (visible) return Number(block.dataset.paragraphIndex)
+    }
+    return -1
+  }
+
+  function pageForParagraph(paragraphIndex) {
+    const viewport = readingViewport.value
+    const flow = readingFlow.value
+    const stride = pageStride.value
+    if (!viewport || !flow || stride <= 0 || paragraphIndex < 0) return null
+    const block = flow.querySelector(`[data-paragraph-index="${paragraphIndex}"]`)
+    const rect = block?.getClientRects()?.[0]
+    if (!rect) return null
+    const viewportRect = viewport.getBoundingClientRect()
+    const logicalLeft = rect.left - viewportRect.left + currentPage.value * stride
+    const page = Math.round(logicalLeft / stride)
+    return Math.min(totalReadingPages.value - 1, Math.max(0, page))
+  }
+
   async function recalculatePages() {
     const wasGuidance = isGuidancePage.value
     await nextTick()
@@ -74,10 +106,12 @@ export function useReaderPagination({ hasActiveReading, renderedBlocks, onLayout
   return {
     canGoNext,
     canGoPrev,
+    currentParagraphIndex,
     currentPage,
     flowTransform,
     isGuidancePage,
     nextPage,
+    pageForParagraph,
     prevPage,
     readingFlow,
     readingViewport,

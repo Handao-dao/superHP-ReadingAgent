@@ -1,4 +1,4 @@
-"""Classical Chinese profile for annotated modern-Chinese study reading."""
+"""Classical-Chinese prompts, labels, validation, and marker parsing policy."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
 from superhp_agent.profiles.base import CardCopy
 from superhp_agent.profiles.validation import validate_annotation_output
 
+# These learning labels are Profile policy, not generic backend POS values.
+# New output is strict; the parser still normalizes aliases in saved old data.
 ANNOTATION_POS = frozenset(
     {"重点实词", "重点虚词", "通假字", "古今异义", "词类活用", "虚词用法", "特殊句式", "其他"}
 )

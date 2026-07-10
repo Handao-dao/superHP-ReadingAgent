@@ -1,4 +1,4 @@
-"""English novel profile used by the current Harry Potter reader."""
+"""English-novel prompts, labels, validation, and marker parsing policy."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
 from superhp_agent.profiles.base import CardCopy
 from superhp_agent.profiles.validation import validate_annotation_output
 
+# New model output must use these exact labels. The parser remains tolerant of
+# legacy saved markers so old reading artifacts can still be opened.
 ANNOTATION_POS = frozenset(
     {"noun", "verb", "adjective", "adverb", "phrase", "other"}
 )

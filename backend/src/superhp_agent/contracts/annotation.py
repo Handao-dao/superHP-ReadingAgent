@@ -1,4 +1,8 @@
-"""Stable results exchanged by annotation profiles, services, and runtime."""
+"""Stable annotation data exchanged across backend layers.
+
+These classes carry outcomes and degradation metadata only. They do not call
+models, validate markers, emit events, or decide whether an artifact is saved.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +21,12 @@ class AnnotationItem:
 
 @dataclass(frozen=True)
 class ServiceIssue:
-    """Machine-readable degradation information safe to pass across layers."""
+    """Machine-readable degradation information safe to pass across layers.
+
+    ``category`` separates Provider failures from content validation failures;
+    ``code`` is the stable value for program logic, while ``message`` is only
+    display copy and may change without breaking consumers.
+    """
 
     category: str
     code: str
@@ -40,7 +49,12 @@ class AnnotationChunkOutcome:
 
 @dataclass(frozen=True)
 class AnnotationResult:
-    """Complete annotation text plus structured degradation information."""
+    """Complete readable text plus per-chunk validation and issue counts.
+
+    ``annotated_text`` may mix validated annotations with original-text
+    fallbacks. Runtime uses the counters to distinguish a useful mixed result
+    from a fully degraded result that must not be persisted as an annotation.
+    """
 
     annotated_text: str
     vocabulary: list[AnnotationItem]
@@ -50,4 +64,5 @@ class AnnotationResult:
 
     @property
     def fully_degraded(self) -> bool:
+        """Whether every model chunk fell back to its original source text."""
         return self.total_chunk_count > 0 and self.validated_chunk_count == 0

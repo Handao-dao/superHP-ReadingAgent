@@ -1,4 +1,10 @@
-"""Chapter annotation service backed by the provider abstraction."""
+"""Orchestrate paragraph chunking, concurrent annotation, and safe fallback.
+
+Provider owns request retry. Profile owns text-specific output validation.
+This Service coordinates them, converts expected model problems into readable
+original-text fallbacks, and returns structured outcomes without persisting or
+making frontend flow decisions.
+"""
 
 from __future__ import annotations
 
@@ -124,6 +130,7 @@ class AnnotatorService:
         request_id: str | None = None,
         profile_id: str | None = None,
     ) -> AnnotationResult:
+        """Annotate a reading unit and return complete text plus degradation data."""
         chunks = self.chunker.split(text)
         if not chunks:
             raise ValueError("模型没有返回译注文本。")
@@ -159,6 +166,7 @@ class AnnotatorService:
         event_sink: EventSink | None,
         request_id: str | None,
     ) -> list[AnnotationChunkOutcome]:
+        """Run chunks concurrently, emit progress, and restore source order."""
         total = len(chunks)
         await self._emit_progress(
             event_sink,
@@ -221,6 +229,11 @@ class AnnotatorService:
         event_sink: EventSink | None,
         request_id: str | None,
     ) -> AnnotationChunkOutcome:
+        """Turn one Provider response into validated text or a safe fallback.
+
+        Only expected model states become degraded outcomes. Cancellation and
+        unexpected program exceptions remain exceptions so bugs are visible.
+        """
         context = base_context.with_blocks(self._reader_text_block(chunk.text))
         response = await self.provider.chat_with_retry(
             messages=context.to_messages(),
@@ -293,6 +306,7 @@ class AnnotatorService:
         code: str,
         message: str,
     ) -> AnnotationChunkOutcome:
+        """Represent a rejected model result using the untouched chunk text."""
         return AnnotationChunkOutcome(
             index=chunk.index,
             text=chunk.text,
@@ -315,6 +329,7 @@ class AnnotatorService:
         message: str,
         chunk_index: int | None = None,
     ) -> None:
+        """Emit completion counts separately from the actual finished chunk."""
         if event_sink is None:
             return
         payload = {
@@ -339,6 +354,7 @@ class AnnotatorService:
         request_id: str | None,
         issue: ServiceIssue,
     ) -> None:
+        """Expose a classified fallback without turning it into task failure."""
         if event_sink is None:
             return
         await emit_backend_event(

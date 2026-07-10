@@ -1,4 +1,9 @@
-"""Profile interfaces for text annotation workflows."""
+"""Profile interfaces for text-specific annotation policy.
+
+A Profile owns prompts, marker rules, output normalization, validation, and
+parsing for one reading scenario. It never calls a Provider, persists data, or
+emits transport events; those responsibilities stay in Service and Runtime.
+"""
 
 from __future__ import annotations
 
@@ -35,7 +40,7 @@ class CardCopy:
 
 
 class AnnotationProfile(Protocol):
-    """Capabilities supplied by one text-learning profile."""
+    """Text policy required by annotation and lookup services."""
 
     id: str
     label: str

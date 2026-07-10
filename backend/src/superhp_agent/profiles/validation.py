@@ -11,6 +11,7 @@ import re
 from superhp_agent.contracts.annotation import ServiceIssue
 
 ANNOTATION_MARKER_RE = re.compile(
+    # Three non-empty fields; brackets and pipes are reserved delimiters.
     r"\[\[([^|\[\]]+)\|([^|\[\]]+)\|([^|\[\]]+)\]\]"
 )
 
@@ -21,10 +22,17 @@ def validate_annotation_output(
     annotated_text: str,
     allowed_pos: frozenset[str],
 ) -> ServiceIssue | None:
-    """Return the first validation issue, or ``None`` for safe model text."""
+    """Return the first validation issue, or ``None`` for safe model text.
+
+    A valid result must use only complete three-field markers, use a label
+    allowed by the active Profile, and reconstruct the source exactly after
+    every marker is replaced by its left-hand field.
+    """
     matches = list(ANNOTATION_MARKER_RE.finditer(annotated_text))
     restored = ANNOTATION_MARKER_RE.sub(lambda match: match.group(1), annotated_text)
 
+    # A valid substitution removes every reserved delimiter. Anything left is
+    # a partial marker or a legacy two-field marker and is unsafe for new data.
     if "[[" in restored or "]]" in restored:
         return ServiceIssue(
             category="validation",
@@ -40,6 +48,8 @@ def validate_annotation_output(
                 message="An annotation uses a label that is not allowed by the profile.",
             )
 
+    # Only platform line endings are normalized. Whitespace and punctuation
+    # remain strict so model rewrites cannot be hidden by a loose comparison.
     if _normalize_newlines(restored) != _normalize_newlines(source_text):
         return ServiceIssue(
             category="validation",

@@ -81,10 +81,11 @@ def test_add_vocabulary_is_idempotent_per_unit(tmp_path):
     db = AppDB(tmp_path / "app.sqlite3")
 
     db.add_vocabulary_items(unit, [VocabItem(word="wand", translation="魔杖", context="first")])
-    db.add_vocabulary_items(unit, [VocabItem(word="wand", translation="魔杖", context="second")])
+    db.add_vocabulary_items(unit, [VocabItem(word="WAND", translation="魔杖", context="second")])
 
     rows = db.list_vocabulary(unit_id="hp01-ch01")
     assert len(rows) == 1
+    assert rows[0]["word"] == "WAND"
     assert rows[0]["encounter_count"] == 2
     assert rows[0]["context"] == "second"
 
@@ -182,6 +183,40 @@ def test_vocabulary_can_be_filtered_by_profile(tmp_path):
 
     assert [row["word"] for row in english_rows] == ["wand"]
     assert [row["word"] for row in classical_rows] == ["说"]
+
+
+def test_same_word_is_isolated_by_profile(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    write_classical_unit(corpus_root)
+    store = CorpusStore(corpus_root)
+    english_unit = store.get_unit("hp01-ch01").meta
+    classical_unit = store.get_unit("cc-lunyu-xueer-01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    english_id = db.add_manual_vocabulary(
+        english_unit,
+        word="Master",
+        translation="主人",
+        pos="noun",
+    )
+    classical_id = db.add_manual_vocabulary(
+        classical_unit,
+        word="master",
+        translation="掌握",
+        pos="重点实词",
+    )
+
+    assert english_id != classical_id
+    assert db.set_mastered_by_word("MASTER", True, profile_id="english_novel")
+    english_row = db.list_vocabulary(profile_id="english_novel")[0]
+    classical_row = db.list_vocabulary(profile_id="classical_chinese")[0]
+    assert english_row["translation"] == "主人"
+    assert english_row["mastered"] == 1
+    assert classical_row["translation"] == "掌握"
+    assert classical_row["mastered"] == 0
+    assert db.list_mastered_words("english_novel") == ["Master"]
+    assert db.list_mastered_words("classical_chinese") == []
 
 
 def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):

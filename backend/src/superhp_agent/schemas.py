@@ -33,6 +33,7 @@ class ProfileMeta(BaseModel):
 
 class VocabularyEntry(BaseModel):
     id: int
+    profile_id: str
     word: str
     translation: str
     global_translation: str
@@ -69,6 +70,7 @@ class AddVocabularyRequest(BaseModel):
 
 class AddVocabularyResponse(BaseModel):
     id: int
+    profile_id: str
     word: str
     translation: str
     pos: str = "other"

@@ -91,6 +91,7 @@ def _vocabulary_entry(row: dict) -> VocabularyEntry:
     """Normalize SQLite rows before they cross the API boundary."""
     return VocabularyEntry(
         id=int(row["id"]),
+        profile_id=str(row["profile_id"]),
         word=str(row["word"]),
         translation=str(row["translation"]),
         global_translation=str(row["global_translation"]),
@@ -252,6 +253,7 @@ async def add_vocabulary(payload: AddVocabularyRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AddVocabularyResponse(
         id=vocab_id,
+        profile_id=unit.profile_id,
         word=payload.word.strip(),
         translation=payload.translation.strip(),
         pos=normalize_pos(payload.pos),

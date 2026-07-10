@@ -30,6 +30,11 @@ _POS_ALIASES = {
 }
 
 
+def normalize_word(word: str | None) -> str:
+    """Build the profile-local identity key for a displayed word or phrase."""
+    return str(word or "").strip().casefold()
+
+
 def normalize_pos(pos: str | None) -> str:
     """Normalize lightweight vocabulary part-of-speech labels."""
     raw = str(pos or "").strip()

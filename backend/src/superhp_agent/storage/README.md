@@ -83,14 +83,15 @@ unit_vocabulary
     unit 与单词的关联、上下文翻译、例句和出现次数
 ```
 
-目标唯一约束应从全局 `UNIQUE(word)` 演进为：
+当前唯一约束已经从全局 `UNIQUE(word)` 演进为：
 
 ```sql
 UNIQUE(profile_id, normalized_word)
 ```
 
-这样不同 Profile 不会错误共享翻译、词性和掌握状态。`unit_vocabulary` 保留上下文相关翻译，
-避免后一次出现覆盖不同语境中的解释。
+`normalized_word` 使用去除首尾空白后的 Unicode `casefold` 结果。这样不同 Profile 不会错误共享
+翻译、词性和掌握状态，同一 Profile 内的大小写变体仍指向同一记录。旧全局词条会在 schema
+升级时按关联 unit 的 Profile 拆分并重新关联；`unit_vocabulary` 继续保留上下文相关翻译。
 
 ## 书签：BookmarkRepository
 
@@ -170,7 +171,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 2. （已完成）从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
 3. （已完成）新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
 4. （已完成）保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
-5. 为 vocabulary 增加 `profile_id + normalized_word` 作用域。
+5. （已完成）为 vocabulary 增加 `profile_id + normalized_word` 作用域。
 6. 为 bookmarks 增加译注 level 和更稳定的文本定位字段。
 7. 最后停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
    不需要为删除空列执行高风险表重建。

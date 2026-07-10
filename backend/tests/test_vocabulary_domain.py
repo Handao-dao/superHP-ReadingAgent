@@ -2,8 +2,13 @@
 
 import pytest
 
-from superhp_agent.domain import normalize_pos
+from superhp_agent.domain import normalize_pos, normalize_word
 from superhp_agent.storage import normalize_pos as legacy_normalize_pos
+
+
+def test_normalize_word_builds_case_insensitive_identity():
+    assert normalize_word("  Straße  ") == "strasse"
+    assert normalize_word(" 学而 ") == "学而"
 
 
 @pytest.mark.parametrize(

@@ -302,7 +302,9 @@ class GenerateAnnotationHandler:
             message="正在生成译注...",
         )
         try:
-            mastered_words = context.db.list_mastered_words() if context.db else []
+            mastered_words = (
+                context.db.list_mastered_words(doc.meta.profile_id) if context.db else []
+            )
             result = await context.annotator_service.annotate_text(
                 doc.body,
                 mastered_words=mastered_words,

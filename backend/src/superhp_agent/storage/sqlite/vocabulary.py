@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
-from superhp_agent.domain.vocabulary import normalize_pos
+from superhp_agent.domain.vocabulary import normalize_pos, normalize_word
 from superhp_agent.storage.database import SQLiteDatabase
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[([^|\]]+)\|[^|\]]+(?:\|[^|\]]+)?\]\]")
@@ -47,13 +47,16 @@ class SQLiteVocabularyRepository:
                     str(getattr(item, "context", "") or "")
                 ).strip()
                 pos = normalize_pos(getattr(item, "pos", "other"))
-                if not word or not translation:
+                normalized_word = normalize_word(word)
+                if not normalized_word or not translation:
                     continue
                 self.database.connection.execute(
                     """
-                    INSERT INTO vocabulary (word, translation, pos)
-                    VALUES (?, ?, ?)
-                    ON CONFLICT(word) DO UPDATE SET
+                    INSERT INTO vocabulary (
+                        profile_id, normalized_word, word, translation, pos
+                    ) VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(profile_id, normalized_word) DO UPDATE SET
+                        word=excluded.word,
                         translation=excluded.translation,
                         pos=CASE
                             WHEN vocabulary.pos IN ('other', '其他') THEN excluded.pos
@@ -61,11 +64,14 @@ class SQLiteVocabularyRepository:
                         END,
                         last_seen_at=datetime('now','localtime')
                     """,
-                    (word, translation, pos),
+                    (unit.profile_id, normalized_word, word, translation, pos),
                 )
                 vocab_id = self.database.connection.execute(
-                    "SELECT id FROM vocabulary WHERE word = ?",
-                    (word,),
+                    """
+                    SELECT id FROM vocabulary
+                    WHERE profile_id = ? AND normalized_word = ?
+                    """,
+                    (unit.profile_id, normalized_word),
                 ).fetchone()["id"]
                 self.database.connection.execute(
                     """
@@ -94,31 +100,38 @@ class SQLiteVocabularyRepository:
     ) -> int:
         """Store one user-selected lookup result and return its vocabulary id."""
         word = word.strip()
+        normalized_word = normalize_word(word)
         translation = translation.strip()
         context = strip_annotation_markers(context).strip()
         pos = normalize_pos(pos)
-        if not word or not translation:
+        if not normalized_word or not translation:
             raise ValueError("word and translation are required")
 
         with self.database.lock:
             self.sync_unit(unit)
             self.database.connection.execute(
                 """
-                INSERT INTO vocabulary (word, translation, pos, mastered, mastered_at)
-                VALUES (?, ?, ?, 0, NULL)
-                ON CONFLICT(word) DO UPDATE SET
+                INSERT INTO vocabulary (
+                    profile_id, normalized_word, word, translation, pos,
+                    mastered, mastered_at
+                ) VALUES (?, ?, ?, ?, ?, 0, NULL)
+                ON CONFLICT(profile_id, normalized_word) DO UPDATE SET
+                    word=excluded.word,
                     translation=excluded.translation,
                     pos=excluded.pos,
                     mastered=0,
                     mastered_at=NULL,
                     last_seen_at=datetime('now','localtime')
                 """,
-                (word, translation, pos),
+                (unit.profile_id, normalized_word, word, translation, pos),
             )
             vocab_id = int(
                 self.database.connection.execute(
-                    "SELECT id FROM vocabulary WHERE word = ?",
-                    (word,),
+                    """
+                    SELECT id FROM vocabulary
+                    WHERE profile_id = ? AND normalized_word = ?
+                    """,
+                    (unit.profile_id, normalized_word),
                 ).fetchone()["id"]
             )
             self.database.connection.execute(
@@ -159,30 +172,24 @@ class SQLiteVocabularyRepository:
         profile_id: str | None = None,
     ) -> bool:
         """Mark vocabulary by word, used by inline reading actions."""
-        normalized = word.strip().lower()
+        normalized = normalize_word(word)
         if not normalized:
             return False
         with self.database.lock:
-            profile_clause = ""
-            params: list[Any] = [1 if mastered else 0, 1 if mastered else 0, normalized]
-            if profile_id:
-                profile_clause = """
-                    AND EXISTS (
-                        SELECT 1
-                        FROM unit_vocabulary uv
-                        JOIN units u ON u.id = uv.unit_id
-                        WHERE uv.vocab_id = vocabulary.id AND u.profile_id = ?
-                    )
-                """
-                params.append(profile_id)
+            resolved_profile_id = profile_id or "english_novel"
+            params: list[Any] = [
+                1 if mastered else 0,
+                1 if mastered else 0,
+                resolved_profile_id,
+                normalized,
+            ]
             cursor = self.database.connection.execute(
-                f"""
+                """
                 UPDATE vocabulary
                 SET mastered = ?,
                     mastered_at = CASE WHEN ? THEN datetime('now','localtime') ELSE NULL END,
                     last_seen_at = datetime('now','localtime')
-                WHERE lower(word) = ?
-                {profile_clause}
+                WHERE profile_id = ? AND normalized_word = ?
                 """,
                 params,
             )
@@ -199,16 +206,17 @@ class SQLiteVocabularyRepository:
             self.database.connection.commit()
             return cursor.rowcount > 0
 
-    def list_mastered_words(self) -> list[str]:
-        """Return globally mastered words for prompt context."""
+    def list_mastered_words(self, profile_id: str = "english_novel") -> list[str]:
+        """Return mastered words for one annotation profile."""
         with self.database.lock:
             rows = self.database.connection.execute(
                 """
                 SELECT word
                 FROM vocabulary
-                WHERE mastered = 1
-                ORDER BY lower(word)
-                """
+                WHERE profile_id = ? AND mastered = 1
+                ORDER BY normalized_word
+                """,
+                (profile_id,),
             ).fetchall()
             return [str(row["word"]) for row in rows]
 
@@ -242,12 +250,13 @@ class SQLiteVocabularyRepository:
             clauses.append("uv.chapter_id = ?")
             params.append(chapter_id)
         if profile_id:
-            clauses.append("u.profile_id = ?")
+            clauses.append("v.profile_id = ?")
             params.append(profile_id)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         query = f"""
             SELECT
                 v.id,
+                v.profile_id,
                 v.word,
                 v.translation AS global_translation,
                 v.pos,
@@ -263,7 +272,7 @@ class SQLiteVocabularyRepository:
             JOIN vocabulary v ON v.id = uv.vocab_id
             JOIN units u ON u.id = uv.unit_id
             {where}
-            ORDER BY uv.last_seen_at DESC, lower(v.word)
+            ORDER BY uv.last_seen_at DESC, v.normalized_word
         """
         with self.database.lock:
             return [

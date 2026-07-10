@@ -96,8 +96,8 @@ class AppDB:
     def delete_vocabulary(self, vocab_id: int) -> bool:
         return self.vocabulary_repository.delete_vocabulary(vocab_id)
 
-    def list_mastered_words(self) -> list[str]:
-        return self.vocabulary_repository.list_mastered_words()
+    def list_mastered_words(self, profile_id: str = "english_novel") -> list[str]:
+        return self.vocabulary_repository.list_mastered_words(profile_id)
 
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         return self.vocabulary_repository.count_vocabulary_for_unit(unit_id)

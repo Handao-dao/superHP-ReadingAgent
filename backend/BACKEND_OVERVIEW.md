@@ -241,11 +241,12 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - 多个 chunk 通过 `annotation_max_concurrency` 控制并发，默认 `8`，兼顾长章节生成速度与常规模型 API 的限流风险。
 - 单块和多块统一进入同一调度流程，都会发送从 `0/N` 到 `N/N` 的进度事件。
 - chunk 完成和模型重试事件携带真实 `chunk_index`；`current` 只表示已完成数量，不再被误解为完成的 chunk 编号。
-- 每个 chunk 独立调用 provider，返回纯 annotated text。
-- 任一 chunk 失败或上层取消译注时，Service 会取消并等待其余任务退出，避免模型请求在调用结束后继续运行。
-- 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。
-- 所有 chunk 成功后，后端按 `chunk.index` 排序合并完整译注。
-- 后端从合并后的 `[[word|翻译|pos]]` 标记中提取 vocabulary 和词性；旧 `[[word|翻译]]` 标记仍兼容，词性回退为 `other`。
+- 每个 chunk 独立调用 provider；Provider retry 耗尽、输出为空或截断时，仅将当前 chunk 降级为原文。
+- Profile 严格校验新生成的三字段标记，并把标记还原为左侧原词后与输入 chunk 比较；格式、POS 或原文完整性不合规时同样降级当前 chunk。
+- `annotation.degraded` 通过 `category/code/chunk_index` 区分 Provider 失败与内容校验失败，整章仍按原顺序合并并返回。
+- 上层取消或未分类的程序异常仍会取消并等待其余任务退出，避免模型请求在调用结束后继续运行。
+- 部分降级的混合译注可以保存；全部 chunk 降级时只向前端返回原文，不创建译注副本，也不标记已译注。
+- 后端只从校验通过的合并结果中提取 vocabulary；读取旧副本时仍兼容 `[[word|翻译]]` 标记并把词性回退为 `other`，新生成结果则严格要求三字段格式。
 - 译注 prompt 使用 block-based context：稳定 system policy 放在 system prompt；每次请求的 `density_profile`、`mastered_words`、`reader_text` 放在 user prompt。
 - 译注 prompt 支持 `beginner/intermediate/advanced` 三档密度；前端 UI 显示为 `H/M/L`。
 - 生成译注时会从 SQLite 读取已掌握词，注入 `mastered_words` block，避免模型再次标注这些词。

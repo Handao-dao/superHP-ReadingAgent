@@ -11,7 +11,6 @@ from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import BackendEvent
 from superhp_agent.services import (
     AnnotationChunker,
-    AnnotationTruncatedError,
     AnnotatorService,
     WordLookupService,
 )
@@ -64,11 +63,7 @@ class CoordinatedProvider(LLMProvider):
         await self.all_started.wait()
 
         if self.fail_first and call_number == 1:
-            return LLMResponse(
-                content="fatal annotation failure",
-                finish_reason="error",
-                error_should_retry=False,
-            )
+            raise RuntimeError("fatal annotation failure")
 
         try:
             await self.never_complete.wait()
@@ -76,6 +71,11 @@ class CoordinatedProvider(LLMProvider):
             self.cancelled += 1
             raise
         return LLMResponse(content="unreachable")
+
+    async def chat_with_retry(self, messages, **kwargs):
+        # These tests exercise AnnotatorService task cleanup when an
+        # unexpected exception escapes the Provider contract.
+        return await self.chat(messages, **kwargs)
 
     def get_default_model(self):
         return "coordinated"
@@ -88,7 +88,11 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         ])
         service = AnnotatorService(provider)
 
-        result = await service.annotate_text("a wand on the table", mastered_words=["owl"], level="beginner")
+        result = await service.annotate_text(
+            "a wand on the table.",
+            mastered_words=["owl"],
+            level="beginner",
+        )
 
         assert result.annotated_text == "a [[wand|魔杖|noun]] on the [[table|桌子|noun]]."
         assert [(item.word, item.translation, item.pos) for item in result.vocabulary] == [
@@ -142,18 +146,18 @@ def test_annotator_base_context_excludes_reader_text():
 def test_annotator_service_deduplicates_vocabulary():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content="a [[wand|魔杖]] and another [[wand|魔杖]].")
+            LLMResponse(content="a [[wand|魔杖|noun]] and another [[wand|魔杖|noun]].")
         ])
         service = AnnotatorService(provider)
 
-        result = await service.annotate_text("a wand and another wand")
+        result = await service.annotate_text("a wand and another wand.")
 
         assert [item.word for item in result.vocabulary] == ["wand"]
 
     asyncio.run(run_case())
 
 
-def test_annotator_service_keeps_legacy_two_part_markers():
+def test_annotator_service_degrades_legacy_two_part_model_markers():
     async def run_case():
         provider = ScriptedProvider([
             LLMResponse(content="a [[wand|魔杖]] and a [[spell|咒语|noun]].")
@@ -162,10 +166,9 @@ def test_annotator_service_keeps_legacy_two_part_markers():
 
         result = await service.annotate_text("a wand and a spell")
 
-        assert [(item.word, item.translation, item.pos) for item in result.vocabulary] == [
-            ("wand", "魔杖", "other"),
-            ("spell", "咒语", "noun"),
-        ]
+        assert result.annotated_text == "a wand and a spell"
+        assert result.vocabulary == []
+        assert result.issues[0].code == "malformed_marker"
 
     asyncio.run(run_case())
 
@@ -173,13 +176,13 @@ def test_annotator_service_keeps_legacy_two_part_markers():
 def test_annotator_service_strips_code_fence():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content="```\na [[wand|魔杖]] on the table\n```")
+            LLMResponse(content="```\na [[wand|魔杖|noun]] on the table\n```")
         ])
         service = AnnotatorService(provider)
 
         result = await service.annotate_text("a wand on the table")
 
-        assert result.annotated_text == "a [[wand|魔杖]] on the table"
+        assert result.annotated_text == "a [[wand|魔杖|noun]] on the table"
         assert result.vocabulary[0].word == "wand"
 
     asyncio.run(run_case())
@@ -191,28 +194,96 @@ def test_annotator_service_recovers_legacy_json_shape():
             LLMResponse(
                 content=(
                     '{ "annotated_text": "# Chapter One\n\n'
-                    'a [[wand|魔杖]] on the table", '
+                    'a [[wand|魔杖|noun]] on the table", '
                     '"extracted_vocabulary": [] }'
                 )
             )
         ])
         service = AnnotatorService(provider)
 
-        result = await service.annotate_text("a wand")
+        result = await service.annotate_text("# Chapter One\n\na wand on the table")
 
-        assert result.annotated_text == "# Chapter One\n\na [[wand|魔杖]] on the table"
+        assert result.annotated_text == "# Chapter One\n\na [[wand|魔杖|noun]] on the table"
         assert result.vocabulary[0].word == "wand"
 
     asyncio.run(run_case())
 
 
-def test_annotator_service_raises_on_empty_response():
+def test_annotator_service_degrades_empty_response():
     async def run_case():
         provider = ScriptedProvider([LLMResponse(content="")])
         service = AnnotatorService(provider)
 
-        with pytest.raises(ValueError, match="译注文本"):
-            await service.annotate_text("a wand")
+        result = await service.annotate_text("a wand")
+
+        assert result.annotated_text == "a wand"
+        assert result.fully_degraded
+        assert result.issues[0].code == "empty_output"
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_degrades_provider_failure_and_emits_category():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(
+                content="provider unavailable",
+                finish_reason="error",
+                error_should_retry=False,
+            )
+        ])
+        events = EventCollector()
+        service = AnnotatorService(provider)
+
+        result = await service.annotate_text(
+            "a wand",
+            event_sink=events,
+            request_id="r-provider-fallback",
+        )
+
+        assert result.annotated_text == "a wand"
+        assert result.fully_degraded
+        assert result.issues[0].category == "provider"
+        degraded = next(
+            event for event in events.events if event.type == "annotation.degraded"
+        )
+        assert degraded.payload["category"] == "provider"
+        assert degraded.payload["code"] == "provider_failed"
+        assert degraded.payload["chunk_index"] == 1
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_keeps_valid_chunks_around_degraded_chunk():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content="first [[part|部分|noun]]"),
+            LLMResponse(
+                content="provider unavailable",
+                finish_reason="error",
+                error_should_retry=False,
+            ),
+            LLMResponse(content="third [[part|部分|noun]]"),
+        ])
+        service = AnnotatorService(
+            provider,
+            chunker=AnnotationChunker(max_chunk_words=2),
+            max_concurrency=1,
+        )
+
+        result = await service.annotate_text(
+            "first part\n\nsecond part\n\nthird part"
+        )
+
+        assert result.annotated_text == (
+            "first [[part|部分|noun]]\n\n"
+            "second part\n\n"
+            "third [[part|部分|noun]]"
+        )
+        assert result.validated_chunk_count == 2
+        assert result.total_chunk_count == 3
+        assert result.issues[0].chunk_index == 2
+        assert not result.fully_degraded
 
     asyncio.run(run_case())
 
@@ -221,7 +292,7 @@ def test_annotator_service_emits_model_retry_event():
     async def run_case():
         provider = ScriptedProvider([
             LLMResponse(content="timeout", finish_reason="error", error_kind="timeout"),
-            LLMResponse(content="a [[wand|魔杖]] on the table"),
+            LLMResponse(content="[[ok|好的|adjective]]"),
         ])
         provider._RETRY_DELAYS = (0.0,)
         events = EventCollector()
@@ -229,7 +300,7 @@ def test_annotator_service_emits_model_retry_event():
 
         result = await service.annotate_text("ok", event_sink=events, request_id="r-retry")
 
-        assert result.annotated_text == "a [[wand|魔杖]] on the table"
+        assert result.annotated_text == "[[ok|好的|adjective]]"
         retry_event = next(
             event for event in events.events if event.type == "annotation.model_retry"
         )
@@ -243,7 +314,7 @@ def test_annotator_service_emits_model_retry_event():
 def test_annotator_service_emits_consistent_progress_for_one_chunk():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content="a [[wand|魔杖]] on the table")
+            LLMResponse(content="a [[wand|魔杖|noun]] on the table")
         ])
         events = EventCollector()
         service = AnnotatorService(provider)
@@ -298,9 +369,9 @@ def test_annotation_chunker_rejects_one_paragraph_over_limit():
 def test_annotator_service_chunks_long_text_and_merges_in_order():
     async def run_case():
         provider = ScriptedProvider([
-            LLMResponse(content="first [[wand|魔杖]] paragraph."),
-            LLMResponse(content="second [[owl|猫头鹰]] paragraph."),
-            LLMResponse(content="third [[cloak|斗篷]] paragraph."),
+            LLMResponse(content="first [[paragraph|段落|noun]]."),
+            LLMResponse(content="second [[paragraph|段落|noun]]."),
+            LLMResponse(content="third [[paragraph|段落|noun]]."),
         ])
         events = EventCollector()
         service = AnnotatorService(
@@ -316,11 +387,11 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         )
 
         assert result.annotated_text == (
-            "first [[wand|魔杖]] paragraph.\n\n"
-            "second [[owl|猫头鹰]] paragraph.\n\n"
-            "third [[cloak|斗篷]] paragraph."
+            "first [[paragraph|段落|noun]].\n\n"
+            "second [[paragraph|段落|noun]].\n\n"
+            "third [[paragraph|段落|noun]]."
         )
-        assert [item.word for item in result.vocabulary] == ["wand", "owl", "cloak"]
+        assert [item.word for item in result.vocabulary] == ["paragraph"]
         progress_events = [
             event for event in events.events if event.type == "annotation.progress"
         ]
@@ -383,15 +454,18 @@ def test_annotator_service_cleans_up_chunks_when_parent_is_cancelled():
     asyncio.run(run_case())
 
 
-def test_annotator_service_rejects_truncated_output():
+def test_annotator_service_degrades_truncated_output():
     async def run_case():
         provider = ScriptedProvider([
             LLMResponse(content="partial text", finish_reason="length"),
         ])
         service = AnnotatorService(provider)
 
-        with pytest.raises(AnnotationTruncatedError):
-            await service.annotate_text("a wand on the table")
+        result = await service.annotate_text("a wand on the table")
+
+        assert result.annotated_text == "a wand on the table"
+        assert result.fully_degraded
+        assert result.issues[0].code == "truncated_output"
 
     asyncio.run(run_case())
 

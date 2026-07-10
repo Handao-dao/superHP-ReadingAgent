@@ -6,16 +6,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from superhp_agent.context import ContextBundle
-
-
-@dataclass(frozen=True)
-class AnnotationItem:
-    """One learning item extracted from profile-specific annotation output."""
-
-    word: str
-    translation: str
-    context: str
-    pos: str = "other"
+from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
 
 
 @dataclass(frozen=True)
@@ -69,5 +60,12 @@ class AnnotationProfile(Protocol):
     def base_annotator_system_prompt(self) -> str: ...
 
     def normalize_annotated_text(self, content: str) -> str: ...
+
+    def validate_annotated_text(
+        self,
+        *,
+        source_text: str,
+        annotated_text: str,
+    ) -> ServiceIssue | None: ...
 
     def parse_annotation_items(self, text: str) -> list[AnnotationItem]: ...

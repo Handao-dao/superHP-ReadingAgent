@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
+from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
@@ -29,7 +30,6 @@ from superhp_agent.runtime.actions import (
 from superhp_agent.runtime.events import (
     CallableEventSink,
 )
-from superhp_agent.services.annotator import AnnotationResult
 
 
 class AnnotationService(Protocol):
@@ -314,24 +314,41 @@ class GenerateAnnotationHandler:
             )
             return
 
-        # The annotated copy is the user's durable reading artifact; DB writes
-        # are secondary indexes for vocabulary review.
-        context.require_annotated_copies().write(
-            doc,
-            annotated_text=result.annotated_text,
-            vocabulary=result.vocabulary,
-            level=level,
-        )
+        # A mixed result remains useful and can be saved. If every chunk fell
+        # back, return the readable source text without recording a fake
+        # annotated copy, so the user can retry later.
+        persisted = not result.fully_degraded
         stored_vocabulary_count = 0
-        if context.db:
-            stored_vocabulary_count = context.db.add_vocabulary_items(doc.meta, result.vocabulary)
-        if context.memory_store:
-            context.memory_store.mark_annotated(unit_id)
+        if persisted:
+            context.require_annotated_copies().write(
+                doc,
+                annotated_text=result.annotated_text,
+                vocabulary=result.vocabulary,
+                level=level,
+            )
+            if context.db:
+                stored_vocabulary_count = context.db.add_vocabulary_items(
+                    doc.meta,
+                    result.vocabulary,
+                )
+            if context.memory_store:
+                context.memory_store.mark_annotated(unit_id)
+
+        status = "degraded" if result.issues else "completed"
+        provider_error_count = sum(
+            issue.category == "provider" for issue in result.issues
+        )
+        validation_error_count = sum(
+            issue.category == "validation" for issue in result.issues
+        )
         context.log_event(
             "annotation_completed",
             unit_id=unit_id,
+            status=status,
+            persisted=persisted,
             vocabulary_count=len(result.vocabulary),
             stored_vocabulary_count=stored_vocabulary_count,
+            degraded_chunk_count=len(result.issues),
         )
 
         await context.emit_event(
@@ -339,14 +356,21 @@ class GenerateAnnotationHandler:
             request_id=request_id,
             unit_id=unit_id,
             chapter_id=unit_id,
+            status=status,
+            persisted=persisted,
             vocabulary_count=len(result.vocabulary),
             stored_vocabulary_count=stored_vocabulary_count,
+            validated_chunk_count=result.validated_chunk_count,
+            total_chunk_count=result.total_chunk_count,
+            degraded_chunk_count=len(result.issues),
+            provider_error_count=provider_error_count,
+            validation_error_count=validation_error_count,
         )
         await _emit_opened_unit(
             context,
             doc,
             body=result.annotated_text,
-            body_kind="annotated",
+            body_kind="annotated" if persisted else "original",
             request_id=request_id,
             action_id=action.id,
         )

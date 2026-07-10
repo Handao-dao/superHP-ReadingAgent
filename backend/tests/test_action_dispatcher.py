@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from superhp_agent.contracts.annotation import ServiceIssue
 from superhp_agent.corpus import CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.runtime.action_dispatcher import (
@@ -44,6 +45,26 @@ class FakeAnnotator:
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
+            validated_chunk_count=1,
+            total_chunk_count=1,
+        )
+
+
+class FullyDegradedAnnotator:
+    async def annotate_text(self, text, **kwargs):
+        return AnnotationResult(
+            annotated_text=text,
+            vocabulary=[],
+            issues=[
+                ServiceIssue(
+                    category="provider",
+                    code="provider_failed",
+                    message="The model request failed.",
+                    chunk_index=1,
+                )
+            ],
+            validated_chunk_count=0,
+            total_chunk_count=1,
         )
 
 
@@ -290,6 +311,51 @@ def test_dispatch_generate_annotation_passes_unit_profile_id(tmp_path):
         assert annotator.profile_ids == ["classical_chinese"]
         annotated_file = tmp_path / "data" / "annotated" / "cc-lunyu-xueer-01.intermediate.annotated.md"
         assert "profile_id: classical_chinese" in annotated_file.read_text(encoding="utf-8")
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_returns_original_without_persisting_fully_degraded_result(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        annotated_dir = tmp_path / "data" / "annotated"
+        memory = ReadingMemoryStore(
+            tmp_path / "data" / "memory.json",
+            tmp_path / "data" / "events.jsonl",
+        )
+        events = []
+
+        async def emit(event_type, **payload):
+            events.append({"type": event_type, **payload})
+
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            emit=emit,
+            memory_store=memory,
+            annotated_dir=annotated_dir,
+            annotator_service=FullyDegradedAnnotator(),
+        )
+
+        await ActionDispatcher().dispatch(
+            AgentAction(
+                id=GENERATE_ANNOTATION,
+                label="生成译注",
+                payload={"unit_id": "hp01-ch01"},
+            ),
+            context,
+            request_id="r-degraded",
+        )
+
+        completed = next(event for event in events if event["type"] == "annotation.completed")
+        opened = events[-1]
+        assert completed["status"] == "degraded"
+        assert completed["persisted"] is False
+        assert completed["provider_error_count"] == 1
+        assert opened["unit"]["body"] == "Body text."
+        assert opened["unit"]["body_kind"] == "original"
+        assert not annotated_dir.exists()
+        assert memory.load().annotated_unit_ids == []
 
     asyncio.run(run_case())
 

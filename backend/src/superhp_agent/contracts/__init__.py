@@ -1,6 +1,12 @@
 """Stable data contracts exchanged across backend boundaries."""
 
 from superhp_agent.contracts.actions import AgentAction
+from superhp_agent.contracts.annotation import (
+    AnnotationChunkOutcome,
+    AnnotationItem,
+    AnnotationResult,
+    ServiceIssue,
+)
 from superhp_agent.contracts.events import BackendEvent
 from superhp_agent.contracts.llm import LLMResponse
 from superhp_agent.contracts.reading import (
@@ -12,8 +18,12 @@ from superhp_agent.contracts.reading import (
 __all__ = [
     "AgentAction",
     "AgentCard",
+    "AnnotationChunkOutcome",
+    "AnnotationItem",
+    "AnnotationResult",
     "BackendEvent",
     "LLMResponse",
     "ReadingUnitDetail",
     "ReadingUnitMeta",
+    "ServiceIssue",
 ]

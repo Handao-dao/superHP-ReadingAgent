@@ -6,7 +6,13 @@ import json
 import re
 
 from superhp_agent.context import ContextBlock, ContextBundle
-from superhp_agent.profiles.base import AnnotationItem, CardCopy
+from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
+from superhp_agent.profiles.base import CardCopy
+from superhp_agent.profiles.validation import validate_annotation_output
+
+ANNOTATION_POS = frozenset(
+    {"noun", "verb", "adjective", "adverb", "phrase", "other"}
+)
 
 SYSTEM_POLICY = """
 You are an expert English-Chinese reading assistant for the Harry Potter novels.
@@ -223,6 +229,18 @@ class EnglishNovelProfile:
             text = legacy_json_text.strip()
         return text
 
+    def validate_annotated_text(
+        self,
+        *,
+        source_text: str,
+        annotated_text: str,
+    ) -> ServiceIssue | None:
+        return validate_annotation_output(
+            source_text=source_text,
+            annotated_text=annotated_text,
+            allowed_pos=ANNOTATION_POS,
+        )
+
     def parse_annotation_items(self, text: str) -> list[AnnotationItem]:
         seen: set[str] = set()
         items: list[AnnotationItem] = []
@@ -333,4 +351,3 @@ def _normalize_marker_pos(pos: str | None) -> str:
     }
     value = aliases.get(value, value)
     return value if value in {"noun", "verb", "adjective", "adverb", "phrase", "other"} else "other"
-

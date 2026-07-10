@@ -6,7 +6,13 @@ import json
 import re
 
 from superhp_agent.context import ContextBlock, ContextBundle
-from superhp_agent.profiles.base import AnnotationItem, CardCopy
+from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
+from superhp_agent.profiles.base import CardCopy
+from superhp_agent.profiles.validation import validate_annotation_output
+
+ANNOTATION_POS = frozenset(
+    {"重点实词", "重点虚词", "通假字", "古今异义", "词类活用", "虚词用法", "特殊句式", "其他"}
+)
 
 SYSTEM_POLICY = """
 你是一名专业的中文文言文学习助手，面向正在学习古文的现代汉语读者。
@@ -241,6 +247,18 @@ class ClassicalChineseProfile:
             text = legacy_json_text.strip()
         return text
 
+    def validate_annotated_text(
+        self,
+        *,
+        source_text: str,
+        annotated_text: str,
+    ) -> ServiceIssue | None:
+        return validate_annotation_output(
+            source_text=source_text,
+            annotated_text=annotated_text,
+            allowed_pos=ANNOTATION_POS,
+        )
+
     def parse_annotation_items(self, text: str) -> list[AnnotationItem]:
         seen: set[str] = set()
         items: list[AnnotationItem] = []
@@ -361,7 +379,6 @@ def _annotation_context(text: str, index: int) -> str:
 
 def _normalize_marker_pos(pos: str | None, *, word: str) -> str:
     value = str(pos or "").strip()
-    allowed = {"重点实词", "重点虚词", "通假字", "古今异义", "词类活用", "虚词用法", "特殊句式", "其他"}
     aliases = {
         "实词": "重点实词",
         "虚词": "重点虚词",
@@ -370,4 +387,4 @@ def _normalize_marker_pos(pos: str | None, *, word: str) -> str:
         "活用": "词类活用",
     }
     value = aliases.get(value, value)
-    return value if value in allowed else "其他"
+    return value if value in ANNOTATION_POS else "其他"

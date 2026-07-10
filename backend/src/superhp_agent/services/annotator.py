@@ -8,11 +8,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from superhp_agent.context import ContextBlock, ContextBundle
-from superhp_agent.contracts.llm import LLMResponse
+from superhp_agent.contracts.annotation import (
+    AnnotationChunkOutcome,
+    AnnotationItem,
+    AnnotationResult,
+    ServiceIssue,
+)
 from superhp_agent.ports.events import EventSink, emit_backend_event
 from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.profiles import (
-    AnnotationItem,
     AnnotationProfile,
     EnglishNovelProfile,
     ProfileRegistry,
@@ -22,28 +26,11 @@ VocabItem = AnnotationItem
 
 
 @dataclass(frozen=True)
-class AnnotationResult:
-    """Structured result consumed by storage and annotated-file rendering."""
-
-    annotated_text: str
-    vocabulary: list[AnnotationItem]
-
-
-@dataclass(frozen=True)
 class TextChunk:
     """One group of complete paragraphs sent to the annotation model."""
 
     index: int
     text: str
-
-
-class AnnotationTruncatedError(RuntimeError):
-    """Raised when a model stops because the output token limit was reached."""
-
-    def __init__(self, *, chunk_index: int | None = None):
-        suffix = f" for chunk {chunk_index}" if chunk_index is not None else ""
-        super().__init__(f"Annotation output was truncated{suffix}.")
-        self.chunk_index = chunk_index
 
 
 class AnnotationChunker:
@@ -146,19 +133,22 @@ class AnnotatorService:
             level=normalized_level,
         )
 
-        annotated_text = await self._annotate_chunks(
+        outcomes = await self._annotate_chunks(
             chunks,
             base_context=base_context,
             event_sink=event_sink,
             request_id=request_id,
         )
 
-        if not annotated_text:
-            raise ValueError("模型没有返回译注文本。")
+        annotated_text = "\n\n".join(outcome.text.strip() for outcome in outcomes)
+        issues = [outcome.issue for outcome in outcomes if outcome.issue is not None]
 
         return AnnotationResult(
             annotated_text=annotated_text,
             vocabulary=self.profile.parse_annotation_items(annotated_text),
+            issues=issues,
+            validated_chunk_count=sum(not outcome.degraded for outcome in outcomes),
+            total_chunk_count=len(outcomes),
         )
 
     async def _annotate_chunks(
@@ -168,7 +158,7 @@ class AnnotatorService:
         base_context: ContextBundle,
         event_sink: EventSink | None,
         request_id: str | None,
-    ) -> str:
+    ) -> list[AnnotationChunkOutcome]:
         total = len(chunks)
         await self._emit_progress(
             event_sink,
@@ -180,12 +170,12 @@ class AnnotatorService:
         )
 
         semaphore = asyncio.Semaphore(self.max_concurrency)
-        results: dict[int, str] = {}
+        results: dict[int, AnnotationChunkOutcome] = {}
         completed = 0
 
-        async def run_chunk(chunk: TextChunk) -> tuple[int, str]:
+        async def run_chunk(chunk: TextChunk) -> AnnotationChunkOutcome:
             async with semaphore:
-                return chunk.index, await self._annotate_chunk(
+                return await self._annotate_chunk(
                     chunk,
                     base_context=base_context,
                     event_sink=event_sink,
@@ -195,9 +185,15 @@ class AnnotatorService:
         tasks = [asyncio.create_task(run_chunk(chunk)) for chunk in chunks]
         try:
             for task in asyncio.as_completed(tasks):
-                index, annotated = await task
-                results[index] = annotated
+                outcome = await task
+                results[outcome.index] = outcome
                 completed += 1
+                if outcome.issue is not None:
+                    await self._emit_degraded(
+                        event_sink,
+                        request_id=request_id,
+                        issue=outcome.issue,
+                    )
                 await self._emit_progress(
                     event_sink,
                     request_id=request_id,
@@ -205,7 +201,7 @@ class AnnotatorService:
                     total=total,
                     stage="chunk",
                     message=f"Completed {completed} of {total} sections.",
-                    chunk_index=index,
+                    chunk_index=outcome.index,
                 )
         finally:
             # Never leave model requests running after this annotation call
@@ -215,11 +211,7 @@ class AnnotatorService:
                     task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
 
-        return "\n\n".join(
-            results[index].strip()
-            for index in sorted(results)
-            if results[index].strip()
-        )
+        return [results[index] for index in sorted(results)]
 
     async def _annotate_chunk(
         self,
@@ -228,7 +220,7 @@ class AnnotatorService:
         base_context: ContextBundle,
         event_sink: EventSink | None,
         request_id: str | None,
-    ) -> str:
+    ) -> AnnotationChunkOutcome:
         context = base_context.with_blocks(self._reader_text_block(chunk.text))
         response = await self.provider.chat_with_retry(
             messages=context.to_messages(),
@@ -242,24 +234,75 @@ class AnnotatorService:
                 else None
             ),
         )
-        return self._text_from_response(response, chunk_index=chunk.index)
+        if response.is_error:
+            return self._degraded_outcome(
+                chunk,
+                category="provider",
+                code="provider_failed",
+                message="The model request failed and this section uses the original text.",
+            )
+        if response.finish_reason == "length":
+            return self._degraded_outcome(
+                chunk,
+                category="validation",
+                code="truncated_output",
+                message="The model output was truncated and this section uses the original text.",
+            )
+        if not response.content:
+            return self._degraded_outcome(
+                chunk,
+                category="validation",
+                code="empty_output",
+                message="The model returned no text and this section uses the original text.",
+            )
+
+        annotated_text = self.profile.normalize_annotated_text(response.content)
+        if not annotated_text:
+            return self._degraded_outcome(
+                chunk,
+                category="validation",
+                code="empty_output",
+                message="The model returned no text and this section uses the original text.",
+            )
+        issue = self.profile.validate_annotated_text(
+            source_text=chunk.text,
+            annotated_text=annotated_text,
+        )
+        if issue is not None:
+            return AnnotationChunkOutcome(
+                index=chunk.index,
+                text=chunk.text,
+                issue=ServiceIssue(
+                    category=issue.category,
+                    code=issue.code,
+                    message=issue.message,
+                    chunk_index=chunk.index,
+                ),
+            )
+        return AnnotationChunkOutcome(index=chunk.index, text=annotated_text)
 
     @staticmethod
     def _reader_text_block(text: str) -> ContextBlock:
         return ContextBlock("reader_text", text, role="user")
 
-    def _text_from_response(self, response: LLMResponse, *, chunk_index: int | None = None) -> str:
-        if response.is_error:
-            raise RuntimeError(response.content or "LLM annotation request failed")
-        if response.finish_reason == "length":
-            raise AnnotationTruncatedError(chunk_index=chunk_index)
-        if not response.content:
-            raise ValueError("模型没有返回译注文本。")
-
-        annotated_text = self.profile.normalize_annotated_text(response.content)
-        if not annotated_text:
-            raise ValueError("模型没有返回译注文本。")
-        return annotated_text
+    @staticmethod
+    def _degraded_outcome(
+        chunk: TextChunk,
+        *,
+        category: str,
+        code: str,
+        message: str,
+    ) -> AnnotationChunkOutcome:
+        return AnnotationChunkOutcome(
+            index=chunk.index,
+            text=chunk.text,
+            issue=ServiceIssue(
+                category=category,
+                code=code,
+                message=message,
+                chunk_index=chunk.index,
+            ),
+        )
 
     @staticmethod
     async def _emit_progress(
@@ -287,6 +330,25 @@ class AnnotatorService:
             "annotation.progress",
             request_id=request_id,
             **payload,
+        )
+
+    @staticmethod
+    async def _emit_degraded(
+        event_sink: EventSink | None,
+        *,
+        request_id: str | None,
+        issue: ServiceIssue,
+    ) -> None:
+        if event_sink is None:
+            return
+        await emit_backend_event(
+            event_sink,
+            "annotation.degraded",
+            request_id=request_id,
+            chunk_index=issue.chunk_index,
+            category=issue.category,
+            code=issue.code,
+            message=issue.message,
         )
 
     @staticmethod

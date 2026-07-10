@@ -117,7 +117,7 @@ Dispatcher 本身不应继续承载译注文件路径、Markdown 序列化、API
 Service 负责一个明确的后端业务能力，例如：
 
 - 文本分块和并发译注。
-- 模型结果合并、截断检测与解析。
+- 模型结果校验、原文降级、合并与解析。
 - 上下文查词和 JSON 修复。
 
 Service 可以依赖 Profile、Context 和 Provider Port，但不应依赖 FastAPI、WebSocket、具体 SQLite 实现或页面流程。
@@ -177,11 +177,11 @@ Contracts 定义模块之间交换的数据，不负责保存数据或执行行�
 
 ```text
 contracts/
-├── commands.py       # 请求系统执行某件事
-├── queries.py        # 请求系统返回只读状态
+├── actions.py        # 前端可选择的标准动作
+├── annotation.py     # 标注结果、chunk outcome 与降级问题
 ├── events.py         # 已经发生的事实
-├── http.py           # HTTP request / response DTO
-└── websocket.py      # WebSocket 协议 DTO
+├── llm.py            # Provider 返回结果
+└── reading.py        # 阅读单元与卡片
 ```
 
 语义约定：
@@ -199,6 +199,8 @@ contracts/
 `BackendEvent` 位于 `contracts/events.py`，事件输出能力由 `ports/events.py` 中的
 `EventSink` 定义；`runtime/events.py` 仅保留适配器与旧导入兼容。前端 reading.v1 扁平 JSON
 由 `transport/event_mapper.py` 转换，Application Event 不再了解 WebSocket 格式。
+`AnnotationResult`、`AnnotationChunkOutcome`、`AnnotationItem` 和 `ServiceIssue` 位于
+`contracts/annotation.py`；Provider 与内容校验失败以稳定的 `category/code` 传递，不依赖异常文案。
 
 ### State / Read Model
 

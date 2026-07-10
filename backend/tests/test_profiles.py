@@ -40,6 +40,32 @@ def test_english_novel_profile_builds_prompt_context():
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
 
 
+def test_english_novel_profile_validates_markers_and_source_reconstruction():
+    profile = EnglishNovelProfile()
+
+    assert profile.validate_annotated_text(
+        source_text="a wand on the table",
+        annotated_text="a [[wand|魔杖|noun]] on the table",
+    ) is None
+
+    malformed = profile.validate_annotated_text(
+        source_text="a wand on the table",
+        annotated_text="a [[wand|魔杖|noun] on the table",
+    )
+    invalid_pos = profile.validate_annotated_text(
+        source_text="a wand on the table",
+        annotated_text="a [[wand|魔杖|object]] on the table",
+    )
+    source_mismatch = profile.validate_annotated_text(
+        source_text="a wand on the table",
+        annotated_text="the [[wand|魔杖|noun]] on the table",
+    )
+
+    assert malformed is not None and malformed.code == "malformed_marker"
+    assert invalid_pos is not None and invalid_pos.code == "invalid_pos"
+    assert source_mismatch is not None and source_mismatch.code == "source_mismatch"
+
+
 def test_classical_chinese_profile_uses_shared_marker_format():
     profile = ClassicalChineseProfile()
 
@@ -65,6 +91,15 @@ def test_classical_chinese_profile_preserves_learning_labels():
         ("而", "虚词用法"),
         ("未知", "其他"),
     ]
+
+
+def test_classical_chinese_profile_validates_its_own_labels():
+    profile = ClassicalChineseProfile()
+
+    assert profile.validate_annotated_text(
+        source_text="学而时习之，不亦说乎？",
+        annotated_text="[[学而时习之|学习后按时复习它|特殊句式]]，不亦[[说|同悦|通假字]]乎？",
+    ) is None
 
 
 def test_classical_chinese_profile_builds_classical_prompt_context():

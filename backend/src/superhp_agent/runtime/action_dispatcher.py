@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from superhp_agent.artifacts import AnnotatedCopyStore
-from superhp_agent.contracts import AgentAction
+from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.prompts import normalize_level
@@ -30,7 +30,6 @@ from superhp_agent.runtime.events import (
     EventSink,
     emit_backend_event,
 )
-from superhp_agent.schemas import ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.services.annotator import AnnotationResult
 from superhp_agent.storage import AppDB
 

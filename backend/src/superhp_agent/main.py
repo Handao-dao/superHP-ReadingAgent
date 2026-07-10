@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import get_settings
+from superhp_agent.contracts import AgentCard, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.corpus import (
     CorpusError,
     CorpusStore,
@@ -28,15 +29,10 @@ from superhp_agent.schemas import (
     AddBookmarkRequest,
     AddVocabularyRequest,
     AddVocabularyResponse,
-    AgentCard,
     BookmarkEntry,
-    ChapterDetail,
-    ChapterMeta,
     MarkByWordRequest,
     MutationResponse,
     ProfileMeta,
-    ReadingUnitDetail,
-    ReadingUnitMeta,
     SetMasteredRequest,
     VocabularyEntry,
     WordLookupRequest,
@@ -198,12 +194,12 @@ async def get_unit(unit_id: str):
 
 # Compatibility endpoints keep older frontend/tests working while the domain
 # language moves from whole chapters to finer reading units.
-@app.get("/api/chapters", response_model=list[ChapterMeta])
+@app.get("/api/chapters", response_model=list[ReadingUnitMeta])
 async def list_chapters():
     return await list_units()
 
 
-@app.get("/api/chapters/{chapter_id}", response_model=ChapterDetail)
+@app.get("/api/chapters/{chapter_id}", response_model=ReadingUnitDetail)
 async def get_chapter(chapter_id: str):
     return await get_unit(chapter_id)
 

@@ -6,9 +6,9 @@ which predefined card templates should be shown.
 
 from __future__ import annotations
 
+from superhp_agent.contracts import AgentCard
 from superhp_agent.runtime.cards import ReadingCardBuilder
 from superhp_agent.runtime.reading_state import ReadingStateReader, ReadingUnitState
-from superhp_agent.schemas import AgentCard
 
 CARD_PHASE_START = "start"
 CARD_PHASE_COMPLETE = "complete"

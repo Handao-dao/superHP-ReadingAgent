@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from superhp_agent.contracts import AgentCard
 from superhp_agent.profiles import CardCopy, ProfileRegistry
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
@@ -12,7 +13,6 @@ from superhp_agent.runtime.actions import (
     action,
 )
 from superhp_agent.runtime.reading_state import ReadingUnitState
-from superhp_agent.schemas import AgentCard
 
 
 class ReadingCardBuilder:

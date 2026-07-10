@@ -5,36 +5,20 @@ keeps their historical import paths available while the remaining API models
 are migrated incrementally.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from superhp_agent.contracts import AgentAction
-
-
-class ReadingUnitMeta(BaseModel):
-    id: str
-    chapter_id: str
-    book_id: str
-    book_title: str
-    chapter_no: int
-    chapter_title: str
-    section_no: int = 1
-    section_count: int = 1
-    summary: str = ""
-    has_annotated_copy: bool = False
-    status: str = "unread"
-    vocab_count: int = 0
-    profile_id: str = "english_novel"
-
-    @property
-    def summary_zh(self) -> str:
-        return self.summary
-
-
-class ReadingUnitDetail(BaseModel):
-    meta: ReadingUnitMeta
-    body: str
-    body_kind: str = Field(description="source or annotated")
-
+from superhp_agent.contracts import (
+    AgentAction as AgentAction,
+)
+from superhp_agent.contracts import (
+    AgentCard as AgentCard,
+)
+from superhp_agent.contracts import (
+    ReadingUnitDetail as ReadingUnitDetail,
+)
+from superhp_agent.contracts import (
+    ReadingUnitMeta as ReadingUnitMeta,
+)
 
 ChapterMeta = ReadingUnitMeta
 ChapterDetail = ReadingUnitDetail
@@ -126,11 +110,3 @@ class AddBookmarkRequest(BaseModel):
 
 class MutationResponse(BaseModel):
     ok: bool = True
-
-
-class AgentCard(BaseModel):
-    id: str
-    type: str
-    title: str
-    body: str
-    actions: list[AgentAction] = Field(default_factory=list)

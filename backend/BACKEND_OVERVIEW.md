@@ -58,7 +58,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - `event_log_path`：用户行为 JSONL 日志。
 - `db_path`：SQLite 数据库路径。
 - `llm_max_tokens`：单次模型输出 token 上限，默认 `8192`。
-- `annotation_max_chunk_words`：兼容保留的分块硬上限名称，默认 `1000`；英文按单词、中文按单个汉字计量。
+- `annotation_max_chunk_words`：兼容保留的单次译注输入上限名称，默认 `3500`；英文单词、中文单字和标点各按一个粗略单位计量。分块器先按空行划分段落，再在不超过上限的前提下合并完整段落；异常的超长单段会直接报错。
 - `annotation_max_concurrency`：标注 chunk 并发数，默认 `8`，可通过环境变量在 `1` 到 `32` 之间调整。
 
 配置优先级遵循 `BaseSettings` 规则：真实环境变量高于 `.env`，`.env` 高于 `Settings` 类中的默认值。
@@ -235,10 +235,9 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 当前流程：
 
 - `AnnotationChunker` 先按自然段识别段落。
-- 英文单词和单个中文汉字都计为一个分块单位，混合文本可使用同一套硬上限。
+- 英文单词、单个中文汉字和标点都粗略计为一个分块单位，默认单次上限为 `3500`。
 - 优先按原文段落组装 chunk；加入下一段会超过上限时，先封闭当前 chunk。
-- 单个段落超过上限时优先在中英文句末切分；没有合适句末时按计量单位硬切。
-- chunk 记录原始分隔符，合并模型结果时不会因为硬切而凭空新增段落。
+- 段落是不可拆分的原子边界；异常的超长单段会明确报错，不进入 Service 调用。
 - 多个 chunk 通过 `annotation_max_concurrency` 控制并发，默认 `8`，兼顾长章节生成速度与常规模型 API 的限流风险。
 - 每个 chunk 独立调用 provider，返回纯 annotated text。
 - 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。

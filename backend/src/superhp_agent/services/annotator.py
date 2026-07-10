@@ -31,13 +31,10 @@ class AnnotationResult:
 
 @dataclass(frozen=True)
 class TextChunk:
-    """One paragraph-aligned slice of a reading unit."""
+    """One group of complete paragraphs sent to the annotation model."""
 
     index: int
     text: str
-    start_index: int
-    end_index: int
-    separator_before: str = ""
 
 
 class AnnotationTruncatedError(RuntimeError):
@@ -50,15 +47,15 @@ class AnnotationTruncatedError(RuntimeError):
 
 
 class AnnotationChunker:
-    """Split English and Chinese text with a hard language-aware size limit."""
+    """Estimate paragraph sizes and pack complete paragraphs for annotation."""
 
     _UNIT_RE = re.compile(
-        r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]"
-        r"|[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*"
+        r"[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*"
+        r"|[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]"
+        r"|[^\s]"
     )
-    _SENTENCE_END_RE = re.compile(r"[.!?。！？；;]+")
 
-    def __init__(self, *, max_chunk_words: int = 1000):
+    def __init__(self, *, max_chunk_words: int = 3500):
         self.max_chunk_words = max(1, int(max_chunk_words))
 
     def split(self, text: str) -> list[TextChunk]:
@@ -66,133 +63,45 @@ class AnnotationChunker:
         if not clean_text:
             return []
 
-        paragraphs = self._paragraph_spans(clean_text)
-        segments: list[tuple[str, int, int, str]] = []
-        previous_end = 0
-        for paragraph, start, end in paragraphs:
-            separator = clean_text[previous_end:start]
-            fragments = self._split_oversized_paragraph(paragraph, start)
-            for fragment_index, (fragment, fragment_start, fragment_end) in enumerate(fragments):
-                if fragment_index == 0:
-                    fragment_separator = separator
-                else:
-                    previous_fragment_end = fragments[fragment_index - 1][2]
-                    fragment_separator = clean_text[previous_fragment_end:fragment_start]
-                segments.append(
-                    (fragment, fragment_start, fragment_end, fragment_separator)
-                )
-            previous_end = end
-
+        paragraphs = self._paragraphs(clean_text)
         chunks: list[TextChunk] = []
-        current_parts: list[tuple[str, int, int, str]] = []
+        current_paragraphs: list[str] = []
         current_size = 0
 
-        for segment in segments:
-            segment_size = self._measure(segment[0])
-            if current_parts and current_size + segment_size > self.max_chunk_words:
-                chunks.append(self._make_chunk(len(chunks) + 1, current_parts))
-                current_parts = []
+        for paragraph in paragraphs:
+            paragraph_size = self._measure(paragraph)
+            if paragraph_size > self.max_chunk_words:
+                raise ValueError(
+                    "A paragraph exceeds the annotation input limit "
+                    f"({paragraph_size} > {self.max_chunk_words})."
+                )
+            if (
+                current_paragraphs
+                and current_size + paragraph_size > self.max_chunk_words
+            ):
+                chunks.append(self._make_chunk(len(chunks) + 1, current_paragraphs))
+                current_paragraphs = []
                 current_size = 0
-            current_parts.append(segment)
-            current_size += segment_size
+            current_paragraphs.append(paragraph)
+            current_size += paragraph_size
 
-        if current_parts:
-            chunks.append(self._make_chunk(len(chunks) + 1, current_parts))
+        if current_paragraphs:
+            chunks.append(self._make_chunk(len(chunks) + 1, current_paragraphs))
         return chunks
 
     @classmethod
     def _measure(cls, text: str) -> int:
-        """Count English words and individual CJK characters as size units."""
+        """Count English words, CJK characters, and punctuation as rough units."""
         return len(cls._UNIT_RE.findall(text))
 
-    def _split_oversized_paragraph(
-        self,
-        paragraph: str,
-        absolute_start: int,
-    ) -> list[tuple[str, int, int]]:
-        """Split one paragraph at sentence ends, then at hard unit boundaries."""
-        unit_spans = [match.span() for match in self._UNIT_RE.finditer(paragraph)]
-        if len(unit_spans) <= self.max_chunk_words:
-            return [(paragraph, absolute_start, absolute_start + len(paragraph))]
-
-        fragments: list[tuple[str, int, int]] = []
-        unit_index = 0
-        cursor = 0
-        while unit_index < len(unit_spans):
-            limit_index = min(unit_index + self.max_chunk_words, len(unit_spans))
-            if limit_index == len(unit_spans):
-                cutoff = len(paragraph)
-            else:
-                hard_cutoff = unit_spans[limit_index - 1][1]
-                preferred_start = unit_spans[
-                    unit_index + max(0, self.max_chunk_words // 2 - 1)
-                ][0]
-                sentence_ends = [
-                    match.end()
-                    for match in self._SENTENCE_END_RE.finditer(
-                        paragraph,
-                        preferred_start,
-                        hard_cutoff,
-                    )
-                ]
-                cutoff = sentence_ends[-1] if sentence_ends else hard_cutoff
-                cutoff = self._include_trailing_punctuation(paragraph, cutoff)
-
-            raw_fragment = paragraph[cursor:cutoff]
-            leading = len(raw_fragment) - len(raw_fragment.lstrip())
-            trailing = len(raw_fragment.rstrip())
-            fragment_start = cursor + leading
-            fragment_end = cursor + trailing
-            if fragment_start < fragment_end:
-                fragments.append(
-                    (
-                        paragraph[fragment_start:fragment_end],
-                        absolute_start + fragment_start,
-                        absolute_start + fragment_end,
-                    )
-                )
-
-            cursor = cutoff
-            while unit_index < len(unit_spans) and unit_spans[unit_index][1] <= cutoff:
-                unit_index += 1
-
-        return fragments
-
-    @classmethod
-    def _include_trailing_punctuation(cls, text: str, cutoff: int) -> int:
-        """Keep punctuation after the last allowed unit with that fragment."""
-        next_unit = cls._UNIT_RE.search(text, cutoff)
-        boundary = next_unit.start() if next_unit else len(text)
-        return boundary if text[cutoff:boundary].strip() else cutoff
+    @staticmethod
+    def _paragraphs(text: str) -> list[str]:
+        """Use blank lines as the only structural splitting rule."""
+        return [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
 
     @staticmethod
-    def _paragraph_spans(text: str) -> list[tuple[str, int, int]]:
-        spans: list[tuple[str, int, int]] = []
-        for match in re.finditer(r"\S(?:.*?\S)?(?=\n\s*\n|\Z)", text, flags=re.S):
-            paragraph = match.group(0).strip()
-            if not paragraph:
-                continue
-            leading_offset = len(match.group(0)) - len(match.group(0).lstrip())
-            start = match.start() + leading_offset
-            end = start + len(paragraph)
-            spans.append((paragraph, start, end))
-        return spans
-
-    @staticmethod
-    def _make_chunk(
-        index: int,
-        parts: list[tuple[str, int, int, str]],
-    ) -> TextChunk:
-        text = parts[0][0]
-        for part in parts[1:]:
-            text += part[3] + part[0]
-        return TextChunk(
-            index=index,
-            text=text,
-            start_index=parts[0][1],
-            end_index=parts[-1][2],
-            separator_before=parts[0][3],
-        )
+    def _make_chunk(index: int, paragraphs: list[str]) -> TextChunk:
+        return TextChunk(index=index, text="\n\n".join(paragraphs))
 
 
 class AnnotatorService:
@@ -308,16 +217,11 @@ class AnnotatorService:
                 task.cancel()
             raise
 
-        merged: list[str] = []
-        chunks_by_index = {chunk.index: chunk for chunk in chunks}
-        for index in sorted(results):
-            annotated = results[index].strip()
-            if not annotated:
-                continue
-            if merged:
-                merged.append(chunks_by_index[index].separator_before)
-            merged.append(annotated)
-        return "".join(merged)
+        return "\n\n".join(
+            results[index].strip()
+            for index in sorted(results)
+            if results[index].strip()
+        )
 
     async def _annotate_chunk(
         self,
@@ -399,7 +303,7 @@ class LazyAnnotatorService:
         *,
         profile: AnnotationProfile | None = None,
         profile_registry: ProfileRegistry | None = None,
-        max_chunk_words: int = 1000,
+        max_chunk_words: int = 3500,
         max_concurrency: int = 8,
     ):
         self.provider_factory = provider_factory

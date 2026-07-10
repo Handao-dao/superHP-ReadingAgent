@@ -1,9 +1,9 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { addBookmark, deleteBookmark, fetchBookmarks } from './api/bookmarks'
 import { listChapters } from './api/chapters'
 import { listProfiles } from './api/profiles'
 import VocabularyPanel from './components/VocabularyPanel.vue'
+import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { useWordLookup } from './composables/useWordLookup'
@@ -20,12 +20,6 @@ const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
-const bookmarks = ref([])
-const bookmarksLoading = ref(false)
-const bookmarkError = ref('')
-const bookmarkSaving = ref(false)
-const deletingBookmarkId = ref(null)
-const pendingBookmarkJump = ref(null)
 const densityMenuOpen = ref(false)
 const densityMenu = ref(null)
 const densityOptions = [
@@ -123,15 +117,6 @@ const chaptersByBook = computed(() => {
   }))
 })
 
-const bookmarksByUnit = computed(() => {
-  const groups = new Map()
-  for (const bookmark of bookmarks.value) {
-    if (!groups.has(bookmark.unit_id)) groups.set(bookmark.unit_id, [])
-    groups.get(bookmark.unit_id).push(bookmark)
-  }
-  return groups
-})
-
 const paragraphs = computed(() => {
   const body = activeChapter.value?.body || ''
   return currentRenderer.value.splitReadingBlocks(body)
@@ -171,6 +156,27 @@ const readerMode = computed(() => {
   if (isGuidancePage.value || (!hasActiveReading.value && cards.value.length > 0)) return 'guidance'
   if (hasActiveReading.value) return 'reading'
   return 'empty'
+})
+
+const {
+  bookmarkError,
+  bookmarksByUnit,
+  bookmarksLoading,
+  bookmarkSaving,
+  deleteBookmarkEntry: handleDeleteBookmark,
+  deletingBookmarkId,
+  formatBookmarkTime,
+  loadBookmarks,
+  queueBookmarkJump,
+  resolvePendingBookmarkJump,
+  saveCurrentBookmark,
+} = useBookmarks({
+  getActiveChapter: () => activeChapter.value,
+  getCurrentPage: () => currentPage.value,
+  getParagraphs: () => paragraphs.value,
+  getReaderMode: () => readerMode.value,
+  getTotalPages: () => totalReadingPages.value,
+  stripAnnotationMarkers,
 })
 
 const pageLabel = computed(() => {
@@ -251,18 +257,6 @@ async function loadProfileList() {
   }
 }
 
-async function loadBookmarks() {
-  bookmarksLoading.value = true
-  bookmarkError.value = ''
-  try {
-    bookmarks.value = await fetchBookmarks()
-  } catch (error) {
-    bookmarkError.value = error.message || '书签加载失败'
-  } finally {
-    bookmarksLoading.value = false
-  }
-}
-
 function handleAction(action) {
   if (action.id === 'review_chapter_vocab') {
     selectedVocabularyUnitId.value = action.payload?.unit_id || action.payload?.chapter_id || currentChapterId.value || ''
@@ -338,50 +332,11 @@ async function handleSelectProfile(profileId) {
   requestCards('start', '')
 }
 
-function cleanBookmarkExcerpt(text = '') {
-  return stripAnnotationMarkers(text)
-    .replace(/^#{1,6}\s+/, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 120)
-}
-
-function currentBookmarkExcerpt() {
-  const block = paragraphs.value[Math.min(currentPage.value, Math.max(0, paragraphs.value.length - 1))]
-  return cleanBookmarkExcerpt(block || activeChapter.value?.body || '')
-}
-
-async function saveCurrentBookmark() {
-  const meta = activeChapter.value?.meta
-  const bodyKind = activeChapter.value?.body_kind
-  if (!meta || !bodyKind || readerMode.value !== 'reading') return
-  bookmarkSaving.value = true
-  bookmarkError.value = ''
-  try {
-    const totalPages = Math.max(0, totalReadingPages.value)
-    const pageIndex = Math.max(0, currentPage.value)
-    const saved = await addBookmark({
-      unitId: meta.id,
-      bodyKind,
-      pageIndex,
-      progressRatio: totalPages > 0 ? pageIndex / totalPages : 0,
-      totalPages,
-      label: `Chapter ${meta.chapter_no} · Page ${pageIndex + 1}`,
-      excerpt: currentBookmarkExcerpt(),
-    })
-    bookmarks.value = [saved, ...bookmarks.value]
-  } catch (error) {
-    bookmarkError.value = error.message || '保存书签失败'
-  } finally {
-    bookmarkSaving.value = false
-  }
-}
-
 function handleOpenBookmark(bookmark) {
   if (isGenerating.value) return
   activeView.value = 'reader'
   closeLookupBubble()
-  pendingBookmarkJump.value = bookmark
+  queueBookmarkJump(bookmark)
   currentChapterId.value = bookmark.unit_id
   const action = {
     id: bookmark.body_kind === 'annotated' ? 'open_annotated_copy' : 'read_original',
@@ -396,31 +351,13 @@ function handleOpenBookmark(bookmark) {
   sidebarOpen.value = false
 }
 
-async function handleDeleteBookmark(bookmark) {
-  deletingBookmarkId.value = bookmark.id
-  bookmarkError.value = ''
-  try {
-    await deleteBookmark(bookmark.id)
-    bookmarks.value = bookmarks.value.filter((item) => item.id !== bookmark.id)
-  } catch (error) {
-    bookmarkError.value = error.message || '删除书签失败'
-  } finally {
-    deletingBookmarkId.value = null
-  }
-}
-
 function applyPendingBookmarkJump() {
-  const bookmark = pendingBookmarkJump.value
-  if (!bookmark || !activeChapter.value || totalReadingPages.value <= 0) return
-  if (bookmark.unit_id !== activeChapter.value.meta?.id) return
-  if (bookmark.body_kind !== activeChapter.value.body_kind) return
-  const pages = totalReadingPages.value
-  const savedPage = Number(bookmark.page_index)
-  const ratio = Number(bookmark.progress_ratio)
-  const ratioPage = Number.isFinite(ratio) ? Math.round((pages - 1) * Math.min(1, Math.max(0, ratio))) : 0
-  const targetPage = Number.isInteger(savedPage) && savedPage >= 0 && savedPage < pages ? savedPage : ratioPage
-  currentPage.value = Math.min(pages - 1, Math.max(0, targetPage))
-  pendingBookmarkJump.value = null
+  const targetPage = resolvePendingBookmarkJump({
+    activeUnitId: activeChapter.value?.meta?.id,
+    bodyKind: activeChapter.value?.body_kind,
+    totalPages: totalReadingPages.value,
+  })
+  if (targetPage !== null) currentPage.value = targetPage
 }
 
 function toggleSidebar() {
@@ -436,14 +373,6 @@ function selectDensity(key) {
   selectedDensity.value = densityOptions.some((option) => option.key === key) ? key : 'M'
   localStorage.setItem('superhp_annotation_density', selectedDensity.value)
   densityMenuOpen.value = false
-}
-
-function formatBookmarkTime(value = '') {
-  if (!value) return ''
-  const normalized = String(value).replace(' ', 'T')
-  const date = new Date(normalized)
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function handleKeydown(event) {

@@ -217,6 +217,9 @@ contracts/
 
 ### Storage / Repository / Artifact Store
 
+各类数据的唯一真相来源、目标表结构和渐进迁移顺序见
+[`storage/README.md`](storage/README.md)。下文描述当前已经落地的代码边界。
+
 数据按性质分为四类，不合并成一个万能 StorageManager：
 
 ```text

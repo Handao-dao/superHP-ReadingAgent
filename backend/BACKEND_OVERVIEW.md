@@ -65,6 +65,9 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 ## 文本与数据层
 
+原文、标注副本、单词、书签、阅读进度和事件日志的权威来源及迁移规划见
+[`src/superhp_agent/storage/README.md`](src/superhp_agent/storage/README.md)。
+
 ### `src/superhp_agent/corpus.py`
 
 `CorpusStore` 是读取小说文本的唯一入口。外部只能通过 `unit_id` 请求文本，不能传入任意文件路径。

@@ -7,8 +7,10 @@ from pathlib import Path
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusStore, ReadingUnit
-from superhp_agent.memory import ReadingMemoryStore
-from superhp_agent.ports.repositories import VocabularyRepository
+from superhp_agent.ports.repositories import (
+    ReadingProgressRepository,
+    VocabularyRepository,
+)
 
 
 @dataclass(frozen=True)
@@ -75,13 +77,13 @@ ChapterState = ReadingUnitState
 
 
 class ReadingStateReader:
-    """Build reading-unit states from corpus files, memory, DB, and local artifacts."""
+    """Build unit states from corpus, progress/vocabulary repositories, and artifacts."""
 
     def __init__(
         self,
         corpus: CorpusStore,
         annotated_copies: AnnotatedCopyStore | str | Path,
-        memory_store: ReadingMemoryStore | None = None,
+        progress_repository: ReadingProgressRepository | None = None,
         db: VocabularyRepository | None = None,
     ):
         self.corpus = corpus
@@ -90,7 +92,7 @@ class ReadingStateReader:
             if isinstance(annotated_copies, AnnotatedCopyStore)
             else AnnotatedCopyStore(annotated_copies)
         )
-        self.memory_store = memory_store
+        self.progress_repository = progress_repository
         self.db = db
 
     def list_states(self, profile_id: str | None = None) -> list[ReadingUnitState]:
@@ -99,8 +101,8 @@ class ReadingStateReader:
         if profile_id:
             units = [unit for unit in units if unit.profile_id == profile_id]
         next_by_id = self._next_unit_ids(units)
-        memory = self.memory_store.load() if self.memory_store else None
-        read_ids = set(memory.read_unit_ids) if memory else set()
+        progress = self.progress_repository.load() if self.progress_repository else None
+        read_ids = set(progress.read_unit_ids) if progress else set()
 
         return [
             ReadingUnitState.from_unit(
@@ -121,9 +123,9 @@ class ReadingStateReader:
 
     def current_state(self, *, profile_id: str | None = None) -> ReadingUnitState | None:
         """Return the last opened unit, if memory has one."""
-        if self.memory_store is None:
+        if self.progress_repository is None:
             return None
-        current_unit_id = self.memory_store.load().current_unit_id
+        current_unit_id = self.progress_repository.load().current_unit_id
         if not current_unit_id:
             return None
         return self.get_state(current_unit_id, profile_id=profile_id)

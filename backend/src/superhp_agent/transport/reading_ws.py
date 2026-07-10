@@ -18,7 +18,10 @@ from superhp_agent.contracts import AgentAction, BackendEvent
 from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.ports.events import EventSink
-from superhp_agent.ports.repositories import VocabularyRepository
+from superhp_agent.ports.repositories import (
+    ReadingProgressRepository,
+    VocabularyRepository,
+)
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -56,7 +59,7 @@ class ReadingSocketSession:
     """Handle one guided-reading WebSocket connection.
 
     A session tracks only connection-local state, such as the current unit id.
-    Durable progress is written through ReadingMemoryStore by action handlers.
+    Durable progress is written through ReadingProgressRepository by action handlers.
     """
 
     def __init__(
@@ -66,6 +69,7 @@ class ReadingSocketSession:
         flow_router: ReadingFlowRouter,
         corpus: CorpusStore,
         memory_store: ReadingMemoryStore | None = None,
+        progress_repository: ReadingProgressRepository | None = None,
         action_dispatcher: ActionDispatcher | None = None,
         annotated_dir: str | Path | None = None,
         annotated_copies: AnnotatedCopyStore | None = None,
@@ -76,6 +80,7 @@ class ReadingSocketSession:
         self.flow_router = flow_router
         self.corpus = corpus
         self.memory_store = memory_store
+        self.progress_repository = progress_repository
         self.action_dispatcher = action_dispatcher or ActionDispatcher()
         self.annotated_dir = Path(annotated_dir) if annotated_dir is not None else None
         self.annotated_copies = annotated_copies or (
@@ -165,6 +170,7 @@ class ReadingSocketSession:
             corpus=self.corpus,
             event_sink=self.event_sink,
             memory_store=self.memory_store,
+            progress_repository=self.progress_repository,
             annotated_dir=self.annotated_dir,
             annotated_copies=self.annotated_copies,
             annotator_service=self.annotator_service,

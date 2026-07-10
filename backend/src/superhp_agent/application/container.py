@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
+from superhp_agent.contracts.reading import ReadingProgressSnapshot
 from superhp_agent.corpus import CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.profiles import (
@@ -29,6 +30,7 @@ from superhp_agent.services.lazy_lookup import LazyLookupService
 from superhp_agent.storage import AppDB
 from superhp_agent.storage.sqlite import (
     SQLiteBookmarkRepository,
+    SQLiteReadingProgressRepository,
     SQLiteVocabularyRepository,
 )
 
@@ -45,6 +47,7 @@ class AppContainer:
     db: AppDB
     vocabulary_repository: SQLiteVocabularyRepository
     bookmark_repository: SQLiteBookmarkRepository
+    reading_progress_repository: SQLiteReadingProgressRepository
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -72,6 +75,15 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     db = AppDB(resolved_settings.db_path)
     vocabulary_repository = db.vocabulary_repository
     bookmark_repository = db.bookmark_repository
+    reading_progress_repository = db.reading_progress_repository
+    legacy_memory = memory_store.load()
+    reading_progress_repository.import_legacy(
+        ReadingProgressSnapshot(
+            current_unit_id=legacy_memory.current_unit_id,
+            opened_unit_ids=legacy_memory.opened_unit_ids,
+            read_unit_ids=legacy_memory.read_unit_ids,
+        )
+    )
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
 
     def provider_factory():
@@ -91,7 +103,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     state_reader = ReadingStateReader(
         corpus,
         annotated_copies,
-        memory_store,
+        reading_progress_repository,
         vocabulary_repository,
     )
     flow_router = ReadingFlowRouter(
@@ -110,6 +122,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         db=db,
         vocabulary_repository=vocabulary_repository,
         bookmark_repository=bookmark_repository,
+        reading_progress_repository=reading_progress_repository,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

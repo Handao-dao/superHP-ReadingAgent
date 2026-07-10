@@ -37,6 +37,12 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             last_opened_at TEXT DEFAULT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS unit_progress (
+            unit_id TEXT PRIMARY KEY,
+            opened_at TEXT DEFAULT NULL,
+            read_at TEXT DEFAULT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS vocabulary (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             word TEXT NOT NULL UNIQUE,

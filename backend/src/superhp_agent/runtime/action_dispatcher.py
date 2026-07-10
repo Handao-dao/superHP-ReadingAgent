@@ -17,7 +17,10 @@ from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
-from superhp_agent.ports.repositories import VocabularyRepository
+from superhp_agent.ports.repositories import (
+    ReadingProgressRepository,
+    VocabularyRepository,
+)
 from superhp_agent.prompts import normalize_level
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
@@ -76,6 +79,7 @@ class ActionContext:
     emit: EventEmitter | None = None
     event_sink: EventSink | None = None
     memory_store: ReadingMemoryStore | None = None
+    progress_repository: ReadingProgressRepository | None = None
     annotated_dir: Path | None = None
     annotated_copies: AnnotatedCopyStore | None = None
     annotator_service: AnnotationService | None = None
@@ -87,6 +91,10 @@ class ActionContext:
             self.event_sink = CallableEventSink(self.emit)
         if self.annotated_copies is None and self.annotated_dir is not None:
             self.annotated_copies = AnnotatedCopyStore(self.annotated_dir)
+        # Compatibility for tests and older composition code during the JSON
+        # to SQLite transition. Production injects the new repository.
+        if self.progress_repository is None and self.memory_store is not None:
+            self.progress_repository = self.memory_store
 
     async def emit_event(
         self,
@@ -157,8 +165,8 @@ class OpenUnitHandler:
         )
         doc = context.corpus.get_unit(unit_id)
         context.current_unit_id = doc.meta.id
-        if context.memory_store:
-            context.memory_store.mark_opened(doc.meta.id)
+        if context.progress_repository:
+            context.progress_repository.mark_opened(doc.meta.id)
         await _emit_opened_unit(
             context,
             doc,
@@ -200,8 +208,8 @@ class OpenAnnotatedUnitHandler:
         )
         doc = context.corpus.get_unit(unit_id)
         context.current_unit_id = doc.meta.id
-        if context.memory_store:
-            context.memory_store.mark_opened(doc.meta.id)
+        if context.progress_repository:
+            context.progress_repository.mark_opened(doc.meta.id)
         await _emit_opened_unit(
             context,
             doc,
@@ -226,8 +234,8 @@ class MarkReadHandler:
             raise MissingActionPayloadError("unit_id")
 
         context.current_unit_id = unit_id
-        if context.memory_store:
-            context.memory_store.mark_read(unit_id)
+        if context.progress_repository:
+            context.progress_repository.mark_read(unit_id)
         await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
@@ -247,8 +255,8 @@ class StartNextUnitHandler:
     ) -> None:
         next_unit_id = _require_unit_id(action.payload)
         completed_unit_id = str(action.payload.get("completed_unit_id") or context.current_unit_id or "")
-        if completed_unit_id and context.memory_store:
-            context.memory_store.mark_read(completed_unit_id)
+        if completed_unit_id and context.progress_repository:
+            context.progress_repository.mark_read(completed_unit_id)
             await context.emit_event(
                 "unit.marked_read",
                 request_id=request_id,
@@ -258,8 +266,8 @@ class StartNextUnitHandler:
 
         context.corpus.get_unit(next_unit_id)
         context.current_unit_id = next_unit_id
-        if context.memory_store:
-            context.memory_store.mark_opened(next_unit_id)
+        if context.progress_repository:
+            context.progress_repository.mark_opened(next_unit_id)
 
 
 class GenerateAnnotationHandler:

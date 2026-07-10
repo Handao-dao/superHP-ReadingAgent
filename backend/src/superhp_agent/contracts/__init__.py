@@ -11,6 +11,7 @@ from superhp_agent.contracts.events import BackendEvent
 from superhp_agent.contracts.llm import LLMResponse
 from superhp_agent.contracts.reading import (
     AgentCard,
+    ReadingProgressSnapshot,
     ReadingUnitDetail,
     ReadingUnitMeta,
 )
@@ -25,5 +26,6 @@ __all__ = [
     "LLMResponse",
     "ReadingUnitDetail",
     "ReadingUnitMeta",
+    "ReadingProgressSnapshot",
     "ServiceIssue",
 ]

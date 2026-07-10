@@ -21,6 +21,9 @@ from superhp_agent.storage.sqlite.bookmarks import (
 from superhp_agent.storage.sqlite.bookmarks import (
     SQLiteBookmarkRepository,
 )
+from superhp_agent.storage.sqlite.reading_progress import (
+    SQLiteReadingProgressRepository,
+)
 from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import (
     ANNOTATION_MARKER_RE as ANNOTATION_MARKER_RE,
@@ -52,6 +55,7 @@ class AppDB:
             self.database,
             sync_unit=self.unit_repository.sync,
         )
+        self.reading_progress_repository = SQLiteReadingProgressRepository(self.database)
 
     def close(self) -> None:
         self.database.close()

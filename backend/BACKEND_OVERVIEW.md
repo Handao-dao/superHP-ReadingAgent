@@ -90,9 +90,10 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 ### `src/superhp_agent/memory.py`
 
-`ReadingMemoryStore` 负责轻量用户状态，使用 JSON 和 JSONL 文件保存。
+`ReadingMemoryStore` 目前只保留旧 JSON 进度的一次性兼容导入和 JSONL 行为日志。生产运行时的
+current/opened/read 状态已经由 SQLite `ReadingProgressRepository` 负责。
 
-它记录：
+旧 JSON 曾记录：
 
 - 当前阅读单元。
 - 打开过的单元。
@@ -101,7 +102,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 已生成译注的状态不再写入 Memory，而是由 `AnnotatedCopyStore` 根据文件实际存在性判断。
 
-这个模块适合存“当前流程需要立刻知道”的状态，不适合复杂查询。
+SQLite 进度为空时启动流程会导入一次旧状态，已有 SQLite 状态不会被旧文件覆盖。
 
 ### `src/superhp_agent/storage/`
 
@@ -115,7 +116,7 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 - 生词出现次数、上下文、词性、掌握状态、时间戳。
 - 显式书签，包括阅读单元、原文/译注模式、页码、比例、摘要和创建时间。
 
-简单说：memory 管流程状态，storage 管可查询数据。
+当前流程状态和可查询数据统一由 SQLite Repository 管理；JSONL 只保留行为历史。
 
 ## 阅读运行时
 

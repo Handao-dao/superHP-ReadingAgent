@@ -18,6 +18,14 @@ def test_build_container_wires_shared_capabilities(tmp_path):
         assert container.settings is settings
         assert container.vocabulary_repository is container.db.vocabulary_repository
         assert container.bookmark_repository is container.db.bookmark_repository
+        assert (
+            container.reading_progress_repository
+            is container.db.reading_progress_repository
+        )
+        assert (
+            container.state_reader.progress_repository
+            is container.reading_progress_repository
+        )
         assert container.state_reader.db is container.vocabulary_repository
         assert container.flow_router.state_reader is container.state_reader
     finally:

@@ -41,6 +41,7 @@ profile_registry = container.profile_registry
 default_profile = container.default_profile
 corpus = container.corpus
 memory_store = container.memory_store
+reading_progress_repository = container.reading_progress_repository
 db = container.db
 vocabulary_repository = container.vocabulary_repository
 bookmark_repository = container.bookmark_repository
@@ -63,8 +64,8 @@ app.add_middleware(
 
 def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
     """Translate internal corpus metadata into the public API schema."""
-    memory = memory_store.load()
-    is_read = unit.id in set(memory.read_unit_ids)
+    progress = reading_progress_repository.load()
+    is_read = unit.id in set(progress.read_unit_ids)
     return ReadingUnitMeta(
         id=unit.id,
         chapter_id=unit.chapter_id,
@@ -304,6 +305,7 @@ async def reading_socket(websocket: WebSocket):
         flow_router=flow_router,
         corpus=corpus,
         memory_store=memory_store,
+        progress_repository=reading_progress_repository,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         db=vocabulary_repository,

@@ -5,9 +5,20 @@ client. They do not load corpus files, calculate reading state, choose cards,
 execute actions, or define HTTP/WebSocket envelopes.
 """
 
+from dataclasses import dataclass, field
+
 from pydantic import BaseModel, Field
 
 from superhp_agent.contracts.actions import AgentAction
+
+
+@dataclass(frozen=True)
+class ReadingProgressSnapshot:
+    """Single-user reading pointer and per-unit opened/read state."""
+
+    current_unit_id: str = ""
+    opened_unit_ids: list[str] = field(default_factory=list)
+    read_unit_ids: list[str] = field(default_factory=list)
 
 
 class ReadingUnitMeta(BaseModel):

@@ -150,6 +150,12 @@ Profile 是文本场景策略插件，负责：
 
 Profile 不负责调用 Provider、访问数据库、保存文件、发送 WebSocket 或执行 Action。
 
+### Domain Rules
+
+纯领域规则位于 `domain/`，可以同时被 Service 与 Infrastructure 使用，但不依赖两者。
+当前 `domain/vocabulary.py` 负责合法词性集合、英文简写映射和未知词性回退；它不解析模型响应、
+访问 SQLite 或构造 API DTO。`storage.normalize_pos` 暂时保留为兼容导出。
+
 ### Provider
 
 具体实现位于 `providers/`；应用层接口位于 `ports/llm.py`，厂商无关响应位于
@@ -309,16 +315,17 @@ Transport
   `ReadingStateReader → ActionDispatcher` 的反向依赖。
 - `AnnotatorService` 现在依赖 `ports.events.EventSink`，已消除
   `AnnotatorService → runtime.events` 的反向依赖。
+- `WordLookupService` 和 Storage 现在共同依赖 `domain.vocabulary.normalize_pos`，已消除
+  `WordLookupService → storage` 的反向依赖。
 
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
-2. `WordLookupService` 从 `storage.py` 导入 `normalize_pos`；POS 规范化属于领域规则。
-3. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
-4. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-5. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
-6. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-7. `prompts.py` 已主要成为 English profile 的兼容包装层。
+2. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
+3. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
+4. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
+5. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
+6. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
@@ -349,6 +356,7 @@ Transport
 
 - 已将 EventSink 移到 `ports/events.py`，Service 不再依赖 Runtime 事件模块。
 - 已在 `ports/llm.py` 建立最小 LLMProvider Protocol，Service 不再依赖 Provider 实现包。
+- 已将 POS 规范化提取为 Vocabulary Domain Rule，Service 不再依赖 Storage 工具函数。
 - 为 Repository 建立最小 Protocol，只暴露 Handler / Service 真正需要的方法。
 
 ### 阶段 4：Storage Package

@@ -14,46 +14,15 @@ from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
+from superhp_agent.domain.vocabulary import normalize_pos as normalize_pos
 
 ANNOTATION_MARKER_RE = re.compile(r"\[\[([^|\]]+)\|[^|\]]+(?:\|[^|\]]+)?\]\]")
-VALID_POS = {
-    "noun",
-    "verb",
-    "adjective",
-    "adverb",
-    "phrase",
-    "other",
-    "重点实词",
-    "重点虚词",
-    "通假字",
-    "古今异义",
-    "词类活用",
-    "虚词用法",
-    "特殊句式",
-    "其他",
-}
 VALID_BODY_KINDS = {"source", "annotated"}
 
 
 def strip_annotation_markers(text: str) -> str:
     """Return source text with inline annotation markers removed."""
     return ANNOTATION_MARKER_RE.sub(r"\1", text)
-
-
-def normalize_pos(pos: str | None) -> str:
-    """Normalize lightweight vocabulary part-of-speech labels."""
-    raw = str(pos or "").strip()
-    if raw in VALID_POS:
-        return raw
-    value = raw.lower()
-    aliases = {
-        "n": "noun",
-        "v": "verb",
-        "adj": "adjective",
-        "adv": "adverb",
-    }
-    value = aliases.get(value, value)
-    return value if value in VALID_POS else "other"
 
 
 class AppDB:

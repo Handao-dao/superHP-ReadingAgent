@@ -17,6 +17,7 @@ from superhp_agent.corpus import (
     ReadingUnit,
     ReadingUnitDocument,
 )
+from superhp_agent.domain.vocabulary import normalize_pos
 from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.profiles import create_default_registry
 from superhp_agent.providers.factory import make_provider
@@ -40,7 +41,7 @@ from superhp_agent.schemas import (
 )
 from superhp_agent.services.annotator import LazyAnnotatorService
 from superhp_agent.services.lookup import WordLookupService
-from superhp_agent.storage import AppDB, normalize_pos
+from superhp_agent.storage import AppDB
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 
 # These singletons are intentionally created at import time: they are cheap,

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import os
 
+from superhp_agent.domain.vocabulary import normalize_pos
 from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.profiles import AnnotationProfile, EnglishNovelProfile
-from superhp_agent.storage import normalize_pos
 from superhp_agent.utils import extract_json
 
 

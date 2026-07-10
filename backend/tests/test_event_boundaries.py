@@ -34,9 +34,3 @@ async def test_event_port_builds_transport_neutral_event():
             payload={"completed": 2, "total": 4},
         )
     ]
-    assert sink.events[0].as_message() == {
-        "type": "annotation.progress",
-        "request_id": "req-1",
-        "completed": 2,
-        "total": 4,
-    }

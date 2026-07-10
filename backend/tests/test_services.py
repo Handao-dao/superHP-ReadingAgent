@@ -22,7 +22,7 @@ class EventCollector:
         self.events = []
 
     async def emit_event(self, event: BackendEvent):
-        self.events.append(event.as_message())
+        self.events.append(event)
 
 
 class ScriptedProvider(LLMProvider):
@@ -193,9 +193,9 @@ def test_annotator_service_emits_model_retry_event():
         result = await service.annotate_text("ok", event_sink=events, request_id="r-retry")
 
         assert result.annotated_text == "a [[wand|魔杖]] on the table"
-        assert events.events[0]["type"] == "annotation.model_retry"
-        assert events.events[0]["request_id"] == "r-retry"
-        assert "retrying" in events.events[0]["message"]
+        assert events.events[0].type == "annotation.model_retry"
+        assert events.events[0].request_id == "r-retry"
+        assert "retrying" in events.events[0].payload["message"]
 
     asyncio.run(run_case())
 
@@ -251,11 +251,13 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
             "third [[cloak|斗篷]] paragraph."
         )
         assert [item.word for item in result.vocabulary] == ["wand", "owl", "cloak"]
-        progress_events = [event for event in events.events if event["type"] == "annotation.progress"]
-        assert progress_events[0]["current"] == 0
-        assert progress_events[0]["total"] == 3
-        assert progress_events[-1]["current"] == 3
-        assert progress_events[-1]["message"] == "Annotating section 3 of 3..."
+        progress_events = [
+            event for event in events.events if event.type == "annotation.progress"
+        ]
+        assert progress_events[0].payload["current"] == 0
+        assert progress_events[0].payload["total"] == 3
+        assert progress_events[-1].payload["current"] == 3
+        assert progress_events[-1].payload["message"] == "Annotating section 3 of 3..."
         user_prompts = [messages[1]["content"] for messages in provider.messages]
         stable_prefixes = [prompt.split("<reader_text>", 1)[0] for prompt in user_prompts]
         assert len(set(stable_prefixes)) == 1

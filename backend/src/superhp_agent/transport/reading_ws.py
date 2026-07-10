@@ -28,6 +28,7 @@ from superhp_agent.runtime.action_dispatcher import (
     UnsupportedActionError,
 )
 from superhp_agent.runtime.action_router import ReadingFlowRouter
+from superhp_agent.transport.event_mapper import event_to_websocket_message
 
 
 class ReadingSocketMessage(BaseModel):
@@ -48,7 +49,7 @@ class ReadingSocketEventSink:
         self.websocket = websocket
 
     async def emit_event(self, event: BackendEvent) -> None:
-        await self.websocket.send_json(event.as_message())
+        await self.websocket.send_json(event_to_websocket_message(event))
 
 
 class ReadingSocketSession:

@@ -197,7 +197,8 @@ contracts/
 `AgentCard` 已迁入 `contracts/reading.py`。Transport、Runtime 与 Composition Root 直接依赖
 新 Contract，`schemas.py` 保留同名 re-export 和 `ChapterMeta` / `ChapterDetail` 旧命名别名。
 `BackendEvent` 位于 `contracts/events.py`，事件输出能力由 `ports/events.py` 中的
-`EventSink` 定义；`runtime/events.py` 仅保留适配器与旧导入兼容。
+`EventSink` 定义；`runtime/events.py` 仅保留适配器与旧导入兼容。前端 reading.v1 扁平 JSON
+由 `transport/event_mapper.py` 转换，Application Event 不再了解 WebSocket 格式。
 
 ### State / Read Model
 
@@ -330,14 +331,14 @@ Transport
 - 书签 HTTP 入口现在依赖 `BookmarkRepository`，不再直接调用全能型数据库对象。
 - SQLite connection、migration、unit metadata、Vocabulary 与 Bookmark SQL 已完全分离；
   `AppDB` 只保留组合、关闭连接和旧方法转发。
+- `BackendEvent` 已成为纯 Application Contract，reading.v1 JSON 映射归属 Transport。
 
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
-2. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
-3. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-4. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-5. `prompts.py` 已主要成为 English profile 的兼容包装层。
+2. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
+3. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
+4. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
@@ -353,18 +354,17 @@ Transport
 实现位于 `artifacts/annotated_copies.py`；Composition Root 创建同一个 Store，并注入
 `ReadingStateReader`、WebSocket Session 和 Action Context。旧的目录参数仍作为兼容入口，便于现有测试和调用方渐进迁移。
 
-### 阶段 2：最小 Contracts（进行中）
+### 阶段 2：最小 Contracts（已完成）
 
 - 已完成第一刀：抽出 `contracts/actions.py` 中的 `AgentAction`。
 - 已完成第二刀：抽出 `contracts/reading.py` 中的阅读单元和 Card 只读模型。
 - 已完成第三刀：抽出 `contracts/events.py` 中的 `BackendEvent`。
 - 已完成第四刀：抽出 `contracts/llm.py` 中厂商无关的 `LLMResponse`。
-- 后续单独拆分 Transport Event DTO，不直接改变现有 WebSocket 消息。
+- 已将 reading.v1 Event JSON 映射移到 Transport，WebSocket 消息保持不变。
 - 保留 `schemas.py` 兼容 re-export。
-- 逐步区分 Transport DTO、Command、Query 和 Event。
-- 每次迁移一组 import，并运行全量测试。
+- 当前最小范围已区分 Action、Reading、Event、LLM Contract 与 Transport mapping。
 
-### 阶段 3：通用 Ports（进行中）
+### 阶段 3：通用 Ports（已完成）
 
 - 已将 EventSink 移到 `ports/events.py`，Service 不再依赖 Runtime 事件模块。
 - 已在 `ports/llm.py` 建立最小 LLMProvider Protocol，Service 不再依赖 Provider 实现包。
@@ -372,7 +372,6 @@ Transport
 - 已建立最小 VocabularyRepository Protocol，Action Handler、Read Model 与 WebSocket Session
   不再依赖具体 `AppDB`。
 - 已建立独立 BookmarkRepository Protocol，没有扩张 Vocabulary 接口。
-- 下一步拆分 SQLite connection、migration 与两个 Repository 实现。
 
 ### 阶段 4：Storage Package（已完成）
 

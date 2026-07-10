@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import { useBookmarks } from './composables/useBookmarks'
@@ -486,17 +487,13 @@ onBeforeUnmount(() => {
           @remove="hideLookupAnnotation"
         />
 
-        <footer class="paper-footer">
-          <span>{{ activeChapter?.body_kind === 'annotated' ? 'Annotated' : 'Original' }}</span>
-          <button
-            v-if="readerMode === 'reading'"
-            type="button"
-            class="bookmark-save"
-            :disabled="bookmarkSaving"
-            @click="saveCurrentBookmark"
-          >{{ bookmarkSaving ? 'Saving...' : 'Bookmark' }}</button>
-          <span>{{ paperPageLabel }}</span>
-        </footer>
+        <ReadingPaperFooter
+          :body-kind="activeChapter?.body_kind || ''"
+          :page-label="paperPageLabel"
+          :reader-mode="readerMode"
+          :saving-bookmark="bookmarkSaving"
+          @save-bookmark="saveCurrentBookmark"
+        />
       </article>
 
       <button

@@ -157,7 +157,7 @@ def test_bookmark_api_create_list_and_delete(tmp_path, monkeypatch):
     )
     fake_db = FakeDB()
     monkeypatch.setattr(main, "corpus", FakeCorpus(unit))
-    monkeypatch.setattr(main, "db", fake_db)
+    monkeypatch.setattr(main, "bookmark_repository", fake_db)
 
     with TestClient(main.app) as client:
         created = client.post(
@@ -199,7 +199,7 @@ def test_bookmark_api_rejects_bad_unit_and_body_kind(tmp_path, monkeypatch):
         path=tmp_path / "hp01-ch01.md",
     )
     monkeypatch.setattr(main, "corpus", FakeCorpus(unit))
-    monkeypatch.setattr(main, "db", FakeDB())
+    monkeypatch.setattr(main, "bookmark_repository", FakeDB())
 
     with TestClient(main.app) as client:
         bad_kind = client.post(

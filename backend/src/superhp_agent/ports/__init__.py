@@ -2,9 +2,10 @@
 
 from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
 from superhp_agent.ports.llm import LLMProvider
-from superhp_agent.ports.repositories import VocabularyRepository
+from superhp_agent.ports.repositories import BookmarkRepository, VocabularyRepository
 
 __all__ = [
+    "BookmarkRepository",
     "EventEmitter",
     "EventSink",
     "LLMProvider",

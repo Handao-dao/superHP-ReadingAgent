@@ -236,6 +236,9 @@ Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `Vocabulary
 词汇能力；`AppDB` 以结构化方式实现该 Port。HTTP 端完整 CRUD 和 SQL 仍暂留在 `AppDB`，
 等访问边界稳定后再移动实现。
 
+书签 HTTP 入口通过 `ports/repositories/bookmarks.py` 中的 `BookmarkRepository` 访问书签；
+Composition Root 当前将同一个 `AppDB` 分别注入 Vocabulary 与 Bookmark 两个独立角色。
+
 当前先将 `AnnotatedCopyStore` 放在 `artifacts/`，强调它管理的是模型生成、可重建的阅读产物。
 阶段 4 再结合其他存储模块的迁移结果，决定是否统一归入 `storage/` package；上层只依赖 Store
 职责，不依赖它最终所在的目录布局。
@@ -323,6 +326,7 @@ Transport
   `WordLookupService → storage` 的反向依赖。
 - Action Handler、Read Model 与 WebSocket Session 现在依赖 `VocabularyRepository`，不再直接
   依赖具体 `AppDB`。
+- 书签 HTTP 入口现在依赖 `BookmarkRepository`，不再直接调用全能型数据库对象。
 
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
@@ -365,11 +369,12 @@ Transport
 - 已将 POS 规范化提取为 Vocabulary Domain Rule，Service 不再依赖 Storage 工具函数。
 - 已建立最小 VocabularyRepository Protocol，Action Handler、Read Model 与 WebSocket Session
   不再依赖具体 `AppDB`。
-- 后续为 Bookmark Repository 建立独立 Port，不扩张 Vocabulary 接口。
+- 已建立独立 BookmarkRepository Protocol，没有扩张 Vocabulary 接口。
+- 下一步拆分 SQLite connection、migration 与两个 Repository 实现。
 
 ### 阶段 4：Storage Package
 
-- 已先稳定 Vocabulary Repository 的上层访问边界，SQLite 实现暂留 `AppDB`。
+- 已先稳定 Vocabulary 与 Bookmark Repository 的上层访问边界，SQLite 实现暂留 `AppDB`。
 - 将 `storage.py` 转成 package。
 - 先拆 Bookmark 与 Vocabulary Repository。
 - 再拆 database connection 和 migrations。

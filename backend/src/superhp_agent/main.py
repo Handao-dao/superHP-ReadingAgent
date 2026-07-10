@@ -19,6 +19,7 @@ from superhp_agent.corpus import (
 )
 from superhp_agent.domain.vocabulary import normalize_pos
 from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.ports.repositories import BookmarkRepository
 from superhp_agent.profiles import create_default_registry
 from superhp_agent.providers.factory import make_provider
 from superhp_agent.runtime import (
@@ -52,6 +53,7 @@ default_profile = profile_registry.get()
 corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
+bookmark_repository: BookmarkRepository = db
 annotated_copies = AnnotatedCopyStore(settings.annotated_dir)
 # LLM providers are lazy so the app can boot and serve corpus/memory endpoints
 # even when no API key has been configured yet.
@@ -219,7 +221,7 @@ async def list_vocabulary(
 
 @app.get("/api/bookmarks", response_model=list[BookmarkEntry])
 async def list_bookmarks(unit_id: str | None = Query(default=None)):
-    return [_bookmark_entry(row) for row in db.list_bookmarks(unit_id=unit_id)]
+    return [_bookmark_entry(row) for row in bookmark_repository.list_bookmarks(unit_id=unit_id)]
 
 
 @app.post("/api/bookmarks", response_model=BookmarkEntry)
@@ -228,7 +230,7 @@ async def add_bookmark(payload: AddBookmarkRequest):
         raise HTTPException(status_code=400, detail="body_kind must be source or annotated")
     try:
         unit = corpus.get_unit(payload.unit_id).meta
-        bookmark_id = db.add_bookmark(
+        bookmark_id = bookmark_repository.add_bookmark(
             unit,
             body_kind=payload.body_kind,
             page_index=payload.page_index,
@@ -242,7 +244,7 @@ async def add_bookmark(payload: AddBookmarkRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    rows = db.list_bookmarks(unit_id=unit.id)
+    rows = bookmark_repository.list_bookmarks(unit_id=unit.id)
     for row in rows:
         if int(row["id"]) == bookmark_id:
             return _bookmark_entry(row)
@@ -251,7 +253,7 @@ async def add_bookmark(payload: AddBookmarkRequest):
 
 @app.delete("/api/bookmarks/{bookmark_id}", response_model=MutationResponse)
 async def delete_bookmark(bookmark_id: int):
-    if not db.delete_bookmark(bookmark_id):
+    if not bookmark_repository.delete_bookmark(bookmark_id):
         raise HTTPException(status_code=404, detail="bookmark not found")
     return MutationResponse(ok=True)
 

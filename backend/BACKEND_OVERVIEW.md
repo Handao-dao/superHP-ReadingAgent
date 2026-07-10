@@ -2,6 +2,8 @@
 
 这份文档用于快速理解后端各部分职责。源码中的注释解释局部实现，这里解释整体分层和模块边界。
 
+后端源码的目标依赖方向、Bus 规划、Contracts / Storage 边界和渐进重构路线见 [`src/superhp_agent/README.md`](src/superhp_agent/README.md)。
+
 ## 近期更新记录
 
 ### 2026-06-14

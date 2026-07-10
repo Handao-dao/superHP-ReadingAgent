@@ -240,6 +240,7 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - 段落是不可拆分的原子边界；异常的超长单段会明确报错，不进入 Service 调用。
 - 多个 chunk 通过 `annotation_max_concurrency` 控制并发，默认 `8`，兼顾长章节生成速度与常规模型 API 的限流风险。
 - 每个 chunk 独立调用 provider，返回纯 annotated text。
+- 任一 chunk 失败或上层取消译注时，Service 会取消并等待其余任务退出，避免模型请求在调用结束后继续运行。
 - 如果 provider 返回 `finish_reason = length`，抛出 `AnnotationTruncatedError`，不会保存半截译注，也不会发 completed。
 - 所有 chunk 成功后，后端按 `chunk.index` 排序合并完整译注。
 - 后端从合并后的 `[[word|翻译|pos]]` 标记中提取 vocabulary 和词性；旧 `[[word|翻译]]` 标记仍兼容，词性回退为 `other`。

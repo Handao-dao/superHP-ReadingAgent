@@ -214,10 +214,13 @@ class AnnotatorService:
                     stage="chunk",
                     message=f"Annotating section {completed} of {total}...",
                 )
-        except Exception:
+        finally:
+            # Never leave model requests running after this annotation call
+            # succeeds, fails, or is cancelled by its caller.
             for task in tasks:
-                task.cancel()
-            raise
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
         return "\n\n".join(
             results[index].strip()

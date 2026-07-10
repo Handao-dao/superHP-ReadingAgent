@@ -44,6 +44,43 @@ class ScriptedProvider(LLMProvider):
         return "scripted"
 
 
+class CoordinatedProvider(LLMProvider):
+    """Hold concurrent calls so cancellation behavior can be asserted."""
+
+    def __init__(self, *, call_count: int, fail_first: bool = False):
+        super().__init__()
+        self.call_count = call_count
+        self.fail_first = fail_first
+        self.started = 0
+        self.cancelled = 0
+        self.all_started = asyncio.Event()
+        self.never_complete = asyncio.Event()
+
+    async def chat(self, messages, **kwargs):
+        self.started += 1
+        call_number = self.started
+        if self.started == self.call_count:
+            self.all_started.set()
+        await self.all_started.wait()
+
+        if self.fail_first and call_number == 1:
+            return LLMResponse(
+                content="fatal annotation failure",
+                finish_reason="error",
+                error_should_retry=False,
+            )
+
+        try:
+            await self.never_complete.wait()
+        except asyncio.CancelledError:
+            self.cancelled += 1
+            raise
+        return LLMResponse(content="unreachable")
+
+    def get_default_model(self):
+        return "coordinated"
+
+
 def test_annotator_service_returns_text_and_extracts_vocabulary():
     async def run_case():
         provider = ScriptedProvider([
@@ -264,6 +301,45 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         assert "first paragraph." in user_prompts[0]
         assert "second paragraph." in user_prompts[1]
         assert "third paragraph." in user_prompts[2]
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_cancels_and_awaits_siblings_when_one_chunk_fails():
+    async def run_case():
+        provider = CoordinatedProvider(call_count=3, fail_first=True)
+        service = AnnotatorService(
+            provider,
+            chunker=AnnotationChunker(max_chunk_words=2),
+            max_concurrency=3,
+        )
+
+        with pytest.raises(RuntimeError, match="fatal annotation failure"):
+            await service.annotate_text("first part\n\nsecond part\n\nthird part")
+
+        assert provider.cancelled == 2
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_cleans_up_chunks_when_parent_is_cancelled():
+    async def run_case():
+        provider = CoordinatedProvider(call_count=3)
+        service = AnnotatorService(
+            provider,
+            chunker=AnnotationChunker(max_chunk_words=2),
+            max_concurrency=3,
+        )
+        annotation = asyncio.create_task(
+            service.annotate_text("first part\n\nsecond part\n\nthird part")
+        )
+        await provider.all_started.wait()
+
+        annotation.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await annotation
+
+        assert provider.cancelled == 3
 
     asyncio.run(run_case())
 

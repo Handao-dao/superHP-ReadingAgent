@@ -15,6 +15,7 @@ from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
 from superhp_agent.prompts import normalize_level
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
@@ -26,9 +27,6 @@ from superhp_agent.runtime.actions import (
 )
 from superhp_agent.runtime.events import (
     CallableEventSink,
-    EventEmitter,
-    EventSink,
-    emit_backend_event,
 )
 from superhp_agent.services.annotator import AnnotationResult
 from superhp_agent.storage import AppDB

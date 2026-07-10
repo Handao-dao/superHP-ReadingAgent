@@ -14,9 +14,10 @@ from fastapi import WebSocket
 from pydantic import BaseModel, ValidationError
 
 from superhp_agent.artifacts import AnnotatedCopyStore
-from superhp_agent.contracts import AgentAction
+from superhp_agent.contracts import AgentAction, BackendEvent
 from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.memory import ReadingMemoryStore
+from superhp_agent.ports.events import EventSink
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -26,7 +27,6 @@ from superhp_agent.runtime.action_dispatcher import (
     UnsupportedActionError,
 )
 from superhp_agent.runtime.action_router import ReadingFlowRouter
-from superhp_agent.runtime.events import BackendEvent, EventSink
 from superhp_agent.storage import AppDB
 
 

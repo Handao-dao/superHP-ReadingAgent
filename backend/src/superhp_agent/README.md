@@ -187,6 +187,8 @@ contracts/
 目前 `AgentAction` 已迁入 `contracts/actions.py`；`ReadingUnitMeta`、`ReadingUnitDetail` 和
 `AgentCard` 已迁入 `contracts/reading.py`。Transport、Runtime 与 Composition Root 直接依赖
 新 Contract，`schemas.py` 保留同名 re-export 和 `ChapterMeta` / `ChapterDetail` 旧命名别名。
+`BackendEvent` 位于 `contracts/events.py`，事件输出能力由 `ports/events.py` 中的
+`EventSink` 定义；`runtime/events.py` 仅保留适配器与旧导入兼容。
 
 ### State / Read Model
 
@@ -302,17 +304,18 @@ Transport
 
 - `ReadingStateReader` 和 Action Handlers 现在共同依赖 `AnnotatedCopyStore`，已消除
   `ReadingStateReader → ActionDispatcher` 的反向依赖。
+- `AnnotatorService` 现在依赖 `ports.events.EventSink`，已消除
+  `AnnotatorService → runtime.events` 的反向依赖。
 
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
-2. `AnnotatorService` 依赖 `runtime.events`；EventSink 更适合作为通用 Port。
-3. `WordLookupService` 从 `storage.py` 导入 `normalize_pos`；POS 规范化属于领域规则。
-4. Runtime 为 WebSocket event 直接创建 Pydantic API DTO，应用事件与 Transport Contract 尚未分开。
-5. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-6. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
-7. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-8. `prompts.py` 已主要成为 English profile 的兼容包装层。
+2. `WordLookupService` 从 `storage.py` 导入 `normalize_pos`；POS 规范化属于领域规则。
+3. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
+4. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
+5. `AppDB` 同时负责连接、migration、unit、vocabulary 和 bookmark。
+6. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
+7. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
@@ -332,14 +335,15 @@ Transport
 
 - 已完成第一刀：抽出 `contracts/actions.py` 中的 `AgentAction`。
 - 已完成第二刀：抽出 `contracts/reading.py` 中的阅读单元和 Card 只读模型。
-- 后续单独梳理 Application Event、EventSink Port 与 Transport Event DTO，不直接整体搬迁。
+- 已完成第三刀：抽出 `contracts/events.py` 中的 `BackendEvent`。
+- 后续单独拆分 Transport Event DTO，不直接改变现有 WebSocket 消息。
 - 保留 `schemas.py` 兼容 re-export。
 - 逐步区分 Transport DTO、Command、Query 和 Event。
 - 每次迁移一组 import，并运行全量测试。
 
-### 阶段 3：通用 Ports
+### 阶段 3：通用 Ports（进行中）
 
-- 将 EventSink 移到 `ports/events.py`。
+- 已将 EventSink 移到 `ports/events.py`，Service 不再依赖 Runtime 事件模块。
 - 将 Provider Protocol 视为 LLM Port。
 - 为 Repository 建立最小 Protocol，只暴露 Handler / Service 真正需要的方法。
 

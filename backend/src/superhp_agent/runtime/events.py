@@ -1,41 +1,23 @@
-"""Backend event hook primitives.
+"""Runtime event adapters and compatibility exports.
 
-Runtime services should report observable behavior through EventSink instead of
-knowing whether the current caller is a WebSocket, test, CLI, or future HTTP
-stream. This keeps progress reporting available without coupling business logic
-to a transport implementation.
+The event data contract and output port now live in ``contracts.events`` and
+``ports.events``. This module retains legacy imports and callback/no-op adapters;
+new services should depend on the port directly.
 """
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
-from typing import Any, Protocol
+from superhp_agent.contracts.events import BackendEvent
+from superhp_agent.ports.events import EventEmitter, EventSink, emit_backend_event
 
-
-@dataclass(frozen=True)
-class BackendEvent:
-    """Transport-neutral backend event emitted during guided actions."""
-
-    type: str
-    request_id: str | None = None
-    payload: dict[str, Any] = field(default_factory=dict)
-
-    def as_message(self) -> dict[str, Any]:
-        """Convert to the flat JSON shape currently used by the frontend."""
-        message = {"type": self.type, **self.payload}
-        if self.request_id is not None:
-            message["request_id"] = self.request_id
-        return message
-
-
-class EventSink(Protocol):
-    """Hook interface for observing backend behavior."""
-
-    async def emit_event(self, event: BackendEvent) -> None: ...
-
-
-EventEmitter = Callable[..., Awaitable[None]]
+__all__ = [
+    "BackendEvent",
+    "CallableEventSink",
+    "EventEmitter",
+    "EventSink",
+    "NullEventSink",
+    "emit_backend_event",
+]
 
 
 class CallableEventSink:
@@ -53,14 +35,3 @@ class NullEventSink:
 
     async def emit_event(self, event: BackendEvent) -> None:
         return None
-
-
-async def emit_backend_event(
-    sink: EventSink,
-    event_type: str,
-    *,
-    request_id: str | None = None,
-    **payload: Any,
-) -> None:
-    """Convenience helper for callers that do not need to build BackendEvent."""
-    await sink.emit_event(BackendEvent(type=event_type, request_id=request_id, payload=payload))

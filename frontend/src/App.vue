@@ -1,11 +1,12 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { addBookmark, deleteBookmark, fetchBookmarks } from './api/bookmarks'
 import { listChapters } from './api/chapters'
 import { lookupWord } from './api/lookup'
 import { listProfiles } from './api/profiles'
 import { addVocabulary, setMasteredByWord } from './api/vocabulary'
 import VocabularyPanel from './components/VocabularyPanel.vue'
+import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { getReadingRenderer } from './renderers'
 
@@ -15,12 +16,7 @@ const listLoading = ref(false)
 const listErrorMessage = ref('')
 const profileErrorMessage = ref('')
 const selectedProfileId = ref(localStorage.getItem('superhp_profile_id') || 'english_novel')
-const currentPage = ref(0)
 const completeCardsRequestedFor = ref('')
-const readingViewport = ref(null)
-const readingFlow = ref(null)
-const pageStride = ref(0)
-const totalReadingPages = ref(0)
 const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
@@ -134,12 +130,24 @@ const renderedBlocks = computed(() => paragraphs.value.map((block) => currentRen
   hiddenAnnotations: hiddenAnnotations.value,
 })))
 const hasActiveReading = computed(() => Boolean(activeChapter.value && renderedBlocks.value.length > 0))
-const isGuidancePage = computed(() => hasActiveReading.value && totalReadingPages.value > 0 && currentPage.value >= totalReadingPages.value)
-const flowTransform = computed(() => ({
-  transform: `translateX(-${currentPage.value * pageStride.value}px)`,
-}))
-const canGoPrev = computed(() => currentPage.value > 0)
-const canGoNext = computed(() => hasActiveReading.value && totalReadingPages.value > 0 && currentPage.value < totalReadingPages.value)
+const {
+  canGoNext,
+  canGoPrev,
+  currentPage,
+  flowTransform,
+  isGuidancePage,
+  nextPage,
+  prevPage,
+  readingFlow,
+  readingViewport,
+  recalculatePages,
+  resetPagination,
+  totalReadingPages,
+} = useReaderPagination({
+  hasActiveReading,
+  renderedBlocks,
+  onLayout: applyPendingBookmarkJump,
+})
 
 const isGenerating = computed(() => {
   return ['generating_annotation', 'model_retrying', 'json_repairing'].includes(loadStatus.value)
@@ -267,8 +275,7 @@ function handleAction(action) {
 function handleSelectChapter(chapter) {
   if (isGenerating.value) return
   activeView.value = 'reader'
-  currentPage.value = 0
-  totalReadingPages.value = 0
+  resetPagination()
   completeCardsRequestedFor.value = ''
   closeLookupBubble()
   const sent = requestCards('start', chapter.id)
@@ -311,8 +318,7 @@ async function handleSelectProfile(profileId) {
   activeChapter.value = null
   cards.value = []
   currentChapterId.value = null
-  currentPage.value = 0
-  totalReadingPages.value = 0
+  resetPagination()
   completeCardsRequestedFor.value = ''
   selectedVocabularyUnitId.value = ''
   closeLookupBubble()
@@ -426,14 +432,6 @@ function formatBookmarkTime(value = '') {
   const date = new Date(normalized)
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function nextPage() {
-  if (canGoNext.value) currentPage.value += 1
-}
-
-function prevPage() {
-  if (canGoPrev.value) currentPage.value -= 1
 }
 
 function handleKeydown(event) {
@@ -609,39 +607,10 @@ function handleVocabularyChanged() {
   loadChapterList()
 }
 
-async function recalculatePages() {
-  const wasGuidance = isGuidancePage.value
-  await nextTick()
-  if (document.fonts?.ready) await document.fonts.ready
-  await new Promise((resolve) => requestAnimationFrame(resolve))
-
-  const viewport = readingViewport.value
-  const flow = readingFlow.value
-  if (!viewport || !flow || !renderedBlocks.value.length) {
-    totalReadingPages.value = 0
-    pageStride.value = 0
-    return
-  }
-
-  const styles = window.getComputedStyle(flow)
-  const gap = Number.parseFloat(styles.columnGap) || 0
-  const viewportWidth = viewport.clientWidth
-  pageStride.value = viewportWidth + gap
-  flow.style.setProperty('--reader-column-width', `${viewportWidth}px`)
-  flow.style.setProperty('--reader-column-gap', `${gap}px`)
-
-  await new Promise((resolve) => requestAnimationFrame(resolve))
-  const pages = Math.max(1, Math.ceil((flow.scrollWidth + 1) / Math.max(1, pageStride.value)))
-  totalReadingPages.value = pages
-  if (currentPage.value >= pages) currentPage.value = wasGuidance ? pages : pages - 1
-  applyPendingBookmarkJump()
-}
-
 watch(
   () => activeChapter.value?.meta?.id + activeChapter.value?.body_kind,
   () => {
-    currentPage.value = 0
-    totalReadingPages.value = 0
+    resetPagination()
     completeCardsRequestedFor.value = ''
     manualAnnotations.value = new Map()
     hiddenAnnotations.value = new Set()

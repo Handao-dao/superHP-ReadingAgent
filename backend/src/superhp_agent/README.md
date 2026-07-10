@@ -221,7 +221,8 @@ storage/
 ├── app_db.py              # 当前过渡门面，等待继续拆分
 ├── database.py            # SQLite 连接、锁与关闭
 ├── migrations.py          # schema 初始化和增量升级
-└── sqlite/                # 目标：Repository 的 SQLite 实现
+└── sqlite/                # Repository 的 SQLite 实现
+    ├── units.py           # 内部 unit metadata 同步
     ├── vocabulary.py      # 已完成：词汇 SQL 实现
     └── bookmarks.py       # 已完成：书签 SQL 实现
 ```
@@ -327,15 +328,16 @@ Transport
 - Action Handler、Read Model 与 WebSocket Session 现在依赖 `VocabularyRepository`，不再直接
   依赖具体 `AppDB`。
 - 书签 HTTP 入口现在依赖 `BookmarkRepository`，不再直接调用全能型数据库对象。
+- SQLite connection、migration、unit metadata、Vocabulary 与 Bookmark SQL 已完全分离；
+  `AppDB` 只保留组合、关闭连接和旧方法转发。
 
 以下问题继续按渐进方式修复，不要求一次移动所有目录：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
 2. `BackendEvent.as_message()` 暂时保留前端扁平 JSON 映射，Application Event 与 Transport Event DTO 尚未完全分开。
 3. `main.py` 同时承担 Composition Root、全部 HTTP routes 和 DTO mapper。
-4. `AppDB` 仍负责 unit metadata 同步 SQL 及 Vocabulary、Bookmark 兼容转发门面。
-5. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-6. `prompts.py` 已主要成为 English profile 的兼容包装层。
+4. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
+5. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
@@ -372,14 +374,15 @@ Transport
 - 已建立独立 BookmarkRepository Protocol，没有扩张 Vocabulary 接口。
 - 下一步拆分 SQLite connection、migration 与两个 Repository 实现。
 
-### 阶段 4：Storage Package
+### 阶段 4：Storage Package（已完成）
 
 - 已先稳定 Vocabulary 与 Bookmark Repository 的上层访问边界，SQLite 实现暂留 `AppDB`。
 - 已将 `storage.py` 转成 package，并通过 `storage/__init__.py` 保持旧 import。
 - 已拆出 `SQLiteDatabase` connection boundary 和独立 migrations 模块。
 - 已拆出 `SQLiteVocabularyRepository`，`AppDB` 保留旧方法转发。
 - 已拆出 `SQLiteBookmarkRepository`，Composition Root 直接注入该实现。
-- 下一步拆 unit metadata 同步实现，使 `AppDB` 只保留组合与兼容转发。
+- 已拆出内部 `SQLiteUnitRepository`，供两个业务 Repository 共享 metadata 同步。
+- `AppDB` 现在只保留组合、连接生命周期和兼容转发，不再包含 SQL。
 - Corpus、Memory、Annotated Copy 保持不同的数据生命周期。
 
 ### 阶段 5：Composition Root 与 HTTP Routers

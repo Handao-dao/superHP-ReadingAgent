@@ -1,9 +1,9 @@
 """Transitional all-in-one SQLite storage implementation.
 
-AppDB now composes the shared connection, migration, vocabulary repository, and
-bookmark repository boundaries. It still contains unit metadata synchronization
-and compatibility forwarding methods; the next step can extract that final SQL
-without changing the historical ``superhp_agent.storage.AppDB`` import.
+AppDB composes the shared connection, migration, unit, vocabulary, and bookmark
+repository implementations. It contains no repository SQL and remains only as
+the historical ``superhp_agent.storage.AppDB`` lifecycle and compatibility
+facade.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from superhp_agent.storage.sqlite.bookmarks import (
 from superhp_agent.storage.sqlite.bookmarks import (
     SQLiteBookmarkRepository,
 )
+from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import (
     ANNOTATION_MARKER_RE as ANNOTATION_MARKER_RE,
 )
@@ -33,7 +34,8 @@ from superhp_agent.storage.sqlite.vocabulary import (
 
 
 class AppDB:
-    """Thin SQLite gateway used by services and API endpoints."""
+    """Compatibility facade that composes SQLite repository implementations."""
+
     def __init__(self, db_path: str | Path):
         self.database = SQLiteDatabase(db_path)
         self.path = self.database.path
@@ -41,54 +43,21 @@ class AppDB:
         self._conn = self.database.connection
         self._lock = self.database.lock
         initialize_schema(self._conn)
+        self.unit_repository = SQLiteUnitRepository(self.database)
         self.vocabulary_repository = SQLiteVocabularyRepository(
             self.database,
-            sync_unit=self.sync_unit,
+            sync_unit=self.unit_repository.sync,
         )
         self.bookmark_repository = SQLiteBookmarkRepository(
             self.database,
-            sync_unit=self.sync_unit,
+            sync_unit=self.unit_repository.sync,
         )
 
     def close(self) -> None:
         self.database.close()
 
     def sync_unit(self, unit: ReadingUnit) -> None:
-        """Upsert corpus metadata so vocabulary rows can reference a unit."""
-        with self._lock:
-            self._conn.execute(
-                """
-                INSERT INTO units (
-                    id, chapter_id, book_id, book_title, chapter_no, chapter_title,
-                    section_no, section_count, summary, source_path, profile_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    chapter_id=excluded.chapter_id,
-                    book_id=excluded.book_id,
-                    book_title=excluded.book_title,
-                    chapter_no=excluded.chapter_no,
-                    chapter_title=excluded.chapter_title,
-                    section_no=excluded.section_no,
-                    section_count=excluded.section_count,
-                    summary=excluded.summary,
-                    source_path=excluded.source_path,
-                    profile_id=excluded.profile_id
-                """,
-                (
-                    unit.id,
-                    unit.chapter_id,
-                    unit.book_id,
-                    unit.book_title,
-                    unit.chapter_no,
-                    unit.chapter_title,
-                    unit.section_no,
-                    unit.section_count,
-                    unit.summary,
-                    str(unit.path),
-                    unit.profile_id,
-                ),
-            )
-            self._conn.commit()
+        self.unit_repository.sync(unit)
 
     def add_vocabulary_items(self, unit: ReadingUnit, items: list[Any]) -> int:
         return self.vocabulary_repository.add_vocabulary_items(unit, items)

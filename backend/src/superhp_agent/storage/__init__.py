@@ -1,8 +1,8 @@
 """SQLite storage implementations and compatibility exports.
 
 Upper layers should depend on Store or Repository Ports. This package exposes
-the historical AppDB entrypoint while its connection, migration, and repository
-responsibilities are separated incrementally.
+the historical AppDB entrypoint as a composition and lifecycle facade over the
+separated connection, migration, and repository implementations.
 """
 
 from superhp_agent.storage.app_db import (

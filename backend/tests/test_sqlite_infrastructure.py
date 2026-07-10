@@ -1,7 +1,9 @@
 """Focused tests for SQLite connection ownership and schema migration."""
 
+from superhp_agent.storage import AppDB
 from superhp_agent.storage.database import SQLiteDatabase
 from superhp_agent.storage.migrations import initialize_schema
+from superhp_agent.storage.sqlite import SQLiteUnitRepository
 
 
 def test_sqlite_database_configures_connection(tmp_path):
@@ -14,6 +16,15 @@ def test_sqlite_database_configures_connection(tmp_path):
         assert row["value"] == 1
     finally:
         database.close()
+
+
+def test_app_db_composes_unit_repository(tmp_path):
+    db = AppDB(tmp_path / "app.db")
+
+    try:
+        assert isinstance(db.unit_repository, SQLiteUnitRepository)
+    finally:
+        db.close()
 
 
 def test_initialize_schema_creates_repository_tables(tmp_path):

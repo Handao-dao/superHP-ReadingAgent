@@ -53,6 +53,7 @@ default_profile = profile_registry.get()
 corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
+vocabulary_repository = db.vocabulary_repository
 bookmark_repository: BookmarkRepository = db.bookmark_repository
 annotated_copies = AnnotatedCopyStore(settings.annotated_dir)
 # LLM providers are lazy so the app can boot and serve corpus/memory endpoints
@@ -83,7 +84,7 @@ class LazyLookupService:
 
 
 lookup_service = LazyLookupService()
-state_reader = ReadingStateReader(corpus, annotated_copies, memory_store, db)
+state_reader = ReadingStateReader(corpus, annotated_copies, memory_store, vocabulary_repository)
 flow_router = ReadingFlowRouter(
     state_reader,
     card_builder=ReadingCardBuilder(default_profile.card_copy, profile_registry=profile_registry),
@@ -116,7 +117,7 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         summary=unit.summary,
         has_annotated_copy=annotated_copies.exists_any(unit.id),
         status="read" if is_read else "unread",
-        vocab_count=db.count_vocabulary_for_unit(unit.id),
+        vocab_count=vocabulary_repository.count_vocabulary_for_unit(unit.id),
         profile_id=unit.profile_id,
     )
 
@@ -215,7 +216,11 @@ async def list_vocabulary(
 ):
     return [
         _vocabulary_entry(row)
-        for row in db.list_vocabulary(unit_id=unit_id, chapter_id=chapter_id, profile_id=profile_id)
+        for row in vocabulary_repository.list_vocabulary(
+            unit_id=unit_id,
+            chapter_id=chapter_id,
+            profile_id=profile_id,
+        )
     ]
 
 
@@ -273,7 +278,7 @@ async def lookup_word(payload: WordLookupRequest):
 async def add_vocabulary(payload: AddVocabularyRequest):
     try:
         unit = corpus.get_unit(payload.unit_id).meta
-        vocab_id = db.add_manual_vocabulary(
+        vocab_id = vocabulary_repository.add_manual_vocabulary(
             unit,
             word=payload.word,
             translation=payload.translation,
@@ -295,21 +300,25 @@ async def add_vocabulary(payload: AddVocabularyRequest):
 
 @app.patch("/api/vocabulary/{vocab_id}/master", response_model=MutationResponse)
 async def set_vocabulary_mastered(vocab_id: int, payload: SetMasteredRequest):
-    if not db.set_mastered(vocab_id, payload.mastered):
+    if not vocabulary_repository.set_mastered(vocab_id, payload.mastered):
         raise HTTPException(status_code=404, detail="vocabulary item not found")
     return MutationResponse(ok=True)
 
 
 @app.delete("/api/vocabulary/{vocab_id}", response_model=MutationResponse)
 async def delete_vocabulary(vocab_id: int):
-    if not db.delete_vocabulary(vocab_id):
+    if not vocabulary_repository.delete_vocabulary(vocab_id):
         raise HTTPException(status_code=404, detail="vocabulary item not found")
     return MutationResponse(ok=True)
 
 
 @app.post("/api/vocabulary/mark-by-word", response_model=MutationResponse)
 async def mark_vocabulary_by_word(payload: MarkByWordRequest):
-    db.set_mastered_by_word(payload.word, payload.mastered, profile_id=payload.profile_id)
+    vocabulary_repository.set_mastered_by_word(
+        payload.word,
+        payload.mastered,
+        profile_id=payload.profile_id,
+    )
     return MutationResponse(ok=True)
 
 
@@ -337,7 +346,7 @@ async def reading_socket(websocket: WebSocket):
         memory_store=memory_store,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
-        db=db,
+        db=vocabulary_repository,
     )
     try:
         await session.run()

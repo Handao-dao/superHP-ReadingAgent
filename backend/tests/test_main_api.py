@@ -80,7 +80,7 @@ def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
 
     monkeypatch.setattr(main, "annotated_copies", AnnotatedCopyStore(annotated_dir))
     monkeypatch.setattr(main, "memory_store", FakeMemoryStore())
-    monkeypatch.setattr(main, "db", FakeDB())
+    monkeypatch.setattr(main, "vocabulary_repository", FakeDB())
 
     meta = main._unit_meta(unit)
 
@@ -131,7 +131,7 @@ def test_list_units_can_filter_by_profile(tmp_path, monkeypatch):
     fake_corpus.units = [english, classical]
     monkeypatch.setattr(main, "corpus", fake_corpus)
     monkeypatch.setattr(main, "memory_store", FakeMemoryStore())
-    monkeypatch.setattr(main, "db", FakeDB())
+    monkeypatch.setattr(main, "vocabulary_repository", FakeDB())
     monkeypatch.setattr(main, "annotated_copies", AnnotatedCopyStore(tmp_path / "annotated"))
 
     with TestClient(main.app) as client:

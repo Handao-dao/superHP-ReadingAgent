@@ -2,6 +2,7 @@
 
 from superhp_agent.ports import BookmarkRepository
 from superhp_agent.storage import AppDB
+from superhp_agent.storage.sqlite import SQLiteBookmarkRepository
 
 
 def test_app_db_satisfies_bookmark_repository_port(tmp_path):
@@ -9,6 +10,8 @@ def test_app_db_satisfies_bookmark_repository_port(tmp_path):
 
     try:
         assert isinstance(db, BookmarkRepository)
+        assert isinstance(db.bookmark_repository, SQLiteBookmarkRepository)
+        assert isinstance(db.bookmark_repository, BookmarkRepository)
         assert db.list_bookmarks() == []
         assert db.delete_bookmark(404) is False
     finally:

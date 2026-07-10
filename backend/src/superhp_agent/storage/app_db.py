@@ -1,9 +1,9 @@
 """Transitional all-in-one SQLite storage implementation.
 
-AppDB now composes the shared connection, migration, and vocabulary repository
-boundaries, but still contains unit metadata and bookmark SQL. Repository Ports
-already hide it from upper layers; upcoming steps will extract those remaining
-queries without changing the historical ``superhp_agent.storage.AppDB`` import.
+AppDB now composes the shared connection, migration, vocabulary repository, and
+bookmark repository boundaries. It still contains unit metadata synchronization
+and compatibility forwarding methods; the next step can extract that final SQL
+without changing the historical ``superhp_agent.storage.AppDB`` import.
 """
 
 from __future__ import annotations
@@ -15,6 +15,12 @@ from superhp_agent.corpus import ReadingUnit
 from superhp_agent.domain.vocabulary import normalize_pos as normalize_pos
 from superhp_agent.storage.database import SQLiteDatabase
 from superhp_agent.storage.migrations import initialize_schema
+from superhp_agent.storage.sqlite.bookmarks import (
+    VALID_BODY_KINDS as VALID_BODY_KINDS,
+)
+from superhp_agent.storage.sqlite.bookmarks import (
+    SQLiteBookmarkRepository,
+)
 from superhp_agent.storage.sqlite.vocabulary import (
     ANNOTATION_MARKER_RE as ANNOTATION_MARKER_RE,
 )
@@ -24,8 +30,6 @@ from superhp_agent.storage.sqlite.vocabulary import (
 from superhp_agent.storage.sqlite.vocabulary import (
     strip_annotation_markers as strip_annotation_markers,
 )
-
-VALID_BODY_KINDS = {"source", "annotated"}
 
 
 class AppDB:
@@ -38,6 +42,10 @@ class AppDB:
         self._lock = self.database.lock
         initialize_schema(self._conn)
         self.vocabulary_repository = SQLiteVocabularyRepository(
+            self.database,
+            sync_unit=self.sync_unit,
+        )
+        self.bookmark_repository = SQLiteBookmarkRepository(
             self.database,
             sync_unit=self.sync_unit,
         )
@@ -145,67 +153,18 @@ class AppDB:
         label: str = "",
         excerpt: str = "",
     ) -> int:
-        """Store one explicit reading bookmark and return its id."""
-        body_kind = str(body_kind or "").strip()
-        if body_kind not in VALID_BODY_KINDS:
-            raise ValueError("body_kind must be source or annotated")
-        page_index = max(0, int(page_index))
-        total_pages = max(0, int(total_pages))
-        progress_ratio = min(1, max(0, float(progress_ratio)))
-        label = str(label or "").strip()
-        excerpt = str(excerpt or "").strip()
-        with self._lock:
-            self.sync_unit(unit)
-            cursor = self._conn.execute(
-                """
-                INSERT INTO bookmarks (
-                    unit_id, chapter_id, body_kind, page_index, progress_ratio,
-                    total_pages, label, excerpt
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    unit.id,
-                    unit.chapter_id,
-                    body_kind,
-                    page_index,
-                    progress_ratio,
-                    total_pages,
-                    label,
-                    excerpt,
-                ),
-            )
-            self._conn.commit()
-            return int(cursor.lastrowid)
+        return self.bookmark_repository.add_bookmark(
+            unit,
+            body_kind=body_kind,
+            page_index=page_index,
+            progress_ratio=progress_ratio,
+            total_pages=total_pages,
+            label=label,
+            excerpt=excerpt,
+        )
 
     def list_bookmarks(self, *, unit_id: str | None = None) -> list[dict[str, Any]]:
-        """Return explicit reading bookmarks, newest first."""
-        params: list[str] = []
-        where = ""
-        if unit_id:
-            where = "WHERE unit_id = ?"
-            params.append(unit_id)
-        query = f"""
-            SELECT
-                id,
-                unit_id,
-                chapter_id,
-                body_kind,
-                page_index,
-                progress_ratio,
-                total_pages,
-                label,
-                excerpt,
-                created_at
-            FROM bookmarks
-            {where}
-            ORDER BY datetime(created_at) DESC, id DESC
-        """
-        with self._lock:
-            return [dict(row) for row in self._conn.execute(query, params).fetchall()]
+        return self.bookmark_repository.list_bookmarks(unit_id=unit_id)
 
     def delete_bookmark(self, bookmark_id: int) -> bool:
-        """Remove one explicit bookmark."""
-        with self._lock:
-            cursor = self._conn.execute("DELETE FROM bookmarks WHERE id = ?", (bookmark_id,))
-            self._conn.commit()
-            return cursor.rowcount > 0
+        return self.bookmark_repository.delete_bookmark(bookmark_id)

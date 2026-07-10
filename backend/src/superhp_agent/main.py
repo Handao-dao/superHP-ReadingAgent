@@ -53,7 +53,7 @@ default_profile = profile_registry.get()
 corpus = CorpusStore(settings.corpus_dir, default_profile_id=settings.default_profile_id)
 memory_store = ReadingMemoryStore(settings.reading_memory_path, settings.event_log_path)
 db = AppDB(settings.db_path)
-bookmark_repository: BookmarkRepository = db
+bookmark_repository: BookmarkRepository = db.bookmark_repository
 annotated_copies = AnnotatedCopyStore(settings.annotated_dir)
 # LLM providers are lazy so the app can boot and serve corpus/memory endpoints
 # even when no API key has been configured yet.

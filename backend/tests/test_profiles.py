@@ -41,7 +41,7 @@ def test_english_novel_profile_builds_prompt_context():
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
     assert "<mastered_words_policy>" in system_prompt
     assert "ignoring letter case and surrounding whitespace" in system_prompt
-    assert "does not automatically make the whole expression mastered" in system_prompt
+    assert "does not exclude a longer expression" in system_prompt
     assert "character-for-character identical" in system_prompt
     assert "English novels" in system_prompt
     assert "lexical annotation assistant" in system_prompt
@@ -49,7 +49,6 @@ def test_english_novel_profile_builds_prompt_context():
     assert "normally use no more than 8 annotations" in system_prompt
     assert "never exceed 15 annotations" in system_prompt
     assert "<harry_potter_selection_policy>" in system_prompt
-    assert "after the general density and selection rules" in system_prompt
     assert "widely established Chinese rendering" in system_prompt
     assert "solely because it is magical, fictional, or capitalized" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt

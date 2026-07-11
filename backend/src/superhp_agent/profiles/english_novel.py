@@ -52,8 +52,6 @@ Gloss quality:
 # Corpus-specific guidance belongs in its own block so another novel series can
 # replace it without changing the shared annotation contract or density policy.
 HARRY_POTTER_SELECTION_POLICY = """
-Apply these corpus-specific rules after the general density and selection rules.
-
 - Treat spells, magical objects, creatures, institutions, titles, and wizarding-world expressions as domain vocabulary.
 - Do not select a term solely because it is magical, fictional, or capitalized.
 - For a selected term, prefer its widely established Chinese rendering when one exists.
@@ -61,9 +59,7 @@ Apply these corpus-specific rules after the general density and selection rules.
 """.strip()
 
 ANNOTATION_EXAMPLES = """
-Choose the smallest complete unit that carries the difficulty.
-Annotate a single word when that word is the complete difficult unit.
-Annotate the whole expression only when its combined meaning is the actual difficulty.
+Choose either a single word or a complete expression according to the smallest unit that carries the actual difficulty.
 
 Single-word example input:
 Harry remained bewildered as the portraits whispered among themselves and refused to explain what had happened.
@@ -81,7 +77,6 @@ Incorrect replacement:
 Harry picked up his wand, looked toward the closed door, and muttered under his breath [[muttered under his breath|低声嘟囔|phrase]] before returning to his seat.
 
 Reason:
-The correct examples select an appropriately sized comprehension obstacle and replace it in place.
 The incorrect replacement duplicates the source expression instead of replacing it.
 """.strip()
 
@@ -96,8 +91,7 @@ MASTERED_WORDS_POLICY = """
 Treat mastered_words as vocabulary the reader already understands.
 
 - Do not annotate a source span that matches an entry in mastered_words, ignoring letter case and surrounding whitespace.
-- A mastered word inside a different, longer expression does not automatically make the whole expression mastered.
-- You may annotate the complete longer expression when its combined meaning is a genuine comprehension obstacle.
+- A mastered component does not exclude a longer expression whose combined meaning is a genuine comprehension obstacle.
 - If mastered_words is an empty JSON array, apply no mastery exclusions.
 """.strip()
 

@@ -20,6 +20,10 @@ from superhp_agent.contracts.annotation import (
     AnnotationResult,
     ServiceIssue,
 )
+from superhp_agent.domain.vocabulary import (
+    extract_vocabulary_candidates,
+    normalize_word,
+)
 from superhp_agent.ports.events import EventSink, emit_backend_event
 from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.profiles import (
@@ -135,14 +139,24 @@ class AnnotatorService:
         if not chunks:
             raise ValueError("模型没有返回译注文本。")
         normalized_level = self.profile.normalize_level(level)
-        base_context = self.profile.build_annotator_base_context(
-            mastered_words=mastered_words,
-            level=normalized_level,
-        )
+        mastered_by_identity = {
+            normalize_word(word): word for word in mastered_words or [] if normalize_word(word)
+        }
+        base_contexts = {}
+        for chunk in chunks:
+            chunk_candidates = extract_vocabulary_candidates(chunk.text)
+            chunk_mastered_words = [
+                mastered_by_identity[identity]
+                for identity in sorted(mastered_by_identity.keys() & chunk_candidates)
+            ]
+            base_contexts[chunk.index] = self.profile.build_annotator_base_context(
+                mastered_words=chunk_mastered_words,
+                level=normalized_level,
+            )
 
         outcomes = await self._annotate_chunks(
             chunks,
-            base_context=base_context,
+            base_contexts=base_contexts,
             event_sink=event_sink,
             request_id=request_id,
         )
@@ -162,7 +176,7 @@ class AnnotatorService:
         self,
         chunks: list[TextChunk],
         *,
-        base_context: ContextBundle,
+        base_contexts: dict[int, ContextBundle],
         event_sink: EventSink | None,
         request_id: str | None,
     ) -> list[AnnotationChunkOutcome]:
@@ -185,7 +199,7 @@ class AnnotatorService:
             async with semaphore:
                 return await self._annotate_chunk(
                     chunk,
-                    base_context=base_context,
+                    base_context=base_contexts[chunk.index],
                     event_sink=event_sink,
                     request_id=request_id,
                 )

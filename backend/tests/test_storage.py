@@ -219,6 +219,30 @@ def test_same_word_is_isolated_by_profile(tmp_path):
     assert db.list_mastered_words("classical_chinese") == []
 
 
+def test_find_mastered_words_returns_only_relevant_profile_candidates(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    write_classical_unit(corpus_root)
+    store = CorpusStore(corpus_root)
+    english_unit = store.get_unit("hp01-ch01").meta
+    classical_unit = store.get_unit("cc-lunyu-xueer-01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    wand_id = db.add_manual_vocabulary(english_unit, word="Wand", translation="魔杖")
+    cloak_id = db.add_manual_vocabulary(english_unit, word="cloak", translation="斗篷")
+    chinese_id = db.add_manual_vocabulary(classical_unit, word="说", translation="愉快")
+    db.set_mastered(wand_id, True)
+    db.set_mastered(cloak_id, True)
+    db.set_mastered(chinese_id, True)
+
+    assert db.find_mastered_words(
+        "english_novel",
+        {"wand", "table", "说"},
+    ) == ["Wand"]
+    assert db.find_mastered_words("classical_chinese", {"wand", "说"}) == ["说"]
+    assert db.find_mastered_words("english_novel", set()) == []
+
+
 def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):
     corpus_root = tmp_path / "corpus"
     write_unit(corpus_root)

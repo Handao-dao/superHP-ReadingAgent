@@ -90,7 +90,7 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
 
         result = await service.annotate_text(
             "a wand on the table.",
-            mastered_words=["owl"],
+            mastered_words=["wand"],
             level="beginner",
         )
 
@@ -109,7 +109,7 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
         assert "<mastered_words>" in user_prompt
         assert "<mastered_words_policy>" in user_prompt
-        assert '["owl"]' in user_prompt
+        assert '["wand"]' in user_prompt
         assert "<reader_text>" in user_prompt
         assert provider.kwargs[0]["extra_body"] is None
 
@@ -411,6 +411,32 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
         assert "first paragraph." in user_prompts[0]
         assert "second paragraph." in user_prompts[1]
         assert "third paragraph." in user_prompts[2]
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_selects_mastered_words_per_chunk():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content="first paragraph."),
+            LLMResponse(content="second paragraph."),
+        ])
+        service = AnnotatorService(
+            provider,
+            chunker=AnnotationChunker(max_chunk_words=3),
+            max_concurrency=1,
+        )
+
+        await service.annotate_text(
+            "first paragraph.\n\nsecond paragraph.",
+            mastered_words=["first", "second", "absent"],
+        )
+
+        prompts = [messages[1]["content"] for messages in provider.messages]
+        assert '<mastered_words>\n["first"]\n</mastered_words>' in prompts[0]
+        assert '<mastered_words>\n["second"]\n</mastered_words>' in prompts[1]
+        assert "absent" not in prompts[0]
+        assert "absent" not in prompts[1]
 
     asyncio.run(run_case())
 

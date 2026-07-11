@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Protocol
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
+from superhp_agent.domain.vocabulary import extract_vocabulary_candidates
 from superhp_agent.ports.events import (
     EventEmitter,
     EventLogger,
@@ -302,8 +304,19 @@ class GenerateAnnotationHandler:
             message="正在生成译注...",
         )
         try:
+            preparation_started = perf_counter()
+            candidates = extract_vocabulary_candidates(doc.body) if context.db else set()
             mastered_words = (
-                context.db.list_mastered_words(doc.meta.profile_id) if context.db else []
+                context.db.find_mastered_words(doc.meta.profile_id, candidates)
+                if context.db
+                else []
+            )
+            context.log_event(
+                "annotation_mastery_prepared",
+                unit_id=unit_id,
+                candidate_count=len(candidates),
+                mastered_match_count=len(mastered_words),
+                preparation_ms=round((perf_counter() - preparation_started) * 1000, 3),
             )
             result = await context.annotator_service.annotate_text(
                 doc.body,

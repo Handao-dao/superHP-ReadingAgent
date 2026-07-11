@@ -220,6 +220,41 @@ class SQLiteVocabularyRepository:
             ).fetchall()
             return [str(row["word"]) for row in rows]
 
+    def find_mastered_words(
+        self,
+        profile_id: str,
+        candidates: set[str],
+    ) -> list[str]:
+        """Return only mastered words that occur in prepared source text."""
+        normalized = sorted(
+            {
+                normalized_word
+                for word in candidates
+                if (normalized_word := normalize_word(word))
+            }
+        )
+        if not normalized:
+            return []
+        found: dict[str, str] = {}
+        with self.database.lock:
+            for start in range(0, len(normalized), 400):
+                batch = normalized[start : start + 400]
+                placeholders = ", ".join("?" for _ in batch)
+                rows = self.database.connection.execute(
+                    f"""
+                    SELECT normalized_word, word
+                    FROM vocabulary
+                    WHERE profile_id = ?
+                      AND mastered = 1
+                      AND normalized_word IN ({placeholders})
+                    """,
+                    [profile_id, *batch],
+                ).fetchall()
+                found.update(
+                    (str(row["normalized_word"]), str(row["word"])) for row in rows
+                )
+        return [found[key] for key in sorted(found)]
+
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         """Return the number shown on guided cards for one reading unit."""
         with self.database.lock:

@@ -57,6 +57,27 @@ truncated_output
 `AnnotationResult` 传递。Service 同时发送 `annotation.degraded` 事件，事件包含稳定的
 `category`、`code` 和 `chunk_index`；前端不应依赖可变的错误文案判断类型。
 
+## 已掌握词动态筛选
+
+已掌握词不会再整表加载并复制到每个 Prompt。Dispatcher 在 Provider 并发开始前先对整章做
+一次轻量候选提取，再通过 `VocabularyRepository.find_mastered_words()` 批量查询当前 Profile
+下真正出现在本章的已掌握词：
+
+```text
+整章原文
+    → 提取英文单词/短语与中文短片段
+    → 分批查询 SQLite（每批最多 400 个候选）
+    → 得到本章相关已掌握词
+    → AnnotatorService 按 chunk 在内存中再次取交集
+    → 每个 chunk 只携带自己的 mastered_words
+    → 并发调用 Provider
+```
+
+SQLite 查询不进入并发 chunk 区域，因此不会让 8 个模型任务争用数据库锁。行为日志中的
+`annotation_mastery_prepared` 记录候选数、命中数和准备耗时，便于用真实章节评估本地筛选成本。
+候选器是检索用途的轻量规则，不承担完整语言学分词：当前支持最多四个英文词的连续短语，以及
+最多四个连续中文字符的片段。
+
 ## 合并与持久化
 
 - 校验通过和降级后的 chunk 都按原始 `index` 合并，因此前端始终能获得完整可读文本。

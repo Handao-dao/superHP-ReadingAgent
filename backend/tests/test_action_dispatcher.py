@@ -256,11 +256,18 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         unit = corpus.get_unit("hp01-ch01").meta
         mastered_id = db.add_manual_vocabulary(
             unit,
+            word="Body",
+            translation="正文",
+            context="Body text.",
+        )
+        db.set_mastered(mastered_id, True)
+        irrelevant_id = db.add_manual_vocabulary(
+            unit,
             word="known",
             translation="已知",
             context="Known word.",
         )
-        db.set_mastered(mastered_id, True)
+        db.set_mastered(irrelevant_id, True)
         annotator = FakeAnnotator()
         context = ActionContext(
             corpus=corpus,
@@ -289,7 +296,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert events[-1]["unit"]["body"] == "Body [[text|文本]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
         assert annotator.levels == ["advanced"]
-        assert annotator.mastered_words == [["known"]]
+        assert annotator.mastered_words == [["Body"]]
         assert annotator.profile_ids == ["english_novel"]
         annotated_file = annotated_dir / "hp01-ch01.advanced.annotated.md"
         assert annotated_file.exists()

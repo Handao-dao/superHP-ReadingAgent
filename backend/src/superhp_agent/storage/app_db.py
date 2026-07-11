@@ -99,6 +99,13 @@ class AppDB:
     def list_mastered_words(self, profile_id: str = "english_novel") -> list[str]:
         return self.vocabulary_repository.list_mastered_words(profile_id)
 
+    def find_mastered_words(
+        self,
+        profile_id: str,
+        candidates: set[str],
+    ) -> list[str]:
+        return self.vocabulary_repository.find_mastered_words(profile_id, candidates)
+
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         return self.vocabulary_repository.count_vocabulary_for_unit(unit_id)
 

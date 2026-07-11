@@ -125,7 +125,7 @@ def test_annotator_prompt_uses_context_blocks():
     assert "<density_profile" not in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
-    assert "Return only the annotated passage text." in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "Return only the passage text with any selected inline annotations." in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "normally use no more than 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "never exceed 15 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT

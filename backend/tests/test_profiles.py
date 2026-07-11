@@ -53,7 +53,8 @@ def test_english_novel_profile_builds_prompt_context():
     assert "widely established Chinese rendering" in system_prompt
     assert "solely because it is magical, fictional, or capitalized" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
-    assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
+    assert "Return only the passage text with any selected inline annotations." in profile.base_annotator_system_prompt
+    assert "return the input passage unchanged" in profile.base_annotator_system_prompt
 
 
 def test_english_annotation_examples_cover_word_and_phrase_boundaries():
@@ -69,6 +70,10 @@ def test_english_novel_profile_validates_markers_and_source_reconstruction():
     assert profile.validate_annotated_text(
         source_text="a wand on the table",
         annotated_text="a [[wand|魔杖|noun]] on the table",
+    ) is None
+    assert profile.validate_annotated_text(
+        source_text="a wand on the table",
+        annotated_text="a wand on the table",
     ) is None
 
     malformed = profile.validate_annotated_text(

@@ -86,12 +86,10 @@ The incorrect replacement duplicates the source expression instead of replacing 
 """.strip()
 
 OUTPUT_CONTRACT = """
-Return only the annotated passage text.
-Do not output JSON.
-Do not output a vocabulary list.
-Do not wrap the answer in code fences.
-Do not add explanations before or after the passage.
-Do not add headings, summaries, or commentary unless they already exist in the input text.
+Return only the passage text with any selected inline annotations.
+Do not output JSON, a vocabulary list, or a code fence.
+Do not add any explanation or commentary around the passage.
+If no annotation is needed, return the input passage unchanged.
 """.strip()
 
 MASTERED_WORDS_POLICY = """

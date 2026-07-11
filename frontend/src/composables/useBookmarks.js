@@ -9,7 +9,6 @@ import { addBookmark, deleteBookmark, fetchBookmarks } from '../api/bookmarks'
 
 export function useBookmarks({
   getActiveChapter,
-  getAnnotationLevel,
   getCurrentPage,
   getCurrentParagraphIndex,
   getPageForParagraph,
@@ -82,7 +81,6 @@ export function useBookmarks({
         totalPages,
         label: `Chapter ${meta.chapter_no} · Page ${pageIndex + 1}`,
         excerpt: currentBookmarkExcerpt(),
-        annotationLevel: bodyKind === 'annotated' ? getAnnotationLevel?.() || '' : '',
         paragraphIndex: getCurrentParagraphIndex?.() ?? -1,
       })
       bookmarks.value = [saved, ...bookmarks.value]

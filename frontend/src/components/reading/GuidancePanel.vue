@@ -1,6 +1,6 @@
 <!--
   Presents guided-reading context and the available agent card actions.
-  The parent owns action routing, density payloads, WebSocket state, and chapter
+  The parent owns action routing, WebSocket state, and chapter
   navigation; this component only emits the action selected by the reader.
 -->
 <script setup>

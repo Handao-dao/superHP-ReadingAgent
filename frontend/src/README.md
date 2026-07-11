@@ -22,7 +22,6 @@ src/
 ├── App.vue                         # 页面协调器与阅读流程组合根
 ├── api/                            # HTTP API 边界
 ├── composables/                    # 可复用的领域状态和行为
-│   ├── useAnnotationDensity.js     # Density 选择、持久化、level 映射
 │   ├── useBookmarks.js             # 书签 CRUD、分组和跳页解析
 │   ├── useReaderPagination.js      # CSS columns 分页和 DOM 测量
 │   ├── useReadingCatalog.js        # Profile、章节目录和选择持久化
@@ -37,7 +36,7 @@ src/
 │       ├── ReadingPaperFooter.vue  # 正文模式、书签按钮和页码
 │       ├── ReadingSidebar.vue      # Profile、章节和书签目录
 │       ├── ReadingTextPage.vue     # 正文块与分页 DOM 节点
-│       └── ReadingTopbar.vue       # 顶栏、视图切换和 Density 菜单
+│       └── ReadingTopbar.vue       # 顶栏、视图切换和连接状态
 ├── renderers/                      # Profile-specific 正文解析和 HTML 渲染
 ├── styles/                         # 分区样式
 ├── styles.css                      # 全局样式入口
@@ -59,7 +58,7 @@ API 文件不能操作 DOM、`localStorage`、路由视图或其他 composable�
 
 ### 2. 领域状态：`composables/`
 
-一个 composable 应当只有一个明确状态域。例如 `useBookmarks` 可以保存和删除书签，但不能决定 WebSocket 应发送哪个阅读 action；后者需要同时了解当前 Density 和阅读会话，属于 `App.vue` 的协调职责。
+一个 composable 应当只有一个明确状态域。例如 `useBookmarks` 可以保存和删除书签，但不能决定 WebSocket 应发送哪个阅读 action；后者需要同时了解阅读会话和当前页面状态，属于 `App.vue` 的协调职责。
 
 Composable 可以依赖：
 
@@ -75,7 +74,7 @@ Composable 不应直接导入展示组件，也不应通过查询全局 DOM 与�
 
 - props 是已经准备好的显示数据。
 - emits 表示用户做了什么，例如 `select-chapter`、`save-bookmark` 或 `action`。
-- 组件可以持有纯 UI 临时状态，例如 Density 菜单是否展开。
+- 组件可以持有纯 UI 临时状态，例如侧边栏是否展开。
 - 组件不能自行决定跨领域流程或直接修改父级状态。
 
 纯格式化逻辑应放在最接近展示位置的组件中。例如章节编号、badge 文案和书签时间格式属于 `ReadingSidebar`，不属于书签持久化层。
@@ -97,7 +96,7 @@ Renderer 不负责：
 
 - 创建 composable 并连接它们的输入输出。
 - 根据 WebSocket 状态推导 `readerMode`。
-- 处理跨领域动作，例如给 annotation action 补充 Density level。
+- 处理跨领域动作，例如打开书签时协调 WebSocket action 与分页跳转。
 - 切换 Profile 时同时清空章节、cards、分页和查词状态。
 - 打开书签时协调 WebSocket action 与分页跳转。
 - 组合侧栏、顶栏、纸面状态、正文、生词页等组件。

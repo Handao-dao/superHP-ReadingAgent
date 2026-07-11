@@ -22,7 +22,6 @@ export async function addBookmark({
   totalPages,
   label,
   excerpt,
-  annotationLevel,
   paragraphIndex,
 }) {
   const response = await fetch(BASE, {
@@ -36,7 +35,6 @@ export async function addBookmark({
       total_pages: totalPages,
       label,
       excerpt,
-      annotation_level: annotationLevel,
       paragraph_index: paragraphIndex,
     }),
   })

@@ -8,7 +8,6 @@ import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
-import { useAnnotationDensity } from './composables/useAnnotationDensity'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -21,12 +20,6 @@ const sidebarOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
-const {
-  densityOptions,
-  selectDensity,
-  selectedDensity,
-  selectedLevel,
-} = useAnnotationDensity()
 const {
   chapters,
   chaptersByBook,
@@ -149,7 +142,6 @@ const {
   saveCurrentBookmark,
 } = useBookmarks({
   getActiveChapter: () => activeChapter.value,
-  getAnnotationLevel: () => selectedLevel.value,
   getCurrentPage: () => currentPage.value,
   getCurrentParagraphIndex: currentParagraphIndex,
   getPageForParagraph: pageForParagraph,
@@ -221,16 +213,7 @@ function handleAction(action) {
   }
   const actionUnitId = action.payload?.unit_id || action.payload?.chapter_id
   if (actionUnitId) currentChapterId.value = actionUnitId
-  const actionWithDensity = ['generate_annotation', 'open_annotated_copy'].includes(action.id)
-    ? {
-        ...action,
-        payload: {
-          ...(action.payload || {}),
-          level: selectedLevel.value,
-        },
-      }
-    : action
-  sendAction(actionWithDensity)
+  sendAction(action)
 }
 
 function handleSelectChapter(chapter) {
@@ -270,9 +253,6 @@ function handleOpenBookmark(bookmark) {
     payload: {
       unit_id: bookmark.unit_id,
       chapter_id: bookmark.unit_id,
-      ...(bookmark.body_kind === 'annotated'
-        ? { level: bookmark.annotation_level || selectedLevel.value }
-        : {}),
     },
   }
   sendAction(action)
@@ -393,11 +373,7 @@ onBeforeUnmount(() => {
         :book-title="currentMeta?.book_title || currentProfile.label"
         :chapter-label="currentMeta ? chapterLabel : ''"
         :connected="connected"
-        :density-options="densityOptions"
-        :is-generating="isGenerating"
         :page-label="pageLabel"
-        :selected-density="selectedDensity"
-        @select-density="selectDensity"
         @toggle-sidebar="toggleSidebar"
         @view-change="activeView = $event"
       />

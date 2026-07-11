@@ -95,8 +95,12 @@ Do not add headings, summaries, or commentary unless they already exist in the i
 """.strip()
 
 MASTERED_WORDS_POLICY = """
-Do not annotate any word or expression listed in mastered_words.
-If mastered_words is an empty JSON array, ignore this block.
+Treat mastered_words as vocabulary the reader already understands.
+
+- Do not annotate a source span that matches an entry in mastered_words, ignoring letter case and surrounding whitespace.
+- A mastered word inside a different, longer expression does not automatically make the whole expression mastered.
+- You may annotate the complete longer expression when its combined meaning is a genuine comprehension obstacle.
+- If mastered_words is an empty JSON array, apply no mastery exclusions.
 """.strip()
 
 ANNOTATION_SYSTEM_BLOCKS = (

@@ -25,7 +25,6 @@ from superhp_agent.storage import AppDB
 
 class FakeAnnotator:
     def __init__(self):
-        self.levels = []
         self.mastered_words = []
         self.profile_ids = []
 
@@ -34,12 +33,10 @@ class FakeAnnotator:
         text,
         *,
         mastered_words=None,
-        level="intermediate",
         event_sink=None,
         request_id=None,
         profile_id=None,
     ):
-        self.levels.append(level)
         self.mastered_words.append(mastered_words or [])
         self.profile_ids.append(profile_id)
         return AnnotationResult(
@@ -295,7 +292,6 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         assert events[2]["stored_vocabulary_count"] == 1
         assert events[-1]["unit"]["body"] == "Body [[text|文本]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
-        assert annotator.levels == ["advanced"]
         assert annotator.mastered_words == [["Body"]]
         assert annotator.profile_ids == ["english_novel"]
         annotated_file = annotated_dir / "hp01-ch01.advanced.annotated.md"
@@ -400,7 +396,6 @@ def test_dispatch_generate_annotation_falls_back_to_intermediate_for_bad_level(t
             context,
         )
 
-        assert annotator.levels == ["intermediate"]
         assert (tmp_path / "data" / "annotated" / "hp01-ch01.intermediate.annotated.md").exists()
 
     asyncio.run(run_case())
@@ -508,7 +503,6 @@ def test_dispatch_open_annotated_copy_generates_missing_density(tmp_path):
             "annotation.completed",
             "chapter.opened",
         ]
-        assert annotator.levels == ["beginner"]
         assert (annotated_dir / "hp01-ch01.beginner.annotated.md").exists()
 
     asyncio.run(run_case())

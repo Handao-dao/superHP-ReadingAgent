@@ -48,13 +48,10 @@ class AnnotationProfile(Protocol):
     renderer_hint: str
     card_copy: CardCopy
 
-    def normalize_level(self, level: str | None) -> str: ...
-
     def build_annotator_base_context(
         self,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
     ) -> ContextBundle: ...
 
     def build_lookup_user_prompt(self, *, word: str, sentence: str) -> str: ...

@@ -125,7 +125,6 @@ class AnnotatorService:
         text: str,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
         profile_id: str | None = None,
@@ -134,10 +133,8 @@ class AnnotatorService:
         chunks = self.chunker.split(text)
         if not chunks:
             raise ValueError("模型没有返回译注文本。")
-        normalized_level = self.profile.normalize_level(level)
         base_context = self.profile.build_annotator_base_context(
             mastered_words=mastered_words,
-            level=normalized_level,
         )
 
         outcomes = await self._annotate_chunks(
@@ -421,7 +418,6 @@ class LazyAnnotatorService:
         text: str,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
         profile_id: str | None = None,
@@ -429,7 +425,6 @@ class LazyAnnotatorService:
         return await self._get_service(profile_id).annotate_text(
             text,
             mastered_words=mastered_words,
-            level=level,
             event_sink=event_sink,
             request_id=request_id,
             profile_id=profile_id,

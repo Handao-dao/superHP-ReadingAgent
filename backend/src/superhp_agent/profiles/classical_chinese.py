@@ -81,9 +81,16 @@ MASTERED_WORDS_POLICY = """
 如果 mastered_words 是空 JSON 数组，则忽略本规则块。
 """.strip()
 
+SELECTION_POLICY = """
+跳过非常基础且上下文明确的字词。
+集中标注影响句意、翻译或断句的实词、虚词、古今异义、词类活用、固定结构和特殊句式。
+不要为了增加数量而标注对理解没有明显帮助的内容。
+""".strip()
+
 ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
+    ContextBlock("selection_policy", SELECTION_POLICY, role="system"),
     ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
     ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),
 )
@@ -91,43 +98,6 @@ ANNOTATION_SYSTEM_BLOCKS = (
 BASE_ANNOTATOR_SYSTEM_PROMPT = ContextBundle(
     system_blocks=ANNOTATION_SYSTEM_BLOCKS,
 ).render_role("system")
-
-LEVEL_PROFILES = {
-    "beginner": {
-        "ui": "H",
-        "label": "文言文基础学习者，需要较高密度辅助",
-        "density": "high",
-        "target": "标注大多数影响理解的重点字词、虚词、活用和句式",
-        "rules": (
-            "面向基础学习者，标注密度可以较高。"
-            "重点解释常见实词、虚词、通假字、古今异义、词类活用和固定句式。"
-            "遇到整句理解依赖特殊结构时，优先整体标注短语或结构。"
-            "不要逐字机械标注，应保留原文阅读流畅度。"
-        ),
-    },
-    "intermediate": {
-        "ui": "M",
-        "label": "有一定文言基础的学习者，需要中等密度辅助",
-        "density": "medium",
-        "target": "标注主要理解障碍和考试高频点",
-        "rules": (
-            "面向有一定基础的学习者，跳过非常基础且上下文明确的字词。"
-            "集中标注影响句意的实词、虚词、古今异义、活用、固定结构和特殊句式。"
-            "优先选择对翻译、断句或考点判断有帮助的片段。"
-        ),
-    },
-    "advanced": {
-        "ui": "L",
-        "label": "文言文进阶学习者，只需要低密度提示",
-        "density": "low",
-        "target": "只标注罕见、歧义或关键考点",
-        "rules": (
-            "面向进阶学习者，只标注容易误解、语义有歧义、用法特殊或考点价值高的内容。"
-            "常见实词、常见虚词和普通句式一般不标注。"
-            "拿不准是否必要时，倾向于不标注。"
-        ),
-    },
-}
 
 LOOKUP_SYSTEM_PROMPT = """
 # 角色
@@ -208,33 +178,24 @@ class ClassicalChineseProfile:
     def lookup_system_prompt(self) -> str:
         return LOOKUP_SYSTEM_PROMPT
 
-    def normalize_level(self, level: str | None) -> str:
-        if level in LEVEL_PROFILES:
-            return str(level)
-        return "intermediate"
-
     def build_annotator_context(
         self,
         text: str,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
     ) -> ContextBundle:
         return self.build_annotator_base_context(
             mastered_words=mastered_words,
-            level=level,
         ).with_blocks(_reader_text_block(text))
 
     def build_annotator_base_context(
         self,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
     ) -> ContextBundle:
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,
             user_blocks=(
-                _density_profile_block(self.normalize_level(level)),
                 _mastered_words_block(mastered_words),
                 _mastered_words_policy_block(),
             ),
@@ -282,25 +243,6 @@ class ClassicalChineseProfile:
                 )
             )
         return items
-
-
-def _density_profile_block(level: str) -> ContextBlock:
-    level_profile = LEVEL_PROFILES[level]
-    content = (
-        f"Target reader: {level_profile['label']}\n"
-        f"Target density: {level_profile['target']}\n\n"
-        f"{level_profile['rules']}"
-    )
-    return ContextBlock(
-        "density_profile",
-        content,
-        role="user",
-        attrs={
-            "level": level,
-            "ui": level_profile["ui"],
-            "density": level_profile["density"],
-        },
-    )
 
 
 def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:

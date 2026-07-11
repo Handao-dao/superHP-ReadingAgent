@@ -103,9 +103,6 @@ BASE_ANNOTATOR_SYSTEM_PROMPT = ContextBundle(
     system_blocks=ANNOTATION_SYSTEM_BLOCKS,
 ).render_role("system")
 
-# Kept only until the downstream API and artifact migration removes `level`.
-SUPPORTED_ANNOTATION_LEVELS = frozenset({"beginner", "intermediate", "advanced"})
-
 LOOKUP_SYSTEM_PROMPT = """
 # Role
 You are an expert English-Chinese dictionary and translation assistant specialized in the Harry Potter novels.
@@ -163,28 +160,20 @@ class EnglishNovelProfile:
     def lookup_system_prompt(self) -> str:
         return LOOKUP_SYSTEM_PROMPT
 
-    def normalize_level(self, level: str | None) -> str:
-        if level in SUPPORTED_ANNOTATION_LEVELS:
-            return str(level)
-        return "intermediate"
-
     def build_annotator_context(
         self,
         text: str,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
     ) -> ContextBundle:
         return self.build_annotator_base_context(
             mastered_words=mastered_words,
-            level=level,
         ).with_blocks(_reader_text_block(text))
 
     def build_annotator_base_context(
         self,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
     ) -> ContextBundle:
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,

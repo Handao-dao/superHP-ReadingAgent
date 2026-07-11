@@ -27,7 +27,6 @@ from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
     VocabularyRepository,
 )
-from superhp_agent.prompts import normalize_level
 from superhp_agent.runtime.actions import (
     GENERATE_ANNOTATION,
     MARK_CHAPTER_READ,
@@ -48,7 +47,6 @@ class AnnotationService(Protocol):
         text: str,
         *,
         mastered_words: list[str] | None = None,
-        level: str = "intermediate",
         event_sink: EventSink | None = None,
         request_id: str | None = None,
         profile_id: str | None = None,
@@ -321,7 +319,6 @@ class GenerateAnnotationHandler:
             result = await context.annotator_service.annotate_text(
                 doc.body,
                 mastered_words=mastered_words,
-                level=level,
                 event_sink=context.event_sink,
                 request_id=request_id,
                 profile_id=doc.meta.profile_id,
@@ -427,7 +424,8 @@ def _require_unit_id(payload: dict[str, Any]) -> str:
 
 
 def _payload_level(payload: dict[str, Any]) -> str:
-    return normalize_level(str(payload.get("level") or "intermediate"))
+    level = str(payload.get("level") or "intermediate")
+    return level if level in {"beginner", "intermediate", "advanced"} else "intermediate"
 
 
 async def _emit_opened_unit(

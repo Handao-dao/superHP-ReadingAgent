@@ -32,7 +32,7 @@ def test_english_novel_profile_parses_legacy_markers():
 def test_english_novel_profile_builds_prompt_context():
     profile = EnglishNovelProfile()
 
-    context = profile.build_annotator_base_context(mastered_words=["wand"], level="advanced")
+    context = profile.build_annotator_base_context(mastered_words=["wand"])
     user_prompt = context.render_role("user")
     system_prompt = context.render_role("system")
 
@@ -118,10 +118,11 @@ def test_classical_chinese_profile_validates_its_own_labels():
 def test_classical_chinese_profile_builds_classical_prompt_context():
     profile = ClassicalChineseProfile()
 
-    context = profile.build_annotator_base_context(mastered_words=["说"], level="beginner")
+    context = profile.build_annotator_base_context(mastered_words=["说"])
     user_prompt = context.render_role("user")
 
-    assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
+    assert "<density_profile" not in user_prompt
+    assert "<selection_policy>" in profile.base_annotator_system_prompt
     assert "<mastered_words>\n[\"说\"]\n</mastered_words>" in user_prompt
     assert "文言文" in profile.base_annotator_system_prompt
     assert "[[原文字词或短语|现代汉语释义|pos]]" in profile.base_annotator_system_prompt

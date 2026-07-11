@@ -91,7 +91,6 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         result = await service.annotate_text(
             "a wand on the table.",
             mastered_words=["wand"],
-            level="beginner",
         )
 
         assert result.annotated_text == "a [[wand|魔杖|noun]] on the [[table|桌子|noun]]."
@@ -121,7 +120,6 @@ def test_annotator_prompt_uses_context_blocks():
     prompt = build_annotator_user_prompt(
         "a wand on the table",
         mastered_words=["wand"],
-        level="advanced",
     )
 
     assert "<density_profile" not in prompt
@@ -135,7 +133,7 @@ def test_annotator_prompt_uses_context_blocks():
 
 
 def test_annotator_base_context_excludes_reader_text():
-    context = build_annotator_base_context(mastered_words=["wand"], level="intermediate")
+    context = build_annotator_base_context(mastered_words=["wand"])
 
     user_prompt = context.render_role("user")
     system_prompt = context.render_role("system")

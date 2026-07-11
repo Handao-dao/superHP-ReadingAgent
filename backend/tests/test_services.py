@@ -415,7 +415,7 @@ def test_annotator_service_chunks_long_text_and_merges_in_order():
     asyncio.run(run_case())
 
 
-def test_annotator_service_selects_mastered_words_per_chunk():
+def test_annotator_service_reuses_chapter_mastered_words_for_all_chunks():
     async def run_case():
         provider = ScriptedProvider([
             LLMResponse(content="first paragraph."),
@@ -429,14 +429,16 @@ def test_annotator_service_selects_mastered_words_per_chunk():
 
         await service.annotate_text(
             "first paragraph.\n\nsecond paragraph.",
-            mastered_words=["first", "second", "absent"],
+            mastered_words=["first", "second"],
         )
 
         prompts = [messages[1]["content"] for messages in provider.messages]
-        assert '<mastered_words>\n["first"]\n</mastered_words>' in prompts[0]
-        assert '<mastered_words>\n["second"]\n</mastered_words>' in prompts[1]
-        assert "absent" not in prompts[0]
-        assert "absent" not in prompts[1]
+        mastered_block = '<mastered_words>\n["first", "second"]\n</mastered_words>'
+        assert mastered_block in prompts[0]
+        assert mastered_block in prompts[1]
+        assert prompts[0].split("<reader_text>", 1)[0] == prompts[1].split(
+            "<reader_text>", 1
+        )[0]
 
     asyncio.run(run_case())
 

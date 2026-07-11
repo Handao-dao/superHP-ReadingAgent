@@ -68,15 +68,16 @@ truncated_output
     → 提取英文单词/短语与中文短片段
     → 分批查询 SQLite（每批最多 400 个候选）
     → 得到本章相关已掌握词
-    → AnnotatorService 按 chunk 在内存中再次取交集
-    → 每个 chunk 只携带自己的 mastered_words
+    → AnnotatorService 为整章构造一份基础 Context
+    → 所有 chunk 共用本章相关 mastered_words
     → 并发调用 Provider
 ```
 
 SQLite 查询不进入并发 chunk 区域，因此不会让 8 个模型任务争用数据库锁。行为日志中的
 `annotation_mastery_prepared` 记录候选数、命中数和准备耗时，便于用真实章节评估本地筛选成本。
 候选器是检索用途的轻量规则，不承担完整语言学分词：当前支持最多四个英文词的连续短语，以及
-最多四个连续中文字符的片段。
+最多四个连续中文字符的片段。当前单章最多约 8 个 chunk，因此不再为每个 chunk 重复提取和
+筛选；若真实日志显示单章命中规模显著增长，再评估恢复更细粒度的筛选。
 
 ## 合并与持久化
 

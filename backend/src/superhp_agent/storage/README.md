@@ -24,7 +24,9 @@ JSONL      保存追加式诊断和审计事件
 | 小说和文言文原文 | `corpus/` Markdown | `CorpusStore` | 否，属于源内容 |
 | 标注版本正文 | `backend/data/annotated_corpus/` Markdown | `AnnotatedCopyStore` | 是，可重新调用模型生成 |
 | 阅读单元关系索引 | SQLite `units` | 内部 Unit Repository | 是，可从 Corpus 重新同步 |
-| 单词和掌握状态 | SQLite `vocabulary` | `VocabularyRepository` | 掌握状态不可重建 |
+| 语言级词元 | SQLite `lexemes` | `VocabularyRepository` | 可从书籍词表重建 |
+| 全局掌握状态 | SQLite `lexeme_mastery` | `VocabularyRepository` | 否，属于用户数据 |
+| 每本书的词表 | SQLite `book_vocabulary` | `VocabularyRepository` | 可从有效标注副本重新索引 |
 | 单词在章节中的出现 | SQLite `unit_vocabulary` | `VocabularyRepository` | 可从有效标注副本重新索引 |
 | 书签 | SQLite `bookmarks` | `BookmarkRepository` | 否，属于用户数据 |
 | 当前章节和阅读进度 | 目标为 SQLite | `ReadingProgressRepository` | 否，属于用户状态 |
@@ -71,27 +73,37 @@ annotated_at: <UTC timestamp>
 文件写入使用同目录临时文件加原子替换。标注文件是权威生成产物；SQLite 中的 vocabulary encounter
 只是可重建查询索引，因此不要求伪造跨文件系统和 SQLite 的事务。
 
-## 单词：VocabularyRepository
+## 单词：书籍隔离与语言级共享
 
-单词适合 SQLite，因为它需要去重、筛选、统计、掌握状态和章节关联。当前两表方向保留：
+词义和词性按书籍隔离，掌握状态按语言共享：
 
 ```text
-vocabulary
-    单词主体、Profile 作用域、标准化词形、词性和掌握状态
+lexemes
+    language_id + normalized_word，保存语言级词汇身份
+
+lexeme_mastery
+    关联 lexeme，保存跨书共享的 mastered 状态
+
+book_vocabulary
+    book_id + lexeme_id，保存当前书中的翻译、词性和 Profile
 
 unit_vocabulary
-    unit 与单词的关联、上下文翻译、例句和出现次数
+    unit 与 book_vocabulary 的关联、上下文翻译、例句和出现次数
 ```
 
-当前唯一约束已经从全局 `UNIQUE(word)` 演进为：
+核心唯一约束为：
 
 ```sql
-UNIQUE(profile_id, normalized_word)
+UNIQUE(language_id, normalized_word)  -- lexemes
+UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 ```
 
-`normalized_word` 使用去除首尾空白后的 Unicode `casefold` 结果。这样不同 Profile 不会错误共享
-翻译、词性和掌握状态，同一 Profile 内的大小写变体仍指向同一记录。旧全局词条会在 schema
-升级时按关联 unit 的 Profile 拆分并重新关联；`unit_vocabulary` 继续保留上下文相关翻译。
+例如 HP1 与 HP2 中的 `wand` 各自拥有书籍词条，可以保留不同翻译和统计，但都指向同一个
+`(en, wand)` lexeme；任意一本书把它标为掌握后，两本书都会显示为已掌握。不同语言中的同形词
+不会共享状态。`normalized_word` 使用去除首尾空白后的 Unicode `casefold` 结果。
+
+当前数据均为测试数据，本次重构直接重置旧 SQLite 与译注产物，不保留旧 `vocabulary` schema
+的兼容迁移。
 
 ## 书签：BookmarkRepository
 
@@ -172,7 +184,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 2. （已完成）从 Reading Memory 中移除 `annotated_unit_ids`，译注存在性只由文件系统判断。
 3. （已完成）新建 `ReadingProgressRepository`，把 current/opened/read 状态迁入 SQLite。
 4. （已完成）保留 JSONL 日志，移除 `reading_memory.json` 的运行时依赖。
-5. （已完成）为 vocabulary 增加 `profile_id + normalized_word` 作用域。
+5. （已替代）早期曾按 `profile_id + normalized_word` 隔离 vocabulary；当前已升级为书籍词表隔离与语言级 Mastery 共享。
 6. （已完成）为 bookmarks 增加译注 level 和更稳定的文本定位字段。
 7. （已完成）停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
    不需要为删除空列执行高风险表重建。

@@ -14,11 +14,11 @@ from superhp_agent.corpus import ReadingUnit
 class VocabularyRepository(Protocol):
     """Vocabulary reads and writes required by the guided-reading workflow."""
 
-    def list_mastered_words(self, profile_id: str = "english_novel") -> list[str]: ...
+    def list_mastered_words(self, language_id: str = "en") -> list[str]: ...
 
     def find_mastered_words(
         self,
-        profile_id: str,
+        language_id: str,
         candidates: set[str],
     ) -> list[str]: ...
 

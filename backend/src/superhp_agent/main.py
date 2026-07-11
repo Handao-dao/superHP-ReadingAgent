@@ -80,6 +80,7 @@ def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
         status="read" if is_read else "unread",
         vocab_count=vocabulary_repository.count_vocabulary_for_unit(unit.id),
         profile_id=unit.profile_id,
+        language_id=unit.language_id,
     )
 
 
@@ -91,7 +92,9 @@ def _vocabulary_entry(row: dict) -> VocabularyEntry:
     """Normalize SQLite rows before they cross the API boundary."""
     return VocabularyEntry(
         id=int(row["id"]),
+        book_id=str(row["book_id"]),
         profile_id=str(row["profile_id"]),
+        language_id=str(row["language_id"]),
         word=str(row["word"]),
         translation=str(row["translation"]),
         global_translation=str(row["global_translation"]),
@@ -134,6 +137,7 @@ async def list_profiles():
     return [
         ProfileMeta(
             id=profile.id,
+            language_id=profile.language_id,
             label=profile.label,
             renderer_hint=profile.renderer_hint,
             is_default=profile.id == profile_registry.default_profile_id,
@@ -177,6 +181,7 @@ async def list_vocabulary(
     unit_id: str | None = Query(default=None),
     chapter_id: str | None = Query(default=None),
     profile_id: str | None = Query(default=None),
+    book_id: str | None = Query(default=None),
 ):
     return [
         _vocabulary_entry(row)
@@ -184,6 +189,7 @@ async def list_vocabulary(
             unit_id=unit_id,
             chapter_id=chapter_id,
             profile_id=profile_id,
+            book_id=book_id,
         )
     ]
 
@@ -257,7 +263,9 @@ async def add_vocabulary(payload: AddVocabularyRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AddVocabularyResponse(
         id=vocab_id,
+        book_id=unit.book_id,
         profile_id=unit.profile_id,
+        language_id=unit.language_id,
         word=payload.word.strip(),
         translation=payload.translation.strip(),
         pos=normalize_pos(payload.pos),
@@ -284,7 +292,7 @@ async def mark_vocabulary_by_word(payload: MarkByWordRequest):
     vocabulary_repository.set_mastered_by_word(
         payload.word,
         payload.mastered,
-        profile_id=payload.profile_id,
+        language_id=profile_registry.get(payload.profile_id).language_id,
     )
     return MutationResponse(ok=True)
 

@@ -100,6 +100,8 @@ def test_profile_api_lists_builtin_profiles():
     profile_ids = [item["id"] for item in response.json()]
     assert "english_novel" in profile_ids
     assert "classical_chinese" in profile_ids
+    languages = {item["id"]: item["language_id"] for item in response.json()}
+    assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
 
 
 def test_list_units_can_filter_by_profile(tmp_path, monkeypatch):

@@ -37,6 +37,7 @@ class ReadingUnitMeta(BaseModel):
     status: str = "unread"
     vocab_count: int = 0
     profile_id: str = "english_novel"
+    language_id: str = "en"
 
     @property
     def summary_zh(self) -> str:

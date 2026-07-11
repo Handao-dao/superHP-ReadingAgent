@@ -43,6 +43,7 @@ class AnnotationProfile(Protocol):
     """Text policy required by annotation and lookup services."""
 
     id: str
+    language_id: str
     label: str
     renderer_hint: str
     card_copy: CardCopy

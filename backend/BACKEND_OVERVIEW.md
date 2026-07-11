@@ -14,7 +14,7 @@
 - WebSocket `hello/cards` 与 HTTP cards API 支持 `profile_id`，可按场景返回对应目录首篇和卡片文案。
 - 新增 `GET /api/profiles`，前端可读取当前可用阅读场景。
 - `GET /api/units` 支持 `profile_id` 过滤，用于英文小说与文言文目录切换。
-- `GET /api/vocabulary` 支持 `profile_id` 过滤；`units` 表补充 `profile_id` 字段并带轻量迁移。
+- `GET /api/vocabulary` 支持 `profile_id`、`book_id` 过滤；书籍词表按 `book_id` 隔离，掌握状态按 `language_id` 共享。
 - `POST /api/word-lookup` 与 `mark-by-word` 支持 profile 参数，文言文查词走文言文 lookup prompt。
 - `classical_chinese` profile 使用 `[[原文|现代汉语释义|pos]]` 标记，pos 使用中文学习标签，如 `通假字`、`古今异义`、`词类活用`、`虚词用法`、`特殊句式`。
 - 添加文言文语料：`论语/学而`、`谏太宗十思疏`、`师说`。

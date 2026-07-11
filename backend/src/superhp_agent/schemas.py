@@ -26,6 +26,7 @@ ChapterDetail = ReadingUnitDetail
 
 class ProfileMeta(BaseModel):
     id: str
+    language_id: str
     label: str
     renderer_hint: str = "english_novel"
     is_default: bool = False
@@ -33,7 +34,9 @@ class ProfileMeta(BaseModel):
 
 class VocabularyEntry(BaseModel):
     id: int
+    book_id: str
     profile_id: str
+    language_id: str
     word: str
     translation: str
     global_translation: str
@@ -70,7 +73,9 @@ class AddVocabularyRequest(BaseModel):
 
 class AddVocabularyResponse(BaseModel):
     id: int
+    book_id: str
     profile_id: str
+    language_id: str
     word: str
     translation: str
     pos: str = "other"

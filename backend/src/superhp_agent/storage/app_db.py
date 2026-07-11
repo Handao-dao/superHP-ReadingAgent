@@ -86,25 +86,25 @@ class AppDB:
     def set_mastered(self, vocab_id: int, mastered: bool) -> bool:
         return self.vocabulary_repository.set_mastered(vocab_id, mastered)
 
-    def set_mastered_by_word(self, word: str, mastered: bool, *, profile_id: str | None = None) -> bool:
+    def set_mastered_by_word(self, word: str, mastered: bool, *, language_id: str = "en") -> bool:
         return self.vocabulary_repository.set_mastered_by_word(
             word,
             mastered,
-            profile_id=profile_id,
+            language_id=language_id,
         )
 
     def delete_vocabulary(self, vocab_id: int) -> bool:
         return self.vocabulary_repository.delete_vocabulary(vocab_id)
 
-    def list_mastered_words(self, profile_id: str = "english_novel") -> list[str]:
-        return self.vocabulary_repository.list_mastered_words(profile_id)
+    def list_mastered_words(self, language_id: str = "en") -> list[str]:
+        return self.vocabulary_repository.list_mastered_words(language_id)
 
     def find_mastered_words(
         self,
-        profile_id: str,
+        language_id: str,
         candidates: set[str],
     ) -> list[str]:
-        return self.vocabulary_repository.find_mastered_words(profile_id, candidates)
+        return self.vocabulary_repository.find_mastered_words(language_id, candidates)
 
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         return self.vocabulary_repository.count_vocabulary_for_unit(unit_id)
@@ -115,11 +115,13 @@ class AppDB:
         unit_id: str | None = None,
         chapter_id: str | None = None,
         profile_id: str | None = None,
+        book_id: str | None = None,
     ) -> list[dict[str, Any]]:
         return self.vocabulary_repository.list_vocabulary(
             unit_id=unit_id,
             chapter_id=chapter_id,
             profile_id=profile_id,
+            book_id=book_id,
         )
 
     def add_bookmark(

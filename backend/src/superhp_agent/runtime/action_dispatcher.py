@@ -307,7 +307,7 @@ class GenerateAnnotationHandler:
             preparation_started = perf_counter()
             candidates = extract_vocabulary_candidates(doc.body) if context.db else set()
             mastered_words = (
-                context.db.find_mastered_words(doc.meta.profile_id, candidates)
+                context.db.find_mastered_words(doc.meta.language_id, candidates)
                 if context.db
                 else []
             )

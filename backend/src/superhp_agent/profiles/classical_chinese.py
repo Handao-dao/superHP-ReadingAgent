@@ -195,6 +195,7 @@ class ClassicalChineseProfile:
     """Profile for classical Chinese annotation using the shared marker format."""
 
     id = "classical_chinese"
+    language_id = "lzh"
     label = "Classical Chinese study reading"
     renderer_hint = "english_novel"
     card_copy = CARD_COPY

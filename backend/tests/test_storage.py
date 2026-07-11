@@ -54,6 +54,27 @@ profile_id: classical_chinese
     )
 
 
+def write_second_english_book(root: Path):
+    path = root / "hp02" / "ch01" / "01.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """---
+id: hp02-ch01
+chapter_id: hp02-ch01
+book_id: hp02
+book_title: "Harry Potter and the Chamber of Secrets"
+chapter_no: 1
+chapter_title: "The Worst Birthday"
+summary: "Summary"
+profile_id: english_novel
+---
+
+Body text.
+""",
+        encoding="utf-8",
+    )
+
+
 def test_add_and_list_vocabulary_by_unit_and_chapter(tmp_path):
     corpus_root = tmp_path / "corpus"
     write_unit(corpus_root)
@@ -185,7 +206,7 @@ def test_vocabulary_can_be_filtered_by_profile(tmp_path):
     assert [row["word"] for row in classical_rows] == ["说"]
 
 
-def test_same_word_is_isolated_by_profile(tmp_path):
+def test_same_surface_word_is_isolated_by_language(tmp_path):
     corpus_root = tmp_path / "corpus"
     write_unit(corpus_root)
     write_classical_unit(corpus_root)
@@ -208,18 +229,18 @@ def test_same_word_is_isolated_by_profile(tmp_path):
     )
 
     assert english_id != classical_id
-    assert db.set_mastered_by_word("MASTER", True, profile_id="english_novel")
+    assert db.set_mastered_by_word("MASTER", True, language_id="en")
     english_row = db.list_vocabulary(profile_id="english_novel")[0]
     classical_row = db.list_vocabulary(profile_id="classical_chinese")[0]
     assert english_row["translation"] == "主人"
     assert english_row["mastered"] == 1
     assert classical_row["translation"] == "掌握"
     assert classical_row["mastered"] == 0
-    assert db.list_mastered_words("english_novel") == ["Master"]
-    assert db.list_mastered_words("classical_chinese") == []
+    assert db.list_mastered_words("en") == ["Master"]
+    assert db.list_mastered_words("lzh") == []
 
 
-def test_find_mastered_words_returns_only_relevant_profile_candidates(tmp_path):
+def test_find_mastered_words_returns_only_relevant_language_candidates(tmp_path):
     corpus_root = tmp_path / "corpus"
     write_unit(corpus_root)
     write_classical_unit(corpus_root)
@@ -236,11 +257,34 @@ def test_find_mastered_words_returns_only_relevant_profile_candidates(tmp_path):
     db.set_mastered(chinese_id, True)
 
     assert db.find_mastered_words(
-        "english_novel",
+        "en",
         {"wand", "table", "说"},
     ) == ["Wand"]
-    assert db.find_mastered_words("classical_chinese", {"wand", "说"}) == ["说"]
-    assert db.find_mastered_words("english_novel", set()) == []
+    assert db.find_mastered_words("lzh", {"wand", "说"}) == ["说"]
+    assert db.find_mastered_words("en", set()) == []
+
+
+def test_books_have_separate_entries_but_share_language_mastery(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    write_second_english_book(corpus_root)
+    store = CorpusStore(corpus_root)
+    first_unit = store.get_unit("hp01-ch01").meta
+    second_unit = store.get_unit("hp02-ch01").meta
+    db = AppDB(tmp_path / "app.sqlite3")
+
+    first_id = db.add_manual_vocabulary(first_unit, word="wand", translation="魔杖")
+    second_id = db.add_manual_vocabulary(second_unit, word="WAND", translation="法杖")
+
+    assert first_id != second_id
+    assert db.set_mastered(first_id, True)
+    first_row = db.list_vocabulary(book_id="hp01")[0]
+    second_row = db.list_vocabulary(book_id="hp02")[0]
+    assert first_row["translation"] == "魔杖"
+    assert second_row["translation"] == "法杖"
+    assert first_row["mastered"] == 1
+    assert second_row["mastered"] == 1
+    assert db.list_mastered_words("en") == ["WAND"]
 
 
 def test_bookmarks_can_be_listed_filtered_and_deleted(tmp_path):

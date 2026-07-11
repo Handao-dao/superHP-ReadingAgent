@@ -177,6 +177,7 @@ class EnglishNovelProfile:
     """Default profile that preserves the current Harry Potter behavior."""
 
     id = "english_novel"
+    language_id = "en"
     label = "English novel intensive reading"
     renderer_hint = "english_novel"
     card_copy = CardCopy()

@@ -29,6 +29,7 @@ class ReadingUnit:
     summary: str
     path: Path
     profile_id: str = "english_novel"
+    language_id: str = "en"
 
     @property
     def summary_zh(self) -> str:
@@ -155,6 +156,12 @@ class CorpusStore:
         section_count = int(data.get("section_count") or 1)
         summary = str(data.get("summary") or data.get("summary_zh") or "")
         profile_id = str(data.get("profile_id") or default_profile_id)
+        language_id = str(
+            data.get("language_id")
+            or {"english_novel": "en", "classical_chinese": "lzh"}.get(
+                profile_id, "und"
+            )
+        )
 
         return ReadingUnit(
             id=unit_id,
@@ -168,6 +175,7 @@ class CorpusStore:
             summary=summary,
             path=path,
             profile_id=profile_id,
+            language_id=language_id,
         )
 
 

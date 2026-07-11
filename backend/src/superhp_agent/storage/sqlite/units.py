@@ -22,8 +22,9 @@ class SQLiteUnitRepository:
                 """
                 INSERT INTO units (
                     id, chapter_id, book_id, book_title, chapter_no, chapter_title,
-                    section_no, section_count, summary, source_path, profile_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    section_no, section_count, summary, source_path, profile_id,
+                    language_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     chapter_id=excluded.chapter_id,
                     book_id=excluded.book_id,
@@ -34,7 +35,8 @@ class SQLiteUnitRepository:
                     section_count=excluded.section_count,
                     summary=excluded.summary,
                     source_path=excluded.source_path,
-                    profile_id=excluded.profile_id
+                    profile_id=excluded.profile_id,
+                    language_id=excluded.language_id
                 """,
                 (
                     unit.id,
@@ -48,6 +50,7 @@ class SQLiteUnitRepository:
                     unit.summary,
                     str(unit.path),
                     unit.profile_id,
+                    unit.language_id,
                 ),
             )
             self.database.connection.commit()

@@ -60,7 +60,7 @@ truncated_output
 ## 已掌握词动态筛选
 
 已掌握词不会再整表加载并复制到每个 Prompt。Dispatcher 在 Provider 并发开始前先对整章做
-一次轻量候选提取，再通过 `VocabularyRepository.find_mastered_words()` 批量查询当前 Profile
+一次轻量候选提取，再通过 `VocabularyRepository.find_mastered_words()` 批量查询当前语言
 下真正出现在本章的已掌握词：
 
 ```text

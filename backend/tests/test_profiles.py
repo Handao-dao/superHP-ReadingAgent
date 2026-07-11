@@ -3,6 +3,7 @@ from superhp_agent.profiles import (
     EnglishNovelProfile,
     create_default_registry,
 )
+from superhp_agent.profiles.english_novel import ANNOTATION_EXAMPLES
 
 
 def test_default_profile_registry_returns_english_novel():
@@ -51,6 +52,13 @@ def test_english_novel_profile_builds_prompt_context():
     assert "solely because it is magical, fictional, or capitalized" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
+
+
+def test_english_annotation_examples_cover_word_and_phrase_boundaries():
+    assert "[[bewildered|困惑的|adjective]]" in ANNOTATION_EXAMPLES
+    assert "[[muttered under his breath|低声嘟囔|phrase]]" in ANNOTATION_EXAMPLES
+    assert "[[wand|" not in ANNOTATION_EXAMPLES
+    assert "duplicates the source expression" in ANNOTATION_EXAMPLES
 
 
 def test_english_novel_profile_validates_markers_and_source_reconstruction():

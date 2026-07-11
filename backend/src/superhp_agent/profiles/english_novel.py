@@ -61,15 +61,28 @@ Apply these corpus-specific rules after the general density and selection rules.
 """.strip()
 
 ANNOTATION_EXAMPLES = """
-Input:
-Harry picked up his wand and muttered a spell.
+Choose the smallest complete unit that carries the difficulty.
+Annotate a single word when that word is the complete difficult unit.
+Annotate the whole expression only when its combined meaning is the actual difficulty.
 
-Good output:
-Harry [[picked up|拿起|phrase]] his [[wand|魔杖|noun]] and [[muttered|低声说|verb]] a [[spell|咒语|noun]].
+Single-word example input:
+Harry remained bewildered as the portraits whispered among themselves and refused to explain what had happened.
 
-Bad output:
-Harry picked up [[picked up|拿起|phrase]] his wand [[wand|魔杖|noun]] and muttered [[muttered|低声说|verb]] a spell [[spell|咒语|noun]].
-Reason: duplicates original text instead of replacing the selected words or expression.
+Single-word example output:
+Harry remained [[bewildered|困惑的|adjective]] as the portraits whispered among themselves and refused to explain what had happened.
+
+Phrase example input:
+Harry picked up his wand, looked toward the closed door, and muttered under his breath before returning to his seat.
+
+Phrase example output:
+Harry picked up his wand, looked toward the closed door, and [[muttered under his breath|低声嘟囔|phrase]] before returning to his seat.
+
+Incorrect replacement:
+Harry picked up his wand, looked toward the closed door, and muttered under his breath [[muttered under his breath|低声嘟囔|phrase]] before returning to his seat.
+
+Reason:
+The correct examples select an appropriately sized comprehension obstacle and replace it in place.
+The incorrect replacement duplicates the source expression instead of replacing it.
 """.strip()
 
 OUTPUT_CONTRACT = """

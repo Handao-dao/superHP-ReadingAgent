@@ -19,9 +19,14 @@ ANNOTATION_POS = frozenset(
 SYSTEM_POLICY = """
 You are an English-Chinese lexical annotation assistant for Chinese learners reading English novels, with particular familiarity with the Harry Potter series.
 
-Identify genuine comprehension obstacles and add selective inline Chinese glosses without translating, rewriting, or otherwise altering the passage.
+Add selective inline Chinese glosses without translating, rewriting, or otherwise altering the passage.
 
-Prioritize exact source preservation, level-appropriate selection, and concise context-specific glosses, in that order.
+Prioritize exact source preservation, importance-based selection, and concise context-specific glosses, in that order.
+
+Annotate only the words or expressions that most affect comprehension.
+For approximately every 300 English words, normally use no more than 8 annotations.
+Increase beyond 8 only when the passage contains an unusual concentration of indispensable comprehension obstacles, and never exceed 15 annotations.
+These limits are not targets: do not use the extra capacity for lower-priority words, and use fewer annotations or none when appropriate.
 """.strip()
 
 ANNOTATION_CONTRACT = """
@@ -45,9 +50,9 @@ Gloss quality:
 """.strip()
 
 # Corpus-specific guidance belongs in its own block so another novel series can
-# replace it without changing the shared annotation contract or level profiles.
+# replace it without changing the shared annotation contract or density policy.
 HARRY_POTTER_SELECTION_POLICY = """
-Apply these corpus-specific rules after the reader-level selection rules.
+Apply these corpus-specific rules after the general density and selection rules.
 
 - Treat spells, magical objects, creatures, institutions, titles, and wizarding-world expressions as domain vocabulary.
 - Do not select a term solely because it is magical, fictional, or capitalized.
@@ -98,52 +103,8 @@ BASE_ANNOTATOR_SYSTEM_PROMPT = ContextBundle(
     system_blocks=ANNOTATION_SYSTEM_BLOCKS,
 ).render_role("system")
 
-LEVEL_PROFILES = {
-    "beginner": {
-        "ui": "H",
-        "label": "a beginner English learner, roughly A1-A2 level",
-        "density": "high",
-        "target": "about 25%-40% of meaningful content words",
-        "rules": (
-            "Annotate frequently enough to help a beginner understand the text, "
-            "but do not annotate every content word. "
-            "Skip only very common function words and very basic everyday vocabulary. "
-            "Annotate most content words beyond A1-A2 level, especially unfamiliar nouns, verbs, adjectives, and adverbs. "
-            "Annotate all idioms, phrasal verbs, fixed expressions, culturally specific expressions, and wizarding-world terms that may affect understanding. "
-            "For idioms and phrasal verbs, annotate the whole expression rather than individual words. "
-            "Avoid repeated annotations of the same word within the same passage unless the meaning changes."
-        ),
-    },
-    "intermediate": {
-        "ui": "M",
-        "label": "an intermediate English learner, roughly B1-B2 level",
-        "density": "medium",
-        "target": "about 8%-18% of meaningful content words",
-        "rules": (
-            "Do not annotate A1-B1 high-frequency vocabulary that an intermediate learner should know. "
-            "Focus on B2+ vocabulary, uncommon verbs, descriptive adjectives, adverbs with subtle meanings, "
-            "less common nouns, literary words, wizarding-world terms, idioms, phrasal verbs, and words whose meaning depends strongly on context. "
-            "Annotate culturally specific expressions and wizarding-world terms whose meaning is not obvious from the individual words. "
-            "For idioms, phrasal verbs, and fixed expressions, annotate the whole expression rather than separate words. "
-            "Avoid repeated annotations of the same word within the same passage unless necessary."
-        ),
-    },
-    "advanced": {
-        "ui": "L",
-        "label": "an advanced English learner, roughly C1-C2 level",
-        "density": "low",
-        "target": "about 2%-6% of meaningful content words",
-        "rules": (
-            "Annotate only words or expressions that may challenge an advanced or near-fluent English reader. "
-            "Do not annotate ordinary descriptive adjectives, common adverbs, common phrasal verbs, common idioms, "
-            "or standard academic vocabulary. "
-            "Focus only on truly rare, archaic, literary, metaphorical, dialectal, culturally specific, wizarding-world, or contextually subtle expressions. "
-            "Annotate wizarding-world terms only if they are obscure, important for understanding the sentence, or appear for the first time as key terms. "
-            "For complex expressions, annotate the whole phrase when appropriate rather than isolated words. "
-            "When in doubt, do not annotate."
-        ),
-    },
-}
+# Kept only until the downstream API and artifact migration removes `level`.
+SUPPORTED_ANNOTATION_LEVELS = frozenset({"beginner", "intermediate", "advanced"})
 
 LOOKUP_SYSTEM_PROMPT = """
 # Role
@@ -203,7 +164,7 @@ class EnglishNovelProfile:
         return LOOKUP_SYSTEM_PROMPT
 
     def normalize_level(self, level: str | None) -> str:
-        if level in LEVEL_PROFILES:
+        if level in SUPPORTED_ANNOTATION_LEVELS:
             return str(level)
         return "intermediate"
 
@@ -227,10 +188,7 @@ class EnglishNovelProfile:
     ) -> ContextBundle:
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,
-            user_blocks=(
-                _density_profile_block(self.normalize_level(level)),
-                _mastered_words_block(mastered_words),
-            ),
+            user_blocks=(_mastered_words_block(mastered_words),),
         )
 
     def build_lookup_user_prompt(self, *, word: str, sentence: str) -> str:
@@ -275,26 +233,6 @@ class EnglishNovelProfile:
                 )
             )
         return items
-
-
-def _density_profile_block(level: str) -> ContextBlock:
-    level_profile = LEVEL_PROFILES[level]
-    content = (
-        f"Target reader: {level_profile['label']}\n"
-        f"Soft density guide: {level_profile['target']}\n"
-        "Prioritize actual reading difficulty over meeting a numeric quota.\n\n"
-        f"{level_profile['rules']}"
-    )
-    return ContextBlock(
-        "density_profile",
-        content,
-        role="user",
-        attrs={
-            "level": level,
-            "ui": level_profile["ui"],
-            "density": level_profile["density"],
-        },
-    )
 
 
 def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:

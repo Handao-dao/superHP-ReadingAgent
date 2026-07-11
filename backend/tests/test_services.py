@@ -106,7 +106,7 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         assert "<annotation_contract>" in system_prompt
         assert "<annotation_examples>" in system_prompt
         assert "<output_contract>" in system_prompt
-        assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
+        assert "<density_profile" not in user_prompt
         assert "<mastered_words>" in user_prompt
         assert "<mastered_words_policy>" in system_prompt
         assert "<mastered_words_policy>" not in user_prompt
@@ -124,12 +124,12 @@ def test_annotator_prompt_uses_context_blocks():
         level="advanced",
     )
 
-    assert '<density_profile level="advanced" ui="L" density="low">' in prompt
-    assert "Soft density guide: about 2%-6% of meaningful content words" in prompt
-    assert "Prioritize actual reading difficulty over meeting a numeric quota." in prompt
+    assert "<density_profile" not in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
     assert "Return only the annotated passage text." in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "normally use no more than 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "never exceed 15 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 
@@ -140,7 +140,7 @@ def test_annotator_base_context_excludes_reader_text():
     user_prompt = context.render_role("user")
     system_prompt = context.render_role("system")
 
-    assert '<density_profile level="intermediate" ui="M" density="medium">' in user_prompt
+    assert "<density_profile" not in user_prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
     assert "<mastered_words_policy>" in system_prompt
     assert "<mastered_words_policy>" not in user_prompt

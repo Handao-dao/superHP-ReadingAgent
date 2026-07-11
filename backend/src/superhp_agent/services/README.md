@@ -29,16 +29,16 @@ System / Static
     output_contract
 
 User / Chapter Task
-    density_profile
     mastered_words
 
 User / Chunk Data
     reader_text
 ```
 
-熟词策略属于稳定 system 指令；动态熟词 JSON 和 Density 属于整章任务数据；每个并发请求只在
-基础 Context 末尾追加自己的 `reader_text`。Density 百分比是软指导，真实阅读难度优先于凑齐
-数值配额。Prompt 对原文保持的要求与后端校验一致：移除 marker 后必须逐字符等于输入。
+熟词策略和统一标注密度属于稳定 system 指令；动态熟词 JSON 属于整章任务数据；每个并发请求只在
+基础 Context 末尾追加自己的 `reader_text`。英文译注不再按高、中、低分级：每约 300 个英文单词通常不超过 8 处，
+局部难点密集时绝对不超过 15 处，且这些数字都不是必须凑满的配额。Prompt 对原文保持的要求与后端校验一致：
+移除 marker 后必须逐字符等于输入。
 
 ## AnnotatorService 的两层兜底
 

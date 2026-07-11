@@ -36,15 +36,17 @@ def test_english_novel_profile_builds_prompt_context():
     user_prompt = context.render_role("user")
     system_prompt = context.render_role("system")
 
-    assert '<density_profile level="advanced" ui="L" density="low">' in user_prompt
+    assert "<density_profile" not in user_prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
     assert "<mastered_words_policy>" in system_prompt
     assert "character-for-character identical" in system_prompt
     assert "English novels" in system_prompt
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
+    assert "normally use no more than 8 annotations" in system_prompt
+    assert "never exceed 15 annotations" in system_prompt
     assert "<harry_potter_selection_policy>" in system_prompt
-    assert "after the reader-level selection rules" in system_prompt
+    assert "after the general density and selection rules" in system_prompt
     assert "widely established Chinese rendering" in system_prompt
     assert "solely because it is magical, fictional, or capitalized" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt

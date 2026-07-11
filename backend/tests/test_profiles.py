@@ -41,6 +41,8 @@ def test_english_novel_profile_builds_prompt_context():
     assert "<mastered_words_policy>" in system_prompt
     assert "character-for-character identical" in system_prompt
     assert "English novels" in system_prompt
+    assert "lexical annotation assistant" in system_prompt
+    assert "Prioritize exact source preservation" in system_prompt
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
 
 

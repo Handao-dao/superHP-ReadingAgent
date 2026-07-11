@@ -43,7 +43,7 @@ def test_english_novel_profile_builds_prompt_context():
     assert "English novels" in system_prompt
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
-    assert "<selection_policy>" in system_prompt
+    assert "<harry_potter_selection_policy>" in system_prompt
     assert "ordinary character names" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt

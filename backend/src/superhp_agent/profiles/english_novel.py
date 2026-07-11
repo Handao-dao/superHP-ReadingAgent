@@ -44,7 +44,9 @@ Gloss quality:
 - Keep the gloss as concise as the meaning allows.
 """.strip()
 
-SELECTION_POLICY = """
+# Corpus-specific guidance belongs in its own block so another novel series can
+# replace it without changing the shared annotation contract or level profiles.
+HARRY_POTTER_SELECTION_POLICY = """
 Prefer concise standard Chinese renderings for widely used Harry Potter proper nouns and magical terms.
 Do not annotate ordinary character names such as Harry, Ron, Hermione, Dumbledore, or Hagrid unless the name itself is being explained as a title, place, spell, object, or special concept.
 """.strip()
@@ -78,7 +80,11 @@ If mastered_words is an empty JSON array, ignore this block.
 ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
-    ContextBlock("selection_policy", SELECTION_POLICY, role="system"),
+    ContextBlock(
+        "harry_potter_selection_policy",
+        HARRY_POTTER_SELECTION_POLICY,
+        role="system",
+    ),
     ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
     ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="system"),
     ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),

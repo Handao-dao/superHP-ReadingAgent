@@ -16,6 +16,30 @@ Profile、Context 和 Provider Port，但不负责：
 Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责判断最终模型结果在当前业务中
 是否可用，并以 Contracts 中的结构化结果向上层传递状态。
 
+## 英文译注 Context 组织
+
+英文小说是当前产品主路径。译注 Context 按稳定规则、整章任务状态和当前 chunk 数据组织：
+
+```text
+System / Static
+    system_policy
+    annotation_contract
+    annotation_examples
+    mastered_words_policy
+    output_contract
+
+User / Chapter Task
+    density_profile
+    mastered_words
+
+User / Chunk Data
+    reader_text
+```
+
+熟词策略属于稳定 system 指令；动态熟词 JSON 和 Density 属于整章任务数据；每个并发请求只在
+基础 Context 末尾追加自己的 `reader_text`。Density 百分比是软指导，真实阅读难度优先于凑齐
+数值配额。Prompt 对原文保持的要求与后端校验一致：移除 marker 后必须逐字符等于输入。
+
 ## AnnotatorService 的两层兜底
 
 译注以单个 chunk 为独立模型任务。每个 chunk 的处理流程如下：

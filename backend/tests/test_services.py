@@ -108,7 +108,8 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         assert "<output_contract>" in system_prompt
         assert '<density_profile level="beginner" ui="H" density="high">' in user_prompt
         assert "<mastered_words>" in user_prompt
-        assert "<mastered_words_policy>" in user_prompt
+        assert "<mastered_words_policy>" in system_prompt
+        assert "<mastered_words_policy>" not in user_prompt
         assert '["wand"]' in user_prompt
         assert "<reader_text>" in user_prompt
         assert provider.kwargs[0]["extra_body"] is None
@@ -124,7 +125,8 @@ def test_annotator_prompt_uses_context_blocks():
     )
 
     assert '<density_profile level="advanced" ui="L" density="low">' in prompt
-    assert "Target density: about 2%-6% of meaningful content words" in prompt
+    assert "Soft density guide: about 2%-6% of meaningful content words" in prompt
+    assert "Prioritize actual reading difficulty over meeting a numeric quota." in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
     assert "Return only the annotated passage text." in BASE_ANNOTATOR_SYSTEM_PROMPT
@@ -136,10 +138,12 @@ def test_annotator_base_context_excludes_reader_text():
     context = build_annotator_base_context(mastered_words=["wand"], level="intermediate")
 
     user_prompt = context.render_role("user")
+    system_prompt = context.render_role("system")
 
     assert '<density_profile level="intermediate" ui="M" density="medium">' in user_prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
-    assert "<mastered_words_policy>" in user_prompt
+    assert "<mastered_words_policy>" in system_prompt
+    assert "<mastered_words_policy>" not in user_prompt
     assert "<reader_text>" not in user_prompt
 
 

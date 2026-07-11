@@ -34,9 +34,13 @@ def test_english_novel_profile_builds_prompt_context():
 
     context = profile.build_annotator_base_context(mastered_words=["wand"], level="advanced")
     user_prompt = context.render_role("user")
+    system_prompt = context.render_role("system")
 
     assert '<density_profile level="advanced" ui="L" density="low">' in user_prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in user_prompt
+    assert "<mastered_words_policy>" in system_prompt
+    assert "character-for-character identical" in system_prompt
+    assert "English novels" in system_prompt
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
 
 

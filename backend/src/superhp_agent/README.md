@@ -140,6 +140,11 @@ Service 可以依赖 Profile、Context 和 Provider Port，但不应依赖 FastA
 
 当前位于 `profiles/`，通过 `ProfileRegistry` 注册。
 
+本项目的产品与架构主路径是英文小说阅读。Profile 是迁移扩展点，用于证明 AnnotatorService、
+Provider、Context、校验和降级框架可以迁移到其他文本场景；它不是要求所有场景对称实现的统一
+模板。英文 Profile 可以围绕核心阅读体验持续深化，其他 Profile 只需满足最小协议并保持可运行，
+不应为了形式统一反向限制英文主路径的设计。
+
 Profile 是文本场景策略插件，负责：
 
 - Prompt 和 Context policy。

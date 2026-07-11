@@ -17,7 +17,7 @@ ANNOTATION_POS = frozenset(
 )
 
 SYSTEM_POLICY = """
-You are an expert English-Chinese reading assistant for the Harry Potter novels.
+You are an expert English-Chinese reading assistant for English novels, with particular familiarity with the Harry Potter series.
 Help Chinese readers understand real reading obstacles while preserving the original reading experience.
 """.strip()
 
@@ -27,7 +27,8 @@ Output: the same passage text with selected difficult words or expressions repla
 
 Preserve the original text exactly except for the selected replacements.
 Do not rewrite, summarize, reorder, correct, add, or remove passage content.
-Keep paragraph order, headings, line breaks, punctuation, casing, and spacing as close to the input as possible.
+After replacing every annotation marker with its exact left-hand source text, the passage must be character-for-character identical to the input.
+Preserve every heading, paragraph break, line break, punctuation mark, letter case, and space exactly.
 
 Inline annotation format: [[word or expression|中文翻译|pos]]
 Use the exact original word or expression on the left side of the pipe.
@@ -76,6 +77,7 @@ ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
     ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
+    ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="system"),
     ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),
 )
 
@@ -96,8 +98,7 @@ LEVEL_PROFILES = {
             "Annotate most content words beyond A1-A2 level, especially unfamiliar nouns, verbs, adjectives, and adverbs. "
             "Annotate all idioms, phrasal verbs, fixed expressions, culturally specific expressions, and wizarding-world terms that may affect understanding. "
             "For idioms and phrasal verbs, annotate the whole expression rather than individual words. "
-            "Avoid repeated annotations of the same word within the same passage unless the meaning changes. "
-            "Target annotation density: relatively high, about 25%-40% of meaningful content words."
+            "Avoid repeated annotations of the same word within the same passage unless the meaning changes."
         ),
     },
     "intermediate": {
@@ -111,8 +112,7 @@ LEVEL_PROFILES = {
             "less common nouns, literary words, wizarding-world terms, idioms, phrasal verbs, and words whose meaning depends strongly on context. "
             "Annotate culturally specific expressions and wizarding-world terms whose meaning is not obvious from the individual words. "
             "For idioms, phrasal verbs, and fixed expressions, annotate the whole expression rather than separate words. "
-            "Avoid repeated annotations of the same word within the same passage unless necessary. "
-            "Target annotation density: moderate, about 8%-18% of meaningful content words."
+            "Avoid repeated annotations of the same word within the same passage unless necessary."
         ),
     },
     "advanced": {
@@ -127,8 +127,7 @@ LEVEL_PROFILES = {
             "Focus only on truly rare, archaic, literary, metaphorical, dialectal, culturally specific, wizarding-world, or contextually subtle expressions. "
             "Annotate wizarding-world terms only if they are obscure, important for understanding the sentence, or appear for the first time as key terms. "
             "For complex expressions, annotate the whole phrase when appropriate rather than isolated words. "
-            "When in doubt, do not annotate. "
-            "Target annotation density: low, about 2%-6% of meaningful content words."
+            "When in doubt, do not annotate."
         ),
     },
 }
@@ -218,7 +217,6 @@ class EnglishNovelProfile:
             user_blocks=(
                 _density_profile_block(self.normalize_level(level)),
                 _mastered_words_block(mastered_words),
-                _mastered_words_policy_block(),
             ),
         )
 
@@ -270,7 +268,8 @@ def _density_profile_block(level: str) -> ContextBlock:
     level_profile = LEVEL_PROFILES[level]
     content = (
         f"Target reader: {level_profile['label']}\n"
-        f"Target density: {level_profile['target']}\n\n"
+        f"Soft density guide: {level_profile['target']}\n"
+        "Prioritize actual reading difficulty over meeting a numeric quota.\n\n"
         f"{level_profile['rules']}"
     )
     return ContextBlock(
@@ -291,10 +290,6 @@ def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:
         json.dumps(mastered_words or [], ensure_ascii=False),
         role="user",
     )
-
-
-def _mastered_words_policy_block() -> ContextBlock:
-    return ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="user")
 
 
 def _reader_text_block(text: str) -> ContextBlock:

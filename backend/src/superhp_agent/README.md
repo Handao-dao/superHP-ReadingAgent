@@ -282,7 +282,7 @@ storage/
 ```
 
 - `CorpusStore`：扫描、解析并安全读取原始语料。
-- `AnnotatedCopyStore`：命名、兼容回退、读取和保存译注副本。
+- `AnnotatedCopyStore`：命名、读取和保存每个阅读单元的唯一译注副本。
 - `ReadingProgressRepository`：通过 SQLite 保存当前、已打开和已读状态。
 - `EventLogStore`：只向 JSONL 追加诊断事件，不读取或重建业务状态。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。

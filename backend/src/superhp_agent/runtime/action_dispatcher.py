@@ -178,7 +178,7 @@ class OpenUnitHandler:
 
 
 class OpenAnnotatedUnitHandler:
-    """Open a generated annotated copy, creating the selected density if needed."""
+    """Open a generated annotated copy, creating it first when needed."""
 
     def __init__(self, generator: GenerateAnnotationHandler | None = None):
         self.generator = generator or GenerateAnnotationHandler()
@@ -191,10 +191,9 @@ class OpenAnnotatedUnitHandler:
         request_id: str | None = None,
     ) -> None:
         unit_id = _require_unit_id(action.payload)
-        level = _payload_level(action.payload)
         # The annotated copy is the user's durable reading artifact; DB writes
         # are secondary indexes for vocabulary review.
-        annotated_copy = context.require_annotated_copies().read(unit_id, level)
+        annotated_copy = context.require_annotated_copies().read(unit_id)
         if annotated_copy is None:
             await self.generator.handle(action, context, request_id=request_id)
             return
@@ -280,7 +279,6 @@ class GenerateAnnotationHandler:
         request_id: str | None = None,
     ) -> None:
         unit_id = _payload_unit_id(action.payload) or context.current_unit_id
-        level = _payload_level(action.payload)
         if not unit_id:
             raise MissingActionPayloadError("unit_id")
         if context.annotator_service is None:
@@ -345,7 +343,6 @@ class GenerateAnnotationHandler:
                 doc,
                 annotated_text=result.annotated_text,
                 vocabulary=result.vocabulary,
-                level=level,
                 status=status,
                 validated_chunk_count=result.validated_chunk_count,
                 total_chunk_count=result.total_chunk_count,
@@ -421,11 +418,6 @@ def _require_unit_id(payload: dict[str, Any]) -> str:
     if not unit_id:
         raise MissingActionPayloadError("unit_id")
     return unit_id
-
-
-def _payload_level(payload: dict[str, Any]) -> str:
-    level = str(payload.get("level") or "intermediate")
-    return level if level in {"beginner", "intermediate", "advanced"} else "intermediate"
 
 
 async def _emit_opened_unit(

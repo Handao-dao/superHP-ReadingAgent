@@ -1,6 +1,6 @@
 """Persistence boundary for generated annotated reading copies.
 
-This store owns annotated-copy filenames, legacy fallback, Markdown
+This store owns annotated-copy filenames, Markdown
 serialization, and filesystem reads/writes. Runtime handlers decide when an
 artifact should be generated or opened; this module does not route actions,
 call models, update reading progress, or emit transport events.
@@ -33,41 +33,24 @@ class AnnotatedCopy:
 
 
 class AnnotatedCopyStore:
-    """Read and write level-specific annotated Markdown artifacts."""
+    """Read and write one canonical annotated Markdown artifact per unit."""
 
     def __init__(self, root: str | Path):
         self.root = Path(root)
 
-    def path_for(self, unit_id: str, level: str) -> Path:
-        """Return the canonical density-specific path without touching disk."""
-        self._validate_unit_id(unit_id)
-        return self.root / f"{unit_id}.{level}.annotated.md"
-
-    def legacy_path_for(self, unit_id: str) -> Path:
-        """Return the pre-density annotated path used by older versions."""
+    def path_for(self, unit_id: str) -> Path:
+        """Return the canonical annotated path without touching disk."""
         self._validate_unit_id(unit_id)
         return self.root / f"{unit_id}.annotated.md"
 
     def exists_any(self, unit_id: str) -> bool:
-        """Return whether any density or legacy copy exists for one unit."""
-        legacy_path = self.legacy_path_for(unit_id)
-        return legacy_path.exists() or any(self.root.glob(f"{unit_id}.*.annotated.md"))
+        """Return whether the canonical copy exists for one unit."""
+        return self.path_for(unit_id).exists()
 
-    def find_path(self, unit_id: str, level: str) -> Path | None:
-        """Resolve an exact copy, with legacy fallback for intermediate only."""
-        annotated_path = self.path_for(unit_id, level)
-        if annotated_path.exists():
-            return annotated_path
-        if level == "intermediate":
-            legacy_path = self.legacy_path_for(unit_id)
-            if legacy_path.exists():
-                return legacy_path
-        return None
-
-    def read(self, unit_id: str, level: str) -> AnnotatedCopy | None:
+    def read(self, unit_id: str) -> AnnotatedCopy | None:
         """Read a resolved annotated copy, or return None when it is missing."""
-        path = self.find_path(unit_id, level)
-        if path is None:
+        path = self.path_for(unit_id)
+        if not path.exists():
             return None
         metadata, body = self._split_markdown(path.read_text(encoding="utf-8"))
         return AnnotatedCopy(path=path, metadata=metadata, body=body.strip())
@@ -78,25 +61,23 @@ class AnnotatedCopyStore:
         *,
         annotated_text: str,
         vocabulary: Iterable[Any],
-        level: str,
         status: str = "completed",
         validated_chunk_count: int = 1,
         total_chunk_count: int = 1,
     ) -> Path:
-        """Atomically persist one canonical density-specific copy."""
+        """Atomically persist one canonical annotated copy."""
         if status not in VALID_ANNOTATION_STATUSES:
             raise ValueError(f"Invalid annotation status: {status!r}")
         validated_chunk_count = int(validated_chunk_count)
         total_chunk_count = int(total_chunk_count)
         if not 0 <= validated_chunk_count <= total_chunk_count:
             raise ValueError("validated_chunk_count must be between 0 and total_chunk_count")
-        path = self.path_for(document.meta.id, level)
+        path = self.path_for(document.meta.id)
         path.parent.mkdir(parents=True, exist_ok=True)
         rendered = self._render_markdown(
             document,
             annotated_text=annotated_text,
             vocabulary=vocabulary,
-            level=level,
             status=status,
             validated_chunk_count=validated_chunk_count,
             total_chunk_count=total_chunk_count,
@@ -110,7 +91,6 @@ class AnnotatedCopyStore:
         *,
         annotated_text: str,
         vocabulary: Iterable[Any],
-        level: str,
         status: str,
         validated_chunk_count: int,
         total_chunk_count: int,
@@ -129,7 +109,6 @@ class AnnotatedCopyStore:
             f"book_id: {document.meta.book_id}\n"
             f"chapter_no: {document.meta.chapter_no}\n"
             f"profile_id: {document.meta.profile_id}\n"
-            f"level: {level}\n"
             "body_kind: annotated\n"
             f"source_hash: {source_hash}\n"
             f"annotation_format_version: {ANNOTATION_FORMAT_VERSION}\n"

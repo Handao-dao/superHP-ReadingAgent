@@ -47,10 +47,10 @@ SQLite `units` 只为 vocabulary、bookmark 等关系数据提供元数据索引
 ## 标注版本：AnnotatedCopyStore
 
 标注版本是完整长文本和可导出的生成产物，继续使用 Markdown 文件保存，不把正文重复写入 SQLite。
-文件名由 `unit_id + level` 确定，例如：
+每个阅读单元只保留一份标注副本，文件名由 `unit_id` 确定，例如：
 
 ```text
-hp01-ch01.intermediate.annotated.md
+hp01-ch01.annotated.md
 ```
 
 标注文件 frontmatter 当前记录：
@@ -59,7 +59,6 @@ hp01-ch01.intermediate.annotated.md
 source_unit_id: hp01-ch01
 source_hash: <sha256>
 profile_id: english_novel
-level: intermediate
 annotation_format_version: 1
 status: completed        # 或 degraded
 validated_chunk_count: 4
@@ -107,14 +106,13 @@ UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 
 ## 书签：BookmarkRepository
 
-书签属于不可重建的用户数据，以 SQLite 为唯一来源。当前 `body_kind` 需要继续区分原文和译注；
-存在多个译注 level 时，通过 `annotation_level` 保存对应的 artifact variant。
+书签属于不可重建的用户数据，以 SQLite 为唯一来源。`body_kind` 继续区分原文和译注。
+`annotation_level` 目前只是待清理的旧 schema 字段，不再对应 artifact variant。
 
 `page_index` 和 `progress_ratio` 受窗口、字体和分页算法影响，只作为最后的恢复回退。当前稳定定位顺序为：
 
 - `excerpt`：优先匹配附近文本锚点。
 - `paragraph_index`：文本未匹配时使用内容块位置。
-- `annotation_level`：打开书签所对应的译注版本。
 
 恢复时优先使用内容锚点，最后才回退到页码或比例。
 

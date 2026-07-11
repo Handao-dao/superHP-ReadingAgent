@@ -28,7 +28,7 @@ Body text.
     )
 
 
-def test_store_writes_and_reads_density_copy(tmp_path):
+def test_store_writes_and_reads_canonical_copy(tmp_path):
     corpus_root = tmp_path / "corpus"
     write_unit(corpus_root)
     document = CorpusStore(corpus_root).get_unit("hp01-ch01")
@@ -38,19 +38,18 @@ def test_store_writes_and_reads_density_copy(tmp_path):
         document,
         annotated_text="Body [[text|文本|noun]].",
         vocabulary=[AnnotationItem(word="text", translation="文本", context="Body text.")],
-        level="advanced",
         status="degraded",
         validated_chunk_count=1,
         total_chunk_count=2,
     )
-    copy = store.read("hp01-ch01", "advanced")
+    copy = store.read("hp01-ch01")
 
-    assert path.name == "hp01-ch01.advanced.annotated.md"
+    assert path.name == "hp01-ch01.annotated.md"
     assert copy is not None
     assert copy.path == path
     assert "<!-- extracted_vocabulary" in copy.body
     assert copy.body.endswith("Body [[text|文本|noun]].")
-    assert "level: advanced" in copy.metadata
+    assert "level:" not in copy.metadata
     source_hash = hashlib.sha256(document.body.encode("utf-8")).hexdigest()
     assert f"source_hash: {source_hash}" in copy.metadata
     assert "annotation_format_version: 1" in copy.metadata
@@ -66,7 +65,7 @@ def test_store_keeps_existing_copy_when_atomic_replace_fails(tmp_path, monkeypat
     write_unit(corpus_root)
     document = CorpusStore(corpus_root).get_unit("hp01-ch01")
     store = AnnotatedCopyStore(tmp_path / "annotated")
-    path = store.path_for("hp01-ch01", "intermediate")
+    path = store.path_for("hp01-ch01")
     path.parent.mkdir(parents=True)
     path.write_text("existing copy", encoding="utf-8")
 
@@ -80,26 +79,24 @@ def test_store_keeps_existing_copy_when_atomic_replace_fails(tmp_path, monkeypat
             document,
             annotated_text="Body [[text|文本|noun]].",
             vocabulary=[],
-            level="intermediate",
         )
 
     assert path.read_text(encoding="utf-8") == "existing copy"
     assert list(path.parent.glob("*.tmp")) == []
 
 
-def test_store_uses_legacy_copy_only_for_intermediate(tmp_path):
+def test_store_reads_canonical_copy(tmp_path):
     root = tmp_path / "annotated"
     root.mkdir()
     legacy = root / "hp01-ch01.annotated.md"
     legacy.write_text("---\nbody_kind: annotated\n---\n\nLegacy body.\n", encoding="utf-8")
     store = AnnotatedCopyStore(root)
 
-    intermediate = store.read("hp01-ch01", "intermediate")
+    copy = store.read("hp01-ch01")
 
-    assert intermediate is not None
-    assert intermediate.path == legacy
-    assert intermediate.body == "Legacy body."
-    assert store.read("hp01-ch01", "advanced") is None
+    assert copy is not None
+    assert copy.path == legacy
+    assert copy.body == "Legacy body."
 
 
 @pytest.mark.parametrize("unit_id", ["", "..", "../outside", "folder/unit"])
@@ -107,4 +104,4 @@ def test_store_rejects_unsafe_unit_ids(tmp_path, unit_id):
     store = AnnotatedCopyStore(tmp_path / "annotated")
 
     with pytest.raises(ValueError):
-        store.path_for(unit_id, "intermediate")
+        store.path_for(unit_id)

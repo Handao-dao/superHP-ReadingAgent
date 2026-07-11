@@ -208,12 +208,53 @@ contracts/
 当前 `runtime/reading_state.py` 中的 `ReadingStateReader` 聚合：
 
 - Corpus 中的阅读单元。
-- Memory 中的已读和当前状态。
+- `ReadingProgressRepository` 中的已读和当前状态。
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 
 它通过 `artifacts/annotated_copies.py` 中的 `AnnotatedCopyStore` 查询译注产物，
 是只读聚合器，不应写入进度、生成文件或反向依赖 Dispatcher。
+
+### Ports 与 Storage
+
+`ports/` 和 `storage/` 分别回答两个不同问题：
+
+```text
+ports/                         # 上层业务需要哪些底层能力
+├── llm.py                     # 模型调用能力接口
+├── events.py                  # 事件发布与行为记录能力接口
+└── repositories/              # 可查询、可更新的数据能力接口
+    ├── vocabulary.py
+    ├── bookmarks.py
+    └── reading_progress.py
+
+storage/                       # 存储类 Port 如何具体实现
+├── database.py                # SQLite 连接、锁和生命周期
+├── migrations.py              # schema 创建与旧数据升级
+├── app_db.py                  # 过渡期组合与兼容门面
+└── sqlite/                    # Repository 的 SQLite Adapter
+    ├── units.py
+    ├── vocabulary.py
+    ├── bookmarks.py
+    └── reading_progress.py
+```
+
+Port 只声明方法、参数和返回值，不执行 SQL，也不知道数据文件的位置。Runtime、Service 和
+Transport 依赖 Port，从而只表达“需要什么能力”。`storage/` 中的 Adapter 依赖并实现这些
+Port，负责 SQLite、事务、锁、表结构和迁移，从而表达“能力怎样落地”。
+
+以书签为例：
+
+```text
+HTTP Handler
+    → BookmarkRepository（ports 中的能力边界）
+    → SQLiteBookmarkRepository（storage 中的具体实现）
+    → backend/data/superhp.sqlite3（实际运行数据）
+```
+
+因此，`ports/` 可以类比为后端内部的“所需能力清单”，但不同于直接暴露给 Agent 的 ToolList；
+`storage/` 则只实现其中与持久化有关的一组能力。具体实现只应由 Composition Root 选择并注入，
+业务层不应直接构造 SQLite Repository。
 
 ### Storage / Repository / Artifact Store
 
@@ -231,7 +272,8 @@ storage/
 └── sqlite/                # Repository 的 SQLite 实现
     ├── units.py           # 内部 unit metadata 同步
     ├── vocabulary.py      # 已完成：词汇 SQL 实现
-    └── bookmarks.py       # 已完成：书签 SQL 实现
+    ├── bookmarks.py       # 已完成：书签 SQL 实现
+    └── reading_progress.py # 已完成：阅读进度 SQL 实现
 ```
 
 - `CorpusStore`：扫描、解析并安全读取原始语料。

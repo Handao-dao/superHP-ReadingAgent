@@ -44,9 +44,9 @@ def test_english_novel_profile_builds_prompt_context():
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
     assert "<harry_potter_selection_policy>" in system_prompt
-    assert "not automatically difficult" in system_prompt
+    assert "after the reader-level selection rules" in system_prompt
     assert "widely established Chinese rendering" in system_prompt
-    assert "solely because it is capitalized" in system_prompt
+    assert "solely because it is magical, fictional, or capitalized" in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
     assert "Return only the annotated passage text." in profile.base_annotator_system_prompt
 

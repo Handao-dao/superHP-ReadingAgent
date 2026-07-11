@@ -47,13 +47,12 @@ Gloss quality:
 # Corpus-specific guidance belongs in its own block so another novel series can
 # replace it without changing the shared annotation contract or level profiles.
 HARRY_POTTER_SELECTION_POLICY = """
-Apply these rules after the reader-level selection rules; a Harry Potter term is not automatically difficult merely because it belongs to the wizarding world.
+Apply these corpus-specific rules after the reader-level selection rules.
 
 - Treat spells, magical objects, creatures, institutions, titles, and wizarding-world expressions as domain vocabulary.
-- Annotate a domain term only when it is a genuine obstacle for the target reader in this context.
-- Use its concise, widely established Chinese rendering when one exists; otherwise use a concise context-specific gloss.
-- Annotate the complete meaningful name or expression rather than isolated words inside it.
-- Do not annotate an ordinary character name such as Harry, Ron, Hermione, Dumbledore, or Hagrid solely because it is capitalized.
+- Do not select a term solely because it is magical, fictional, or capitalized.
+- For a selected term, prefer its widely established Chinese rendering when one exists.
+- Ordinary character names such as Harry, Ron, Hermione, Dumbledore, and Hagrid are not annotation targets.
 """.strip()
 
 ANNOTATION_EXAMPLES = """

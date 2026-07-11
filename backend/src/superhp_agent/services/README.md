@@ -18,12 +18,14 @@ Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责�
 
 ## 英文译注 Context 组织
 
-英文小说是当前产品主路径。译注 Context 按稳定规则、整章任务状态和当前 chunk 数据组织：
+英文小说是当前产品主路径。译注 Context 按“稳定规则 → 整章任务数据 → 当前 chunk”
+的顺序组织：
 
 ```text
 System / Static
     system_policy
     annotation_contract
+    harry_potter_selection_policy
     annotation_examples
     mastered_words_policy
     output_contract
@@ -35,10 +37,34 @@ User / Chunk Data
     reader_text
 ```
 
-熟词策略和统一标注密度属于稳定 system 指令；动态熟词 JSON 属于整章任务数据；每个并发请求只在
-基础 Context 末尾追加自己的 `reader_text`。英文译注不再按高、中、低分级：每约 300 个英文单词通常不超过 8 处，
-局部难点密集时绝对不超过 15 处，且这些数字都不是必须凑满的配额。Prompt 对原文保持的要求与后端校验一致：
-移除 marker 后必须逐字符等于输入。
+各 block 的职责如下：
+
+- `system_policy`：定义英文词汇译注任务、优先级和统一密度。
+- `annotation_contract`：定义 marker 格式、POS、原文还原不变式和释义质量。
+- `harry_potter_selection_policy`：只补充哈利波特语料的专名与领域词策略，便于其他小说替换。
+- `annotation_examples`：演示单词、完整短语和错误重复替换。
+- `mastered_words_policy`：解释熟词排除以及熟词作为更长表达组成部分时的边界。
+- `output_contract`：约束响应外壳，并明确零标注时原样返回输入。
+
+英文译注不再按高、中、低分级。每约 300 个英文单词通常不超过 8 处标注；只有局部必要难点密集时
+才可超过 8 处，但绝对不超过 15 处。上限不是必须凑满的配额。Prompt 对原文的要求与后端校验一致：
+将所有 marker 还原为左侧源文后，必须与输入逐字符一致。
+
+### 整章复用与 prompt caching
+
+Dispatcher 在并发译注前一次性准备整章相关的 `mastered_words`。`AnnotatorService` 随后只构造一份
+基础 Context，所有 chunk 共用完全相同的 system blocks 和章节级熟词 JSON。每个模型请求只在最后追加
+自己的 `reader_text`：
+
+```text
+chunk_0 request = shared_base_context + reader_text(chunk_0)
+chunk_1 request = shared_base_context + reader_text(chunk_1)
+chunk_2 request = shared_base_context + reader_text(chunk_2)
+```
+
+这种“固定内容在前、变动内容在后”的排列为 Provider 的 prompt caching 提供稳定前缀；是否实际命中缓存
+仍取决于所用 Provider 和模型。请求中不应在 `reader_text` 之前插入 chunk 索引、进度或其他
+会逐块变化的数据。
 
 ## AnnotatorService 的两层兜底
 

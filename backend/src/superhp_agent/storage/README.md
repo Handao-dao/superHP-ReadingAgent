@@ -107,7 +107,6 @@ UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 ## 书签：BookmarkRepository
 
 书签属于不可重建的用户数据，以 SQLite 为唯一来源。`body_kind` 继续区分原文和译注。
-`annotation_level` 目前只是待清理的旧 schema 字段，不再对应 artifact variant。
 
 `page_index` 和 `progress_ratio` 受窗口、字体和分页算法影响，只作为最后的恢复回退。当前稳定定位顺序为：
 

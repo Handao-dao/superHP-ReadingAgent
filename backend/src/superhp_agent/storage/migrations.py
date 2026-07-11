@@ -95,7 +95,6 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             total_pages INTEGER NOT NULL DEFAULT 0,
             label TEXT DEFAULT '',
             excerpt TEXT DEFAULT '',
-            annotation_level TEXT DEFAULT '',
             paragraph_index INTEGER NOT NULL DEFAULT -1,
             created_at TEXT DEFAULT (datetime('now','localtime'))
         );

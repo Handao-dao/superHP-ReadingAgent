@@ -102,7 +102,6 @@ class BookmarkEntry(BaseModel):
     total_pages: int = 0
     label: str = ""
     excerpt: str = ""
-    annotation_level: str = ""
     paragraph_index: int = -1
     created_at: str = ""
 
@@ -115,7 +114,6 @@ class AddBookmarkRequest(BaseModel):
     total_pages: int = 0
     label: str = ""
     excerpt: str = ""
-    annotation_level: str = ""
     paragraph_index: int = -1
 
 

@@ -32,7 +32,6 @@ class FakeDB:
             "total_pages": payload.get("total_pages", 0),
             "label": payload.get("label", ""),
             "excerpt": payload.get("excerpt", ""),
-            "annotation_level": payload.get("annotation_level", ""),
             "paragraph_index": payload.get("paragraph_index", -1),
             "created_at": "2026-06-11 10:00:00",
         })
@@ -174,14 +173,12 @@ def test_bookmark_api_create_list_and_delete(tmp_path, monkeypatch):
                 "total_pages": 8,
                 "label": "Chapter 1 · Page 3",
                 "excerpt": "Mr and Mrs Dursley...",
-                "annotation_level": "advanced",
                 "paragraph_index": 7,
             },
         )
         assert created.status_code == 200
         assert created.json()["id"] == 1
         assert created.json()["body_kind"] == "annotated"
-        assert created.json()["annotation_level"] == "advanced"
         assert created.json()["paragraph_index"] == 7
 
         listed = client.get("/api/bookmarks", params={"unit_id": "hp01-ch01"})

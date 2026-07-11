@@ -134,7 +134,6 @@ class AppDB:
         total_pages: int = 0,
         label: str = "",
         excerpt: str = "",
-        annotation_level: str = "",
         paragraph_index: int = -1,
     ) -> int:
         return self.bookmark_repository.add_bookmark(
@@ -145,7 +144,6 @@ class AppDB:
             total_pages=total_pages,
             label=label,
             excerpt=excerpt,
-            annotation_level=annotation_level,
             paragraph_index=paragraph_index,
         )
 

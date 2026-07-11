@@ -25,29 +25,28 @@ Prioritize exact source preservation, level-appropriate selection, and concise c
 """.strip()
 
 ANNOTATION_CONTRACT = """
-Input: one English passage from a Harry Potter chapter.
-Output: the same passage text with selected difficult words or expressions replaced by inline annotations.
+Transform one passage from an English novel by replacing selected source spans with inline annotations.
 
-Preserve the original text exactly except for the selected replacements.
-Do not rewrite, summarize, reorder, correct, add, or remove passage content.
-After replacing every annotation marker with its exact left-hand source text, the passage must be character-for-character identical to the input.
-Preserve every heading, paragraph break, line break, punctuation mark, letter case, and space exactly.
+Source preservation:
+- After replacing every annotation marker with its left-hand source field, the result must be character-for-character identical to the input.
+- Do not rewrite, summarize, reorder, correct, add, or remove any other text.
 
-Inline annotation format: [[word or expression|中文翻译|pos]]
-Use the exact original word or expression on the left side of the pipe.
-Do not include the pipe character | inside the word, translation, or pos fields.
-The Chinese translation must match the exact meaning in context.
-Keep translations concise: prefer 1-4 Chinese characters; proper nouns or specialized terms may use up to 6 Chinese characters.
+Annotation syntax:
+- Use [[exact source span|context-specific Chinese gloss|pos]].
+- The source field must exactly match the text it replaces.
+- Do not include |, [, or ] inside any field.
+- Prefer one marker for the complete expression when that expression is the meaningful unit.
 The pos value must be one of: noun, verb, adjective, adverb, phrase, other.
 Use phrase for multi-word expressions, phrasal verbs, idioms, and fixed collocations.
 
-If a phrase is the real difficult unit, annotate the whole phrase instead of separate words.
+Gloss quality:
+- The Chinese gloss must match the source span's exact meaning in context.
+- Keep the gloss as concise as the meaning allows.
+""".strip()
+
+SELECTION_POLICY = """
 Prefer concise standard Chinese renderings for widely used Harry Potter proper nouns and magical terms.
 Do not annotate ordinary character names such as Harry, Ron, Hermione, Dumbledore, or Hagrid unless the name itself is being explained as a title, place, spell, object, or special concept.
-Do not duplicate the original word before or after the marker.
-Correct: "a [[wand|魔杖|noun]]"
-Incorrect: "a wand[[wand|魔杖|noun]]"
-Incorrect: "a wand [[wand|魔杖|noun]]"
 """.strip()
 
 ANNOTATION_EXAMPLES = """
@@ -79,6 +78,7 @@ If mastered_words is an empty JSON array, ignore this block.
 ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
+    ContextBlock("selection_policy", SELECTION_POLICY, role="system"),
     ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
     ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="system"),
     ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),

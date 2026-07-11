@@ -130,7 +130,7 @@ def test_annotator_prompt_uses_context_blocks():
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
     assert "Return only the annotated passage text." in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "[[word or expression|中文翻译|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 
 

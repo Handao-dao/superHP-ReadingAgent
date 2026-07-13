@@ -1,3 +1,5 @@
+import pytest
+
 from superhp_agent.profiles import (
     ClassicalChineseProfile,
     EnglishNovelProfile,
@@ -48,12 +50,33 @@ def test_english_novel_profile_builds_prompt_context():
     assert "Prioritize exact source preservation" in system_prompt
     assert "normally use no more than 8 annotations" in system_prompt
     assert "never exceed 15 annotations" in system_prompt
-    assert "<harry_potter_selection_policy>" in system_prompt
-    assert "widely established Chinese rendering" in system_prompt
-    assert "solely because it is magical, fictional, or capitalized" in system_prompt
+    assert "<selection_policy>" not in system_prompt
+    assert "Harry Potter" not in system_prompt
+    assert "widely established Chinese rendering" not in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
     assert "Return only the passage text with any selected inline annotations." in profile.base_annotator_system_prompt
     assert "return the input passage unchanged" in profile.base_annotator_system_prompt
+
+
+def test_english_novel_profile_adds_harry_potter_policy_when_selected():
+    profile = EnglishNovelProfile()
+
+    context = profile.build_annotator_base_context(
+        selection_policy_id="harry_potter",
+    )
+    system_prompt = context.render_role("system")
+
+    assert "<selection_policy>" in system_prompt
+    assert "particular familiarity with the Harry Potter series" in system_prompt
+    assert "widely established Chinese rendering" in system_prompt
+    assert "solely because it is magical, fictional, or capitalized" in system_prompt
+
+
+def test_english_novel_profile_rejects_unknown_selection_policy():
+    profile = EnglishNovelProfile()
+
+    with pytest.raises(ValueError, match="Unknown English selection policy"):
+        profile.build_annotator_base_context(selection_policy_id="missing")
 
 
 def test_english_annotation_examples_cover_word_and_phrase_boundaries():

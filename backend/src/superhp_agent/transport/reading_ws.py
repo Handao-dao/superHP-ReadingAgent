@@ -27,6 +27,7 @@ from superhp_agent.runtime.action_dispatcher import (
     ActionExecutionError,
     AnnotationService,
     MissingActionPayloadError,
+    SelectionPolicyResolver,
     UnsupportedActionError,
 )
 from superhp_agent.runtime.action_router import ReadingFlowRouter
@@ -74,6 +75,7 @@ class ReadingSocketSession:
         annotated_copies: AnnotatedCopyStore | None = None,
         annotator_service: AnnotationService | None = None,
         db: VocabularyRepository | None = None,
+        selection_policy_resolver: SelectionPolicyResolver | None = None,
     ):
         self.websocket = websocket
         self.flow_router = flow_router
@@ -87,6 +89,7 @@ class ReadingSocketSession:
         )
         self.annotator_service = annotator_service
         self.db = db
+        self.selection_policy_resolver = selection_policy_resolver
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
         self.current_unit_id: str | None = None
         self.current_profile_id: str | None = None
@@ -174,6 +177,7 @@ class ReadingSocketSession:
             annotated_copies=self.annotated_copies,
             annotator_service=self.annotator_service,
             db=self.db,
+            selection_policy_resolver=self.selection_policy_resolver,
             current_unit_id=self.current_unit_id,
         )
         try:

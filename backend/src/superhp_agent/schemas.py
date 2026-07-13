@@ -32,6 +32,20 @@ class ProfileMeta(BaseModel):
     is_default: bool = False
 
 
+class LibraryBookMeta(BaseModel):
+    id: str
+    order: int
+
+
+class LibraryCollectionMeta(BaseModel):
+    id: str
+    profile_id: str
+    title: str
+    author: str = ""
+    order: int
+    books: list[LibraryBookMeta]
+
+
 class VocabularyEntry(BaseModel):
     id: int
     book_id: str

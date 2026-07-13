@@ -27,6 +27,7 @@ class FakeAnnotator:
     def __init__(self):
         self.mastered_words = []
         self.profile_ids = []
+        self.selection_policy_ids = []
 
     async def annotate_text(
         self,
@@ -36,9 +37,11 @@ class FakeAnnotator:
         event_sink=None,
         request_id=None,
         profile_id=None,
+        selection_policy_id=None,
     ):
         self.mastered_words.append(mastered_words or [])
         self.profile_ids.append(profile_id)
+        self.selection_policy_ids.append(selection_policy_id)
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
@@ -325,6 +328,38 @@ def test_dispatch_generate_annotation_passes_unit_profile_id(tmp_path):
         assert annotator.profile_ids == ["classical_chinese"]
         annotated_file = tmp_path / "data" / "annotated" / "cc-lunyu-xueer-01.annotated.md"
         assert "profile_id: classical_chinese" in annotated_file.read_text(encoding="utf-8")
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_generate_annotation_passes_optional_series_policy(tmp_path):
+    class Resolver:
+        def selection_policy_id_for_book(self, book_id, *, profile_id=None):
+            assert book_id == "hp01"
+            assert profile_id == "english_novel"
+            return "harry_potter"
+
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        annotator = FakeAnnotator()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            annotated_dir=tmp_path / "data" / "annotated",
+            annotator_service=annotator,
+            selection_policy_resolver=Resolver(),
+        )
+
+        await ActionDispatcher().dispatch(
+            AgentAction(
+                id=GENERATE_ANNOTATION,
+                label="生成注释",
+                payload={"unit_id": "hp01-ch01"},
+            ),
+            context,
+        )
+
+        assert annotator.selection_policy_ids == ["harry_potter"]
 
     asyncio.run(run_case())
 

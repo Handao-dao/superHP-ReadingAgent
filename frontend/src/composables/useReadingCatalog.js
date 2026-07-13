@@ -6,13 +6,16 @@
  */
 import { computed, ref, watch } from 'vue'
 import { listChapters } from '../api/chapters'
+import { listLibraryCollections } from '../api/library'
 import { listProfiles } from '../api/profiles'
 
 const PROFILE_STORAGE_KEY = 'superhp_profile_id'
 
 export function useReadingCatalog() {
   const chapters = ref([])
+  const catalogCollections = ref([])
   const profiles = ref([])
+  const catalogErrorMessage = ref('')
   const listLoading = ref(false)
   const listErrorMessage = ref('')
   const profileErrorMessage = ref('')
@@ -53,6 +56,39 @@ export function useReadingCatalog() {
     }))
   })
 
+  const libraryCollections = computed(() => {
+    const booksById = new Map(chaptersByBook.value.map((book) => [book.id, book]))
+    const configured = catalogCollections.value
+      .filter((collection) => collection.profile_id === selectedProfileId.value)
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((collection) => ({
+        ...collection,
+        books: collection.books
+          .slice()
+          .sort((a, b) => a.order - b.order)
+          .map((book) => booksById.get(book.id))
+          .filter(Boolean),
+      }))
+      .filter((collection) => collection.books.length > 0)
+
+    const configuredBookIds = new Set(configured.flatMap((collection) => collection.books.map((book) => book.id)))
+    const unconfiguredBooks = chaptersByBook.value.filter((book) => !configuredBookIds.has(book.id))
+    if (unconfiguredBooks.length === 0) return configured
+
+    return [
+      ...configured,
+      {
+        id: `${selectedProfileId.value}-other`,
+        profile_id: selectedProfileId.value,
+        title: selectedProfileId.value === 'classical_chinese' ? '其他选篇' : 'Other Books',
+        author: '',
+        order: Number.MAX_SAFE_INTEGER,
+        books: unconfiguredBooks,
+      },
+    ]
+  })
+
   async function loadChapterCatalog() {
     listLoading.value = true
     listErrorMessage.value = ''
@@ -81,17 +117,30 @@ export function useReadingCatalog() {
     }
   }
 
+  async function loadLibraryCatalog() {
+    catalogErrorMessage.value = ''
+    try {
+      catalogCollections.value = await listLibraryCollections()
+    } catch (error) {
+      catalogCollections.value = []
+      catalogErrorMessage.value = error.message || '书库结构加载失败'
+    }
+  }
+
   watch(selectedProfileId, (profileId) => {
     localStorage.setItem(PROFILE_STORAGE_KEY, profileId)
   })
 
   return {
+    catalogErrorMessage,
     chapters,
     chaptersByBook,
     currentProfile,
+    libraryCollections,
     listErrorMessage,
     listLoading,
     loadChapterCatalog,
+    loadLibraryCatalog,
     loadProfileList,
     profileErrorMessage,
     profileOptions,

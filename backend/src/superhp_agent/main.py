@@ -21,6 +21,8 @@ from superhp_agent.schemas import (
     AddVocabularyRequest,
     AddVocabularyResponse,
     BookmarkEntry,
+    LibraryBookMeta,
+    LibraryCollectionMeta,
     MarkByWordRequest,
     MutationResponse,
     ProfileMeta,
@@ -40,6 +42,7 @@ settings = container.settings
 profile_registry = container.profile_registry
 default_profile = container.default_profile
 corpus = container.corpus
+library_catalog = container.library_catalog
 event_log_store = container.event_log_store
 reading_progress_repository = container.reading_progress_repository
 db = container.db
@@ -142,6 +145,22 @@ async def list_profiles():
             is_default=profile.id == profile_registry.default_profile_id,
         )
         for profile in profile_registry.list_profiles()
+    ]
+
+
+@app.get("/api/library", response_model=list[LibraryCollectionMeta])
+async def list_library_collections(profile_id: str | None = None):
+    return [
+        LibraryCollectionMeta(
+            id=collection.id,
+            profile_id=collection.profile_id,
+            title=collection.title,
+            author=collection.author,
+            order=collection.order,
+            books=[LibraryBookMeta(id=book.id, order=book.order) for book in collection.books],
+        )
+        for collection in library_catalog.list_collections()
+        if not profile_id or collection.profile_id == profile_id
     ]
 
 
@@ -321,6 +340,7 @@ async def reading_socket(websocket: WebSocket):
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         db=vocabulary_repository,
+        selection_policy_resolver=library_catalog,
     )
     try:
         await session.run()

@@ -50,7 +50,19 @@ class AnnotationService(Protocol):
         event_sink: EventSink | None = None,
         request_id: str | None = None,
         profile_id: str | None = None,
+        selection_policy_id: str | None = None,
     ) -> AnnotationResult: ...
+
+
+class SelectionPolicyResolver(Protocol):
+    """Resolve an optional prompt addition from stable library metadata."""
+
+    def selection_policy_id_for_book(
+        self,
+        book_id: str,
+        *,
+        profile_id: str | None = None,
+    ) -> str | None: ...
 
 
 class UnsupportedActionError(ValueError):
@@ -88,6 +100,7 @@ class ActionContext:
     annotated_copies: AnnotatedCopyStore | None = None
     annotator_service: AnnotationService | None = None
     db: VocabularyRepository | None = None
+    selection_policy_resolver: SelectionPolicyResolver | None = None
     current_unit_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -320,6 +333,14 @@ class GenerateAnnotationHandler:
                 event_sink=context.event_sink,
                 request_id=request_id,
                 profile_id=doc.meta.profile_id,
+                selection_policy_id=(
+                    context.selection_policy_resolver.selection_policy_id_for_book(
+                        doc.meta.book_id,
+                        profile_id=doc.meta.profile_id,
+                    )
+                    if context.selection_policy_resolver is not None
+                    else None
+                ),
             )
         except Exception as exc:
             context.log_event("annotation_failed", unit_id=unit_id, error=str(exc))

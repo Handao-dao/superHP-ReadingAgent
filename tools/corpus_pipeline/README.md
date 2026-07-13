@@ -5,6 +5,7 @@
 ## 正式工具
 
 - `extract_all.py`：从 EPUB 提取章节，输出 Markdown + YAML frontmatter。
+- `extract_christie_collection.py`：从已检查的阿加莎·克里斯蒂合集 EPUB 中提取八部精选小说，按章节写入 `ac01`–`ac08`。
 - `generate_summaries.py`：为 `hp01` 中尚无摘要的章节调用 Proma API 生成摘要。
 
 安装工具依赖：
@@ -17,6 +18,7 @@ python -m pip install -r tools/corpus_pipeline/requirements.txt
 
 ```powershell
 python tools/corpus_pipeline/extract_all.py book.epub --dry-run
+python tools/corpus_pipeline/extract_christie_collection.py collection.epub --dry-run
 python tools/corpus_pipeline/generate_summaries.py --dry-run
 ```
 
@@ -24,6 +26,7 @@ python tools/corpus_pipeline/generate_summaries.py --dry-run
 
 ```powershell
 python tools/corpus_pipeline/extract_all.py book.epub --corpus-dir corpus
+python tools/corpus_pipeline/extract_christie_collection.py collection.epub --corpus-dir corpus
 $env:PROMA_API_KEY = "..."
 python tools/corpus_pipeline/generate_summaries.py --corpus-dir corpus/hp01
 ```

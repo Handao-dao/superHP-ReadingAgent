@@ -8,6 +8,9 @@ import re
 from superhp_agent.context import ContextBlock, ContextBundle
 from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
 from superhp_agent.profiles.base import CardCopy
+from superhp_agent.profiles.english_selection_policies import (
+    get_english_selection_policy,
+)
 from superhp_agent.profiles.validation import validate_annotation_output
 
 # New model output must use these exact labels. The parser remains tolerant of
@@ -17,7 +20,7 @@ ANNOTATION_POS = frozenset(
 )
 
 SYSTEM_POLICY = """
-You are an English-Chinese lexical annotation assistant for Chinese learners reading English novels, with particular familiarity with the Harry Potter series.
+You are an English-Chinese lexical annotation assistant for Chinese learners reading English novels.
 
 Add selective inline Chinese glosses without translating, rewriting, or otherwise altering the passage.
 
@@ -47,15 +50,6 @@ Use phrase for multi-word expressions, phrasal verbs, idioms, and fixed collocat
 Gloss quality:
 - The Chinese gloss must match the source span's exact meaning in context.
 - Keep the gloss as concise as the meaning allows.
-""".strip()
-
-# Corpus-specific guidance belongs in its own block so another novel series can
-# replace it without changing the shared annotation contract or density policy.
-HARRY_POTTER_SELECTION_POLICY = """
-- Treat spells, magical objects, creatures, institutions, titles, and wizarding-world expressions as domain vocabulary.
-- Do not select a term solely because it is magical, fictional, or capitalized.
-- For a selected term, prefer its widely established Chinese rendering when one exists.
-- Ordinary character names such as Harry, Ron, Hermione, Dumbledore, and Hagrid are not annotation targets.
 """.strip()
 
 ANNOTATION_EXAMPLES = """
@@ -98,11 +92,6 @@ Treat mastered_words as vocabulary the reader already understands.
 ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
-    ContextBlock(
-        "harry_potter_selection_policy",
-        HARRY_POTTER_SELECTION_POLICY,
-        role="system",
-    ),
     ContextBlock("annotation_examples", ANNOTATION_EXAMPLES, role="system"),
     ContextBlock("mastered_words_policy", MASTERED_WORDS_POLICY, role="system"),
     ContextBlock("output_contract", OUTPUT_CONTRACT, role="system"),
@@ -174,18 +163,21 @@ class EnglishNovelProfile:
         text: str,
         *,
         mastered_words: list[str] | None = None,
+        selection_policy_id: str | None = None,
     ) -> ContextBundle:
         return self.build_annotator_base_context(
             mastered_words=mastered_words,
+            selection_policy_id=selection_policy_id,
         ).with_blocks(_reader_text_block(text))
 
     def build_annotator_base_context(
         self,
         *,
         mastered_words: list[str] | None = None,
+        selection_policy_id: str | None = None,
     ) -> ContextBundle:
         return ContextBundle(
-            system_blocks=ANNOTATION_SYSTEM_BLOCKS,
+            system_blocks=_annotation_system_blocks(selection_policy_id),
             user_blocks=(_mastered_words_block(mastered_words),),
         )
 
@@ -238,6 +230,24 @@ def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:
         "mastered_words",
         json.dumps(mastered_words or [], ensure_ascii=False),
         role="user",
+    )
+
+
+def _annotation_system_blocks(
+    selection_policy_id: str | None,
+) -> tuple[ContextBlock, ...]:
+    """Insert an optional series addition after the shared contract."""
+    if selection_policy_id is None:
+        return ANNOTATION_SYSTEM_BLOCKS
+    selection_policy = ContextBlock(
+        "selection_policy",
+        get_english_selection_policy(selection_policy_id),
+        role="system",
+    )
+    return (
+        *ANNOTATION_SYSTEM_BLOCKS[:2],
+        selection_policy,
+        *ANNOTATION_SYSTEM_BLOCKS[2:],
     )
 
 

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from superhp_agent import main
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.corpus import CorpusError, ReadingUnit, ReadingUnitDocument
+from superhp_agent.library_catalog import CatalogBook, CatalogCollection
 from superhp_agent.memory import ReadingMemory
 
 
@@ -101,6 +102,45 @@ def test_profile_api_lists_builtin_profiles():
     assert "classical_chinese" in profile_ids
     languages = {item["id"]: item["language_id"] for item in response.json()}
     assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
+
+
+def test_library_api_filters_collections_by_profile(monkeypatch):
+    class FakeLibraryCatalog:
+        def list_collections(self):
+            return [
+                CatalogCollection(
+                    id="novels",
+                    profile_id="english_novel",
+                    title="Novels",
+                    author="Author",
+                    order=10,
+                    books=(CatalogBook(id="book-1", order=1),),
+                ),
+                CatalogCollection(
+                    id="classics",
+                    profile_id="classical_chinese",
+                    title="古文",
+                    author="",
+                    order=20,
+                    books=(),
+                ),
+            ]
+
+    monkeypatch.setattr(main, "library_catalog", FakeLibraryCatalog())
+    with TestClient(main.app) as client:
+        response = client.get("/api/library", params={"profile_id": "english_novel"})
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": "novels",
+            "profile_id": "english_novel",
+            "title": "Novels",
+            "author": "Author",
+            "order": 10,
+            "books": [{"id": "book-1", "order": 1}],
+        }
+    ]
 
 
 def test_list_units_can_filter_by_profile(tmp_path, monkeypatch):

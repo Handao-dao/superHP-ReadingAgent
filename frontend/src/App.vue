@@ -15,18 +15,26 @@ import { useReadingSocket } from './composables/useReadingSocket'
 import { useWordLookup } from './composables/useWordLookup'
 import { getReadingRenderer } from './renderers'
 
+const PAPER_THEME_STORAGE_KEY = 'superhp_reader_theme'
+const PAPER_THEMES = new Set(['parchment', 'white-paper'])
+
 const completeCardsRequestedFor = ref('')
 const sidebarOpen = ref(false)
+const storedPaperTheme = localStorage.getItem(PAPER_THEME_STORAGE_KEY)
+const paperTheme = ref(PAPER_THEMES.has(storedPaperTheme) ? storedPaperTheme : 'parchment')
+const paperThemeOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
 const selectedVocabularyUnitId = ref('')
 const {
+  catalogErrorMessage,
   chapters,
-  chaptersByBook,
   currentProfile,
+  libraryCollections,
   listErrorMessage,
   listLoading,
   loadChapterCatalog,
+  loadLibraryCatalog,
   loadProfileList,
   profileErrorMessage,
   profileOptions,
@@ -275,12 +283,21 @@ function handleReadingElements({ flow, viewport }) {
 }
 
 function toggleSidebar() {
+  paperThemeOpen.value = false
   sidebarOpen.value = !sidebarOpen.value
+}
+
+function selectPaperTheme(theme) {
+  if (!PAPER_THEMES.has(theme)) return
+  paperTheme.value = theme
+  paperThemeOpen.value = false
+  localStorage.setItem(PAPER_THEME_STORAGE_KEY, theme)
 }
 
 function handleKeydown(event) {
   if (event.key === 'Escape') {
     closeLookupBubble()
+    paperThemeOpen.value = false
     return
   }
   if (activeView.value !== 'reader') return
@@ -332,6 +349,7 @@ watch(isGuidancePage, (isGuidance) => {
 
 onMounted(() => {
   loadProfileList()
+  loadLibraryCatalog()
   loadChapterList()
   loadBookmarks()
   connect()
@@ -346,12 +364,18 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="reader-layout" :class="[{ 'is-sidebar-open': sidebarOpen }, profileShellClass]">
+  <main
+    class="reader-layout"
+    :class="[{ 'is-sidebar-open': sidebarOpen }, profileShellClass]"
+    :data-reader-theme="paperTheme"
+    @click="paperThemeOpen = false"
+  >
     <ReadingSidebar
       :bookmark-error="bookmarkError"
       :bookmarks-by-unit="bookmarksByUnit"
       :bookmarks-loading="bookmarksLoading"
-      :books="chaptersByBook"
+      :catalog-error="catalogErrorMessage"
+      :collections="libraryCollections"
       :current-chapter-id="currentChapterId || ''"
       :deleting-bookmark-id="deletingBookmarkId"
       :is-generating="isGenerating"
@@ -374,6 +398,10 @@ onBeforeUnmount(() => {
         :chapter-label="currentMeta ? chapterLabel : ''"
         :connected="connected"
         :page-label="pageLabel"
+        :paper-theme="paperTheme"
+        :paper-theme-open="paperThemeOpen"
+        @paper-theme-change="selectPaperTheme"
+        @toggle-paper-theme="paperThemeOpen = !paperThemeOpen"
         @toggle-sidebar="toggleSidebar"
         @view-change="activeView = $event"
       />

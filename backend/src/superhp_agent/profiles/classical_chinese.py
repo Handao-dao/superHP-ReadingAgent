@@ -192,6 +192,7 @@ class ClassicalChineseProfile:
         self,
         *,
         mastered_words: list[str] | None = None,
+        selection_policy_id: str | None = None,
     ) -> ContextBundle:
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,

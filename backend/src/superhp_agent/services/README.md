@@ -25,7 +25,7 @@ Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责�
 System / Static
     system_policy
     annotation_contract
-    harry_potter_selection_policy
+    selection_policy（可选的系列补充）
     annotation_examples
     mastered_words_policy
     output_contract
@@ -41,7 +41,7 @@ User / Chunk Data
 
 - `system_policy`：定义英文词汇译注任务、优先级和统一密度。
 - `annotation_contract`：定义 marker 格式、POS、原文还原不变式和释义质量。
-- `harry_potter_selection_policy`：只补充哈利波特语料的专名与领域词策略，便于其他小说替换。
+- `selection_policy`：可选的系列特色补充；普通英文小说不生成此 block。当前仅哈利波特系列使用，其他小说直接采用通用规则。
 - `annotation_examples`：演示单词、完整短语和错误重复替换。
 - `mastered_words_policy`：解释熟词排除以及熟词作为更长表达组成部分时的边界。
 - `output_contract`：约束响应外壳，并明确零标注时原样返回输入。
@@ -65,6 +65,10 @@ chunk_2 request = shared_base_context + reader_text(chunk_2)
 这种“固定内容在前、变动内容在后”的排列为 Provider 的 prompt caching 提供稳定前缀；是否实际命中缓存
 仍取决于所用 Provider 和模型。请求中不应在 `reader_text` 之前插入 chunk 索引、进度或其他
 会逐块变化的数据。
+
+`selection_policy` 不是每个系列都必须实现的模板。`corpus/catalog.yaml` 只有在某个系列确实需要
+稳定的额外选词边界时才配置 `selection_policy_id`；没有配置时，英文 Profile 不插入空 block，
+也不会附加任何题材说明。
 
 ## AnnotatorService 的两层兜底
 

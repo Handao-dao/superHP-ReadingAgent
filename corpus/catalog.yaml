@@ -1,0 +1,51 @@
+version: 1
+collections:
+  - id: harry-potter
+    profile_id: english_novel
+    selection_policy_id: harry_potter
+    title: Harry Potter
+    author: J. K. Rowling
+    order: 10
+    books:
+      - id: hp01
+        order: 1
+      - id: hp02
+        order: 2
+      - id: hp03
+        order: 3
+      - id: hp04
+        order: 4
+
+  - id: agatha-christie-selected
+    profile_id: english_novel
+    title: Agatha Christie · Selected Mysteries
+    author: Agatha Christie
+    order: 20
+    books:
+      - id: ac01
+        order: 1
+      - id: ac02
+        order: 2
+      - id: ac03
+        order: 3
+      - id: ac04
+        order: 4
+      - id: ac05
+        order: 5
+      - id: ac06
+        order: 6
+      - id: ac07
+        order: 7
+      - id: ac08
+        order: 8
+
+  - id: classical-chinese-selection
+    profile_id: classical_chinese
+    title: 古文选读
+    author: ""
+    order: 10
+    books:
+      - id: cc-lunyu
+        order: 1
+      - id: cc-tang-song-guwen
+        order: 2

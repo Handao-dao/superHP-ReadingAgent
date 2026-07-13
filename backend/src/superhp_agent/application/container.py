@@ -13,6 +13,7 @@ from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
 from superhp_agent.corpus import CorpusStore
 from superhp_agent.event_log import EventLogStore
+from superhp_agent.library_catalog import LibraryCatalogStore
 from superhp_agent.profiles import (
     AnnotationProfile,
     ProfileRegistry,
@@ -42,6 +43,7 @@ class AppContainer:
     profile_registry: ProfileRegistry
     default_profile: AnnotationProfile
     corpus: CorpusStore
+    library_catalog: LibraryCatalogStore
     event_log_store: EventLogStore
     db: AppDB
     vocabulary_repository: SQLiteVocabularyRepository
@@ -67,6 +69,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         resolved_settings.corpus_dir,
         default_profile_id=resolved_settings.default_profile_id,
     )
+    library_catalog = LibraryCatalogStore(resolved_settings.corpus_dir / "catalog.yaml")
     event_log_store = EventLogStore(resolved_settings.event_log_path)
     db = AppDB(resolved_settings.db_path)
     vocabulary_repository = db.vocabulary_repository
@@ -106,6 +109,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         profile_registry=profile_registry,
         default_profile=default_profile,
         corpus=corpus,
+        library_catalog=library_catalog,
         event_log_store=event_log_store,
         db=db,
         vocabulary_repository=vocabulary_repository,

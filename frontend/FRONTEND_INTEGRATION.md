@@ -1,488 +1,373 @@
-# Frontend Integration Notes
+# 前端集成说明
 
-这份文档只记录前端展示和前后端对接需要知道的内容。后端内部实现细节，例如 provider、corpus 扫描、memory/storage 写入、dispatcher 执行逻辑，不在这里展开。
+本文记录当前前端阅读界面以及前后端对接契约。后端内部的 Provider、Service、Repository、
+Storage 和 Dispatcher 分层不在这里展开；前端 `src/` 的组件边界与依赖方向见
+[`src/README.md`](src/README.md)。
 
-`src/` 内部的解耦分层、依赖方向和扩展约定见 [`src/README.md`](src/README.md)。
+## 当前产品形态
 
-## 近期更新记录
+前端是受控阅读界面，而不是自由聊天页。主要职责是：
 
-### 2026-06-14
+- 按阅读场景和系列浏览书库。
+- 展示原文或后端生成的译注副本。
+- 渲染后端下发的 guided cards，并把用户选择作为 action 发回后端。
+- 展示译注进度、模型重试、降级和失败状态。
+- 提供上下文查词、手动加词、生词复习和显式书签。
 
-- 侧边栏顶部新增阅读场景切换：`英文小说` / `文言文`。
-- 前端通过 `/api/profiles` 读取场景列表，并将 `profile_id` 传给目录、cards、WebSocket、lookup 和 vocabulary 相关请求。
-- `localStorage.superhp_profile_id` 保存当前阅读场景；切换场景时清空当前阅读态并重新请求对应目录和起始卡片。
-- 新增 renderer registry，`english_novel` 与 `classical_chinese` 使用不同 renderer。
-- 新增 `renderers/classicalChinese/`：
-  - 文言文标注渲染为行内小注。
-  - 注释词使用靛青强调。
-  - 小注不换行，避免注释被拆成多行。
-  - 标题后方以内联小号文字显示作者，如 `师说  韩愈`。
-- 文言文阅读页使用独立样式包：暖纸色、墨色正文、中文宋体系字体优先、文言知识点 badge。
-- 词表页按当前 `profile_id` 请求数据；文言文显示为“文言重点”，英文小说仍为生词表。
-- 英文小说侧边栏目录优化：书籍分组显示章节数，章节编号显示 `CH 01`，状态 badge 分色，选中态和 hover 更清晰。
-- 文言文目录保持简洁文选风格，不展示摘要。
+当前主路径是英文小说阅读；文言文 Profile 是迁移扩展点。英文书库现包含 Harry Potter 和
+Agatha Christie · Selected Mysteries 两个 collection。
 
-## 前端目标
+## 页面与模块边界
 
-前端的核心不是自由聊天，而是一个受控阅读界面：
+页面由 [`App.vue`](src/App.vue) 协调，主要模块如下：
 
-- 展示当前阅读内容。
-- 展示后端给出的下一步选项 cards。
-- 用户通过 card actions 推动流程。
-- 实时显示加载、模型生成、重试、失败、完成等状态。
-- 为生词复习保留清晰入口。
+```text
+App.vue
+├── useReadingCatalog      Profile、collection、book、chapter 目录
+├── useReadingSocket       WebSocket 会话、cards、正文和模型状态
+├── useReaderPagination    CSS columns 分页与页面导航
+├── useBookmarks           书签读取、保存、删除和定位
+├── useWordLookup          点击查词与手动词汇操作
+├── ReadingSidebar         collection → book → chapter 三级目录
+├── ReadingTopbar          阅读/生词表切换与纸张主题
+├── ReadingTextPage        当前正文页
+├── GuidancePanel          章节 summary 和 guided cards
+├── ReaderStatePage        空白、生成中和错误状态
+├── ReadingPaperFooter     body mode、书签按钮和页码
+├── LookupPopover          查词结果与添加/取消标注操作
+└── VocabularyPanel        生词表查询与掌握状态管理
+```
 
-推荐把页面理解成三块：
+组件负责展示和发出用户意图；API 请求、WebSocket、持久化状态和跨模块协调留在 composable
+或 `App.vue` 中。
 
-1. 阅读区：显示原文或译注正文。
-2. 引导区：显示当前 cards 和 actions。
-3. 状态区：显示连接状态、加载状态、模型进度、错误信息。
+## 阅读界面
 
-## 第一版阅读界面
+- 桌面端是左侧书库目录和中央阅读纸张；移动端目录变为抽屉。
+- 目录按 `collection → book → chapter` 逐级进入，并在当前层级内搜索。
+- 后端 catalog 不可用时，前端仍会按章节中的 `book_id` 自动整理到 `Other Books/其他选篇`。
+- 正文使用固定窗口和 CSS columns 分页；方向键、空格和页面按钮负责翻页。
+- 正文最后一页之后进入 guidance 页，展示 summary 和后端 cards。
+- 译注生成期间保留章节上下文，只在纸张内显示进度，不预览未合并的 chunk。
+- 纸张主题支持 `parchment` 和 `white-paper`，只影响显示，不进入后端请求。
+- 英文正文的普通单词和现有译注词可以点击查词；当前不支持用户框选任意短语查词。
 
-当前前端采用三栏阅读壳：左侧目录、中央固定纸张窗口、移动端目录抽屉。侧边栏和顶部状态栏保留部分中文，阅读纸面区域和 guided card 已基本英文化。
-
-核心设计：
-
-- 阅读内容显示在固定高度的纸张窗口中。
-- 第一版分页使用固定窗口 + CSS columns 的伪分页，让浏览器按真实排版切页。
-- 用户通过左右按钮、方向键或空格翻页。
-- 正文最后一页之后进入引导页，集中展示后端 cards。
-- 译注生成中不清空上下文，而是在纸张中央展示 summary。
-- 引导页上半区展示书名、章节、summary；下半区是轻量 action panel，避免重复 card title/body。
-- 长文本译注由后端分块并发处理、后端合并保存；前端只展示进度，不展示 chunk 正文预览。
-- 进度、重试、JSON 修复、错误信息以小字显示在 summary 上方或纸张顶部。
-- 右上角 `Density: H/M/L` 下拉映射为 `beginner/intermediate/advanced`，生成或打开译注时写入 action payload。
-- 当前阅读单元 id 通过 `localStorage` 持久化，刷新后可恢复卡片页的章节上下文。
-- 书签是显式锚点：阅读页保存当前页，侧边栏章节下展示书签，点击后打开对应原文/译注并跳转到页。
-- 译注正文和普通英文词都可点击查词；添加标注会写入生词表并即时重排正文。
-
-当前页面模式可以理解为：
+当前页面状态可以概括为：
 
 ```ts
 type ReaderMode = "empty" | "reading" | "guidance" | "generating" | "error"
+
+type ReadingLoadStatus =
+  | "connecting"
+  | "offline"
+  | "idle"
+  | "loading_unit"
+  | "generating_annotation"
+  | "model_retrying"
+  | "failed"
+  | "completed"
 ```
 
-后续升级方向：
+前端保留两个兼容状态分支 `json_repairing` 和 `annotation.not_ready`，但当前后端主链路不再发送
+对应事件。
 
-1. 固定窗口保留不变。
-2. 书签后续可增强为选中文本锚点、备注或独立管理页。
-3. 再考虑双页书本、翻页动画等阅读表现升级。
-4. 不做自动阅读位置恢复；刷新后恢复章节/card 上下文，定位由用户显式书签负责。
+## 本地状态
+
+前端使用以下 `localStorage` key：
+
+| key | 用途 |
+| --- | --- |
+| `superhp_profile_id` | 当前阅读 Profile |
+| `superhp_current_unit_id` | 当前阅读单元，用于刷新后恢复章节/cards 上下文 |
+| `superhp_reader_theme` | `parchment` 或 `white-paper` |
+
+页面位置不自动持久化。精确阅读定位由用户显式保存书签完成。
 
 ## HTTP API
 
-### `GET /api/health`
+### 健康与目录
 
-用途：检查后端是否可用。
+#### `GET /api/health`
 
-典型返回：
+返回 `{ "status": "ok" }`。
 
-```json
-{
-  "status": "ok"
+#### `GET /api/profiles`
+
+返回可用 Profile：
+
+```ts
+type ProfileMeta = {
+  id: string
+  language_id: string
+  label: string
+  renderer_hint: string
+  is_default: boolean
 }
 ```
 
-前端用途：启动时或调试面板中显示后端连接状态。
+前端使用 `renderer_hint` 选择 English Novel 或 Classical Chinese renderer。
 
-### `GET /api/units`
+#### `GET /api/library`
 
-用途：获取所有阅读单元的元数据。
+可选查询参数：`profile_id`。
 
-返回类型：`ReadingUnitMeta[]`
+返回 collection 和稳定的图书顺序：
 
-前端用途：
+```ts
+type LibraryCollectionMeta = {
+  id: string
+  profile_id: string
+  title: string
+  author: string
+  order: number
+  books: Array<{ id: string; order: number }>
+}
+```
 
-- 构建章节/阅读单元列表。
-- 显示书名、章节名、切分进度。
-- 判断某个单元是否已有译注副本。
+Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units` 返回的数据补齐。
 
-### `GET /api/units/{unit_id}`
+#### `GET /api/units`
 
-用途：按 id 获取一个阅读单元正文。
+可选查询参数：`profile_id`。返回 `ReadingUnitMeta[]`。
 
-返回类型：`ReadingUnitDetail`
+#### `GET /api/units/{unit_id}`
 
-前端用途：
+直接读取一个原文单元，主要用于调试或 HTTP 兜底。常规阅读通过 WebSocket action 打开正文。
 
-- 非 WebSocket 场景下直接加载原文。
-- 调试或兜底读取。
+`/api/chapters` 和 `/api/chapters/{chapter_id}` 是旧命名兼容入口。
 
-常规阅读流程更推荐通过 WebSocket action 打开正文，因为 WebSocket 会同步返回事件和 cards。
+### 查词与词表
 
-### `GET /api/vocabulary`
+#### `POST /api/word-lookup`
 
-用途：获取生词列表。
+请求：
 
-可选查询：
+```json
+{
+  "word": "conviction",
+  "sentence": "I said it with conviction.",
+  "profile_id": "english_novel"
+}
+```
+
+返回：
+
+```ts
+type WordLookupResult = {
+  word: string
+  word_cn: string
+  pos: string
+  sentence_cn: string
+}
+```
+
+英文查词是通用小说上下文查词，不绑定某个系列。后端要求 `word_cn` 非空；请求带句子时也要求
+`sentence_cn` 非空。格式或必需字段不合规时，Lookup Service 会执行内容重试。
+
+#### `GET /api/vocabulary`
+
+可选查询参数：
 
 - `unit_id`
 - `chapter_id`
+- `profile_id`
+- `book_id`
 
-返回类型：`VocabularyEntry[]`
+书中生词按 `book_id` 隔离；同一语言下的“已掌握”状态全局共享。
 
-前端用途：
+#### `POST /api/vocabulary`
 
-- 展示当前单元生词。
-- 展示章节生词。
-- 支持生词表页的章节筛选、搜索、掌握/重新学习、删除。
+把查词结果作为手动词条写入当前阅读单元：
 
-### `GET /api/bookmarks`
+```json
+{
+  "word": "conviction",
+  "translation": "确信",
+  "context": "I said it with conviction.",
+  "pos": "noun",
+  "unit_id": "ac08-ch17"
+}
+```
 
-用途：获取显式阅读书签。
+写入成功后，前端使用 `manualAnnotations` 立即重绘正文，无需重新生成整章译注。
 
-可选查询：
+#### `PATCH /api/vocabulary/{vocab_id}/master`
 
-- `unit_id`
+按词条 id 标记掌握或重新学习。
 
-返回类型：`BookmarkEntry[]`
+#### `POST /api/vocabulary/mark-by-word`
 
-前端用途：
+按 `word + profile_id` 更新语言级掌握状态，当前用于从阅读正文取消标注。
 
-- 在侧边栏章节下展示书签。
-- 过滤当前章节书签。
+#### `DELETE /api/vocabulary/{vocab_id}`
 
-### `POST /api/bookmarks`
+删除一个书中词条，不等同于删除语言级掌握记录。
 
-用途：保存当前阅读页为书签。
+### 书签
 
-请求字段：
+#### `GET /api/bookmarks`
 
-- `unit_id`
-- `body_kind`: `source` 或 `annotated`
-- `page_index`
-- `progress_ratio`
-- `total_pages`
-- `label`
-- `excerpt`
+可选查询参数：`unit_id`。
 
-### `DELETE /api/bookmarks/{bookmark_id}`
+#### `POST /api/bookmarks`
 
-用途：删除一个书签。
+```json
+{
+  "unit_id": "ac01-ch01",
+  "body_kind": "source",
+  "page_index": 2,
+  "progress_ratio": 0.4,
+  "total_pages": 5,
+  "label": "Page 3",
+  "excerpt": "In the corner of a first-class smoking carriage...",
+  "paragraph_index": 4
+}
+```
 
-### `POST /api/vocabulary`
+定位时优先使用 excerpt/paragraph，再以页码和比例兜底，降低重新排版造成的偏移。
 
-用途：把用户查词得到的词条写入生词库，并关联当前阅读单元。
+#### `DELETE /api/bookmarks/{bookmark_id}`
 
-前端用途：
+删除指定书签。
 
-- 查词气泡中的 `添加标注`。
-- 写入后即时加入 `manualAnnotations`，重新渲染当前正文。
+### Guided cards
 
-### `PATCH /api/vocabulary/{vocab_id}/master`
+#### `GET /api/agent-cards`
 
-用途：按词条 id 标记掌握/未掌握。
-
-### `DELETE /api/vocabulary/{vocab_id}`
-
-用途：删除一个生词词条。
-
-### `POST /api/vocabulary/mark-by-word`
-
-用途：阅读区按词标记掌握，通常用于取消当前标注。
-
-### `POST /api/word-lookup`
-
-用途：上下文查词。
-
-返回字段包括：
-
-- `word`
-- `word_cn`
-- `pos`
-- `sentence_cn`
-
-### `GET /api/agent-cards`
-
-用途：获取当前应展示的引导 cards。
-
-可选查询：
-
-- `current_unit_id`
-- `current_chapter_id`，兼容旧命名
-
-返回类型：`AgentCard[]`
-
-前端用途：
-
-- 首次加载时获取默认推荐动作。
-- WebSocket 不可用时的兜底。
-
-常规情况下，WebSocket 会主动推送 `cards.updated`。
+可选查询参数：`current_unit_id`、兼容字段 `current_chapter_id`、`profile_id` 和 `phase`。
+它是 WebSocket cards 的 HTTP 兜底入口。
 
 ## WebSocket
 
-连接地址：
+连接地址：`/ws/reading`。本地开发通常为 `ws://127.0.0.1:8000/ws/reading`。
 
-```text
-/ws/reading
-```
+所有消息都可以携带 `request_id`。Profile 会话通过 `profile_id` 指定；Action 执行时正文自己的
+`profile_id` 仍是最终依据。
 
-开发环境通常是：
+### 前端发送
 
-```text
-ws://127.0.0.1:8000/ws/reading
-```
-
-WebSocket 是主阅读流程的推荐通道，因为它支持后端实时推送加载和模型进度。
-
-## 前端发送消息
-
-### `hello`
-
-用途：初始化会话，告诉后端当前阅读位置。
+#### `hello`
 
 ```json
 {
   "type": "hello",
   "request_id": "optional-client-id",
-  "current_unit_id": "hp01-ch01"
+  "current_unit_id": "ac01-ch01",
+  "profile_id": "english_novel"
 }
 ```
 
-`current_unit_id` 可省略。省略时后端会根据 memory 或第一节返回 cards。
+连接建立后发送。`current_chapter_id` 仍作为兼容字段同时发送。
 
-### `ping`
-
-用途：心跳或调试。
+#### `cards`
 
 ```json
 {
-  "type": "ping",
-  "request_id": "ping-1"
+  "type": "cards",
+  "request_id": "optional-client-id",
+  "current_unit_id": "ac01-ch01",
+  "profile_id": "english_novel",
+  "phase": "start"
 }
 ```
 
-后端返回 `pong`。
+`phase` 当前常用 `start` 或 `complete`。
 
-### `action`
-
-用途：用户点击 card action 后发送给后端。
+#### `action`
 
 ```json
 {
   "type": "action",
-  "request_id": "action-1",
+  "request_id": "optional-client-id",
   "action": {
     "id": "generate_annotation",
     "label": "Generate",
     "payload": {
-      "unit_id": "hp01-ch01",
-      "chapter_id": "hp01-ch01",
-      "level": "intermediate"
+      "unit_id": "ac01-ch01",
+      "chapter_id": "ac01-ch01"
     }
   }
 }
 ```
 
-前端不要自行推断复杂流程。优先原样发送后端 card 中给出的 action。
+当前没有 `level` 或 Density 字段。每个阅读单元只保存一个译注副本。前端原则上原样发送后端 card
+中的 action，不自行拼装业务 payload。
 
-例外：
+当前 action id：
 
-- `generate_annotation` 和 `open_annotated_copy` 会由前端注入当前 `level`。
-- `review_chapter_vocab` 是本地页面跳转，前端直接切到生词表并筛选当前章节。
+- `open_chapter`
+- `read_original`
+- `generate_annotation`
+- `open_annotated_copy`
+- `mark_chapter_read`
+- `start_next_chapter`
+- `review_chapter_vocab`
 
-## 后端推送事件
+`review_chapter_vocab` 是前端本地视图切换：进入生词表并筛选当前单元，不发送给 Dispatcher。
 
-### `ready`
+#### `ping`
 
-含义：WebSocket 已连接，协议可用。
+后端返回 `pong`，用于连接健康检查。
 
-```json
-{
-  "type": "ready",
-  "protocol": "reading.v1"
+## 后端事件
+
+### 会话与正文
+
+- `ready`：WebSocket 可用，包含 `protocol=reading.v1`。
+- `cards.updated`：替换当前 cards，并更新 `current_unit_id`。
+- `chapter.loading`：正文即将打开，包含 `unit_id` 和 `body_kind`。
+- `chapter.opened`：正文已打开；优先读取 `unit`，`chapter` 是旧命名兼容副本。
+- `unit.marked_read`：阅读单元已标记完成。
+- `pong`：心跳响应。
+- `error`：传输或 Action 错误，结构为 `{ error: { code, message } }`。
+
+`body_kind` 当前为 `source` 或 `annotated`。
+
+### 译注事件
+
+- `annotation.started`：整章译注开始。
+- `annotation.progress`：分块进度，可能包含 `stage/current/total/chunk_index/message`。
+- `annotation.model_retry`：Provider 正在重试某个 chunk，包含 `chunk_index` 和 `message`。
+- `annotation.degraded`：单个 chunk 已回退原文，包含 `category/code/chunk_index/message`。
+- `annotation.completed`：流程完成，随后会发送 `chapter.opened`。
+- `annotation.failed`：未分类异常导致整章任务失败。
+
+`annotation.completed` 的重要字段：
+
+```ts
+type AnnotationCompletedPayload = {
+  unit_id: string
+  status: "completed" | "degraded"
+  persisted: boolean
+  vocabulary_count: number
+  stored_vocabulary_count: number
+  validated_chunk_count: number
+  total_chunk_count: number
+  degraded_chunk_count: number
+  provider_error_count: number
+  validation_error_count: number
 }
 ```
 
-前端建议：连接状态切到 online。
+部分 chunk 降级时，后端会合并并保存可用结果；全部 chunk 降级时 `persisted=false`，随后以
+`body_kind=source` 打开完整原文。前端不应把 `annotation.degraded` 当作整章失败。
 
-### `cards.updated`
+当前 `useReadingSocket` 会显示 retry、progress 和最终状态，但尚未为 `annotation.degraded` 提供独立
+提示；未知事件会被安全忽略。
 
-含义：后端给出当前可选动作。
-
-```json
-{
-  "type": "cards.updated",
-  "current_unit_id": "hp01-ch01",
-  "cards": []
-}
-```
-
-前端建议：刷新引导区，不要把旧 actions 混在一起。
-
-### `chapter.loading`
-
-含义：后端开始加载某个阅读单元。
-
-```json
-{
-  "type": "chapter.loading",
-  "unit_id": "hp01-ch01",
-  "body_kind": "source"
-}
-```
-
-`body_kind` 可能是：
-
-- `source`：原文
-- `annotated`：译注副本
-
-前端建议：阅读区显示 loading 状态。
-
-### `chapter.opened`
-
-含义：正文已经打开。
-
-```json
-{
-  "type": "chapter.opened",
-  "action_id": "open_chapter",
-  "unit": {
-    "meta": {},
-    "body": "...",
-    "body_kind": "source"
-  },
-  "chapter": {}
-}
-```
-
-前端建议：优先使用 `unit` 字段。`chapter` 是兼容旧命名。
-
-### `annotation.started`
-
-含义：译注生成流程开始。
-
-前端建议：显示生成状态，禁用重复点击生成按钮。
-
-### `annotation.progress`
-
-含义：译注生成过程中的普通进度。
-
-可能字段：
-
-- `unit_id`
-- `stage`
-- `current`
-- `total`
-- `message`
-
-前端建议：状态区显示 `message`。生成译注时保持 summary 页面，不拼接或预览 chunk 正文；最终译注以后端随后推送的 `chapter.opened` 为准。
-
-### `annotation.model_retry`
-
-含义：模型调用出现可重试错误，后端正在等待并重试。
-
-```json
-{
-  "type": "annotation.model_retry",
-  "message": "Model request failed, retrying in 1s."
-}
-```
-
-前端建议：显示为温和提醒，不要立刻标记失败。
-
-### `annotation.json_repair`
-
-含义：模型返回内容不是有效 JSON，后端正在要求模型修复。
-
-```json
-{
-  "type": "annotation.json_repair",
-  "attempt": 1,
-  "message": "模型返回不是有效 JSON，正在请求修复。"
-}
-```
-
-前端建议：显示为处理中状态。
-
-### `annotation.completed`
-
-含义：译注生成完成，并已保存副本和生词数据。
-
-可能字段：
-
-- `unit_id`
-- `vocabulary_count`
-- `stored_vocabulary_count`
-
-前端建议：显示完成状态。随后通常还会收到 `chapter.opened` 和 `cards.updated`。
-
-### `annotation.failed`
-
-含义：译注生成失败。
-
-```json
-{
-  "type": "annotation.failed",
-  "unit_id": "hp01-ch01",
-  "message": "..."
-}
-```
-
-前端建议：显示错误，并允许用户重试或阅读原文。
-
-### `unit.marked_read`
-
-含义：当前阅读单元已标记为已读。
-
-前端建议：更新阅读状态。随后通常会收到新的 `cards.updated`。
-
-### `error`
-
-含义：后端无法处理某条消息或 action。
-
-```json
-{
-  "type": "error",
-  "error": {
-    "code": "internal_error",
-    "message": "后端执行 action 时发生未知错误。"
-  }
-}
-```
-
-常见 code：
+常见 WebSocket error code：
 
 - `invalid_message`
 - `missing_action`
 - `missing_unit_id`
 - `unit_not_found`
 - `unsupported_action`
-- `annotated_copy_not_found`
 - `annotator_not_configured`
 - `internal_error`
 
-前端建议：根据 code 决定提示方式。`internal_error` 应显示明确失败状态，但不要让整个页面崩掉。
+错误不应清空已经打开的正文。
 
-### `pong`
-
-含义：心跳响应。
-
-前端建议：用于连接健康状态，不需要展示给普通用户。
-
-## 数据模型
-
-### `AgentCard`
-
-```ts
-type AgentCard = {
-  id: string
-  type: string
-  title: string
-  body: string
-  actions: AgentAction[]
-}
-```
-
-前端展示：
-
-- `title` 作为卡片标题。
-- `body` 作为卡片说明。
-- `actions` 渲染为按钮。
-
-### `AgentAction`
+## 核心数据模型
 
 ```ts
 type AgentAction = {
@@ -490,17 +375,15 @@ type AgentAction = {
   label: string
   payload: Record<string, unknown>
 }
-```
 
-前端处理：
+type AgentCard = {
+  id: string
+  type: string
+  title: string
+  body: string
+  actions: AgentAction[]
+}
 
-- 按钮文字使用 `label`。
-- 点击后原样通过 WebSocket `action` 消息发送。
-- 不建议前端手写 payload，除非是明确的本地兜底逻辑。
-
-### `ReadingUnitMeta`
-
-```ts
 type ReadingUnitMeta = {
   id: string
   chapter_id: string
@@ -508,47 +391,31 @@ type ReadingUnitMeta = {
   book_title: string
   chapter_no: number
   chapter_title: string
-  section_no?: number
-  section_count?: number
+  section_no: number
+  section_count: number
   summary: string
   has_annotated_copy: boolean
-  status: string
+  status: "unread" | "read" | string
   vocab_count: number
+  profile_id: string
+  language_id: string
 }
-```
 
-前端展示：
-
-- `book_title`：书名。
-- `chapter_no` + `chapter_title`：章节标题。
-- `section_no` / `section_count`：旧版阅读单元兼容字段；章节粒度下前端不再展示。
-- `summary`：章节或单元概要。
-- `has_annotated_copy`：是否已有译注副本。
-
-### `ReadingUnitDetail`
-
-```ts
 type ReadingUnitDetail = {
   meta: ReadingUnitMeta
   body: string
-  body_kind: "source" | "annotated" | string
+  body_kind: "source" | "annotated"
 }
-```
 
-前端展示：
-
-- `body_kind = source` 时展示原文。
-- `body_kind = annotated` 时展示译注内容。
-
-### `VocabularyEntry`
-
-```ts
 type VocabularyEntry = {
   id: number
+  book_id: string
+  profile_id: string
+  language_id: string
   word: string
   translation: string
   global_translation: string
-  pos: "noun" | "verb" | "adjective" | "adverb" | "phrase" | "other" | string
+  pos: string
   mastered: boolean
   context: string
   encounter_count: number
@@ -559,71 +426,23 @@ type VocabularyEntry = {
 }
 ```
 
-前端展示：
+## 前端对齐原则
 
-- 生词表列表、词性 badge、上下文、章节筛选。
-- 未掌握/已掌握 tab。
-- 删除、标记掌握、重新学习。
+1. Guided flow 以服务端 cards 为准；前端只处理明确的本地 action。
+2. Profile、collection、book 和 unit 是不同层级，不用 `profile_id` 代替系列标识。
+3. Density 分级已取消，不再发送或保存 `level`。
+4. 译注副本按 unit 唯一；原文与译注通过 `body_kind` 区分。
+5. 书中词条按书隔离，语言级掌握状态共享。
+6. 模型重试、chunk 降级和整章失败是不同状态，不根据易变文案判断类型。
+7. 前端渲染覆盖层可以即时增加或隐藏单词，但不修改后端保存的原文或译注 Markdown。
+8. 断线和错误时保留最后正文、cards 和书签上下文。
 
-## 推荐前端状态
+## 已知边界与后续方向
 
-建议前端至少维护这些状态：
-
-```ts
-type ReadingConnectionStatus = "connecting" | "online" | "offline" | "error"
-
-type ReadingLoadStatus =
-  | "idle"
-  | "loading_unit"
-  | "generating_annotation"
-  | "model_retrying"
-  | "json_repairing"
-  | "failed"
-  | "completed"
-```
-
-核心状态建议包括：
-
-- `connectionStatus`
-- `loadStatus`
-- `currentUnit`
-- `currentBody`
-- `bodyKind`
-- `cards`
-- `lastProgressMessage`
-- `lastError`
-- `vocabulary`
-
-## 推荐事件处理策略
-
-- `ready`：连接成功。
-- `cards.updated`：替换 cards。
-- `chapter.loading`：进入正文 loading。
-- `chapter.opened`：更新正文和当前 unit。
-- `annotation.started`：进入译注生成状态。
-- `annotation.progress`：更新进度文案。
-- `annotation.model_retry`：显示重试中。
-- `annotation.json_repair`：显示修复中。
-- `annotation.completed`：显示完成，可等待后续 `chapter.opened`。
-- `annotation.failed`：显示失败，可允许重试。
-- `unit.marked_read`：更新已读状态。
-- `error`：根据 code 显示错误，不要清空正文。
-
-## UI 对齐原则
-
-1. 用户只通过后端提供的 actions 推进流程。
-2. 当前正文和当前 cards 是页面最重要的信息。
-3. 进度事件应该可见，但不要打断阅读。
-4. 错误提示要保留用户的上下文，不要把页面重置为空。
-5. WebSocket 断开时，页面可以保留最后一次正文和 cards，并提示重连。
-6. 生词复习入口已作为 card action 接入，点击后打开生词表并筛选当前章节。
-7. 已掌握词和手动标注属于前端渲染覆盖层，不应触发模型重新生成。
-8. Density 变化影响模型选词，应通过 level-specific annotated copy 缓存隔离。
-
-## 后续前端任务拆分
-
-1. 书签增强：支持选中文本锚点、书签备注和独立书签管理视图。
-2. 断线重连体验：保留最后正文和 cards，并提供明确重连状态。
-3. 生词复习模式：在列表之外扩展 flashcard/quiz。
-4. 前端英文化收尾：查词、生词表、状态栏文案按产品风格逐步统一。
-5. 组件测试或 e2e：覆盖 density action payload、复习生词跳转、伪分页边界、显式书签跳转。
+- 查词目前只支持点击单词；尚无框选短语交互。
+- 快速连续点击多个单词时，查词请求尚未使用 request token 或 AbortController 防止旧响应覆盖。
+- `annotation.degraded` 尚未在 UI 中单独展示分类提示。
+- `annotation.json_repair` 和 `annotation.not_ready` 仅剩前端兼容分支，可在后续清理。
+- 书签后续可增加备注、选中文本锚点和独立管理视图。
+- 生词复习可在当前列表之外扩展 flashcard 或 quiz。
+- 组件测试与 e2e 应优先覆盖三级目录、Profile 切换、显式书签、译注降级和分页边界。

@@ -532,6 +532,54 @@ def test_lookup_service_normalizes_pos_alias():
     asyncio.run(run_case())
 
 
+def test_lookup_service_retries_parseable_json_with_missing_required_fields():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content='{"word":"spell","word_cn":"","pos":"noun","sentence_cn":""}'),
+            LLMResponse(content='{"word":"changed","word_cn":"咒语","pos":"noun","sentence_cn":"他念了一个咒语。"}'),
+        ])
+        service = WordLookupService(provider)
+
+        result = await service.lookup("spell", "He cast a spell.")
+
+        assert len(provider.messages) == 2
+        assert result["word"] == "spell"
+        assert result["word_cn"] == "咒语"
+        assert "required JSON fields" in provider.messages[1][1]["content"]
+
+    asyncio.run(run_case())
+
+
+def test_lookup_service_requires_sentence_translation_when_context_is_given():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content='{"word":"spell","word_cn":"咒语","pos":"noun"}'),
+            LLMResponse(content='{"word":"spell","word_cn":"咒语","pos":"noun","sentence_cn":"他念了一个咒语。"}'),
+        ])
+        service = WordLookupService(provider)
+
+        result = await service.lookup("spell", "He cast a spell.")
+
+        assert len(provider.messages) == 2
+        assert result["sentence_cn"] == "他念了一个咒语。"
+
+    asyncio.run(run_case())
+
+
+def test_lookup_service_allows_empty_sentence_translation_without_context():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content='{"word":"spell","word_cn":"咒语","pos":"noun"}'),
+        ])
+        service = WordLookupService(provider)
+
+        result = await service.lookup("spell", "")
+
+        assert result["sentence_cn"] == ""
+
+    asyncio.run(run_case())
+
+
 def test_lookup_service_raises_on_provider_error():
     async def run_case():
         provider = ScriptedProvider([LLMResponse(content="Error: nope", finish_reason="error")])

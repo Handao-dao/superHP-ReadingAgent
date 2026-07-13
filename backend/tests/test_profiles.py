@@ -86,6 +86,15 @@ def test_english_annotation_examples_cover_word_and_phrase_boundaries():
     assert "duplicates the source expression" in ANNOTATION_EXAMPLES
 
 
+def test_english_lookup_prompt_is_generic_and_context_specific():
+    profile = EnglishNovelProfile()
+
+    assert "English novels" in profile.lookup_system_prompt
+    assert "Harry Potter" not in profile.lookup_system_prompt
+    assert "enough Chinese characters" in profile.lookup_system_prompt
+    assert "Prefer 1-4 Chinese characters" not in profile.lookup_system_prompt
+
+
 def test_english_novel_profile_validates_markers_and_source_reconstruction():
     profile = EnglishNovelProfile()
 

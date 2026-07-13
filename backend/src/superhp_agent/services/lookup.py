@@ -35,8 +35,8 @@ class WordLookupService:
             prompt = user_prompt
             if attempt > 0:
                 prompt += (
-                    "\n\nYour previous response was not valid JSON. "
-                    "Return the lookup result again as valid JSON only."
+                    "\n\nYour previous response did not match the required JSON fields. "
+                    "Return a complete lookup result as valid JSON only."
                 )
 
             response = await self.provider.chat_with_retry(
@@ -53,13 +53,32 @@ class WordLookupService:
 
             try:
                 payload = extract_json(response.content)
-                return {
-                    "word": str(payload.get("word") or word),
-                    "word_cn": str(payload.get("word_cn") or ""),
-                    "pos": normalize_pos(payload.get("pos")),
-                    "sentence_cn": str(payload.get("sentence_cn") or ""),
-                }
+                return _normalize_lookup_payload(
+                    payload,
+                    word=word,
+                    sentence=sentence,
+                )
             except ValueError as exc:
                 last_error = exc
 
         raise last_error or ValueError("LLM did not return valid JSON")
+
+
+def _normalize_lookup_payload(payload: object, *, word: str, sentence: str) -> dict:
+    """Validate required model fields and preserve the user's queried word."""
+    if not isinstance(payload, dict):
+        raise ValueError("LLM lookup response must be a JSON object")
+
+    word_cn = str(payload.get("word_cn") or "").strip()
+    sentence_cn = str(payload.get("sentence_cn") or "").strip()
+    if not word_cn:
+        raise ValueError("LLM lookup response is missing word_cn")
+    if sentence.strip() and not sentence_cn:
+        raise ValueError("LLM lookup response is missing sentence_cn")
+
+    return {
+        "word": word,
+        "word_cn": word_cn,
+        "pos": normalize_pos(payload.get("pos")),
+        "sentence_cn": sentence_cn,
+    }

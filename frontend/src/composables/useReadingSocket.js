@@ -34,12 +34,34 @@ export function useReadingSocket(options = {}) {
   const progressMessage = ref('')
   const errorMessage = ref('')
   const cardsRevision = ref(0)
+  const degradationCounts = ref({ provider: 0, validation: 0, other: 0 })
 
   let socket = null
   let intentionalClose = false
 
   const canSend = computed(() => connected.value && socket?.readyState === WebSocket.OPEN)
   const selectedProfileId = () => options.profileId?.value || options.profileId || ''
+  const annotationWarning = computed(() => {
+    const { provider, validation, other } = degradationCounts.value
+    const parts = []
+    if (provider) parts.push(`${provider} 个分块在模型调用重试后仍失败`)
+    if (validation) parts.push(`${validation} 个分块未通过格式或原文校验`)
+    if (other) parts.push(`${other} 个分块未能生成有效译注`)
+    if (!parts.length) return ''
+    return `${parts.join('，')}，已回退为原文；其他分块仍可正常阅读。`
+  })
+
+  function resetAnnotationWarning() {
+    degradationCounts.value = { provider: 0, validation: 0, other: 0 }
+  }
+
+  function recordDegradedChunk(category) {
+    const key = ['provider', 'validation'].includes(category) ? category : 'other'
+    degradationCounts.value = {
+      ...degradationCounts.value,
+      [key]: degradationCounts.value[key] + 1,
+    }
+  }
 
   watch(currentChapterId, (unitId) => {
     if (unitId) {
@@ -164,6 +186,7 @@ export function useReadingSocket(options = {}) {
         if (!['failed', 'offline'].includes(loadStatus.value)) loadStatus.value = 'idle'
         return
       case 'chapter.loading':
+        resetAnnotationWarning()
         currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'loading_unit'
@@ -175,10 +198,11 @@ export function useReadingSocket(options = {}) {
         currentChapterId.value = activeChapter.value?.meta?.id || currentChapterId.value
         statusMessage.value = 'Reading unit opened'
         progressMessage.value = ''
-        noticeMessage.value = ''
+        noticeMessage.value = annotationWarning.value
         loadStatus.value = 'idle'
         return
       case 'annotation.started':
+        resetAnnotationWarning()
         currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'generating_annotation'
@@ -198,6 +222,10 @@ export function useReadingSocket(options = {}) {
         progressMessage.value = message.message || 'Model request failed, retrying...'
         noticeMessage.value = progressMessage.value
         return
+      case 'annotation.degraded':
+        recordDegradedChunk(message.category)
+        noticeMessage.value = annotationWarning.value
+        return
       case 'annotation.json_repair':
         busy.value = true
         loadStatus.value = 'json_repairing'
@@ -205,10 +233,24 @@ export function useReadingSocket(options = {}) {
         noticeMessage.value = progressMessage.value
         return
       case 'annotation.completed':
+        if (message.status === 'degraded') {
+          degradationCounts.value = {
+            provider: Number(message.provider_error_count) || 0,
+            validation: Number(message.validation_error_count) || 0,
+            other: Math.max(
+              0,
+              (Number(message.degraded_chunk_count) || 0)
+                - (Number(message.provider_error_count) || 0)
+                - (Number(message.validation_error_count) || 0),
+            ),
+          }
+        } else {
+          resetAnnotationWarning()
+        }
         busy.value = false
         loadStatus.value = 'completed'
         progressMessage.value = 'Annotations ready'
-        noticeMessage.value = 'Annotations ready'
+        noticeMessage.value = annotationWarning.value || 'Annotations ready'
         return
       case 'annotation.failed':
         errorMessage.value = userFacingError(message.message, '译注生成失败。')
@@ -239,6 +281,7 @@ export function useReadingSocket(options = {}) {
 
   return {
     activeChapter,
+    annotationWarning,
     busy,
     canSend,
     cardsRevision,

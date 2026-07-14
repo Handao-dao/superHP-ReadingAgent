@@ -352,8 +352,8 @@ type AnnotationCompletedPayload = {
 部分 chunk 降级时，后端会合并并保存可用结果；全部 chunk 降级时 `persisted=false`，随后以
 `body_kind=source` 打开完整原文。前端不应把 `annotation.degraded` 当作整章失败。
 
-当前 `useReadingSocket` 会显示 retry、progress 和最终状态，但尚未为 `annotation.degraded` 提供独立
-提示；未知事件会被安全忽略。
+当前 `useReadingSocket` 会显示 retry、progress 和最终状态，并按 `provider`、`validation` 汇总
+`annotation.degraded`。降级提示独立于整章错误显示，随后自动打开正文时仍会保留；未知事件会被安全忽略。
 
 常见 WebSocket error code：
 
@@ -436,12 +436,11 @@ type VocabularyEntry = {
 6. 模型重试、chunk 降级和整章失败是不同状态，不根据易变文案判断类型。
 7. 前端渲染覆盖层可以即时增加或隐藏单词，但不修改后端保存的原文或译注 Markdown。
 8. 断线和错误时保留最后正文、cards 和书签上下文。
+9. 可被重复触发的异步读取使用 request revision，只有最新请求可以更新页面状态。
 
 ## 已知边界与后续方向
 
 - 查词目前只支持点击单词；尚无框选短语交互。
-- 快速连续点击多个单词时，查词请求尚未使用 request token 或 AbortController 防止旧响应覆盖。
-- `annotation.degraded` 尚未在 UI 中单独展示分类提示。
 - `annotation.json_repair` 和 `annotation.not_ready` 仅剩前端兼容分支，可在后续清理。
 - 书签后续可增加备注、选中文本锚点和独立管理视图。
 - 生词复习可在当前列表之外扩展 flashcard 或 quiz。

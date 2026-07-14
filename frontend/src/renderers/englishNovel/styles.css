@@ -1,5 +1,5 @@
 .vocab-word {
-  color: #B8860B;
+  color: var(--annotation-word-color);
   font-family: "Bookerly-Bold", "Bookerly", Georgia, "Times New Roman", serif;
   font-weight: 700;
   border-bottom: 1px solid transparent;
@@ -7,8 +7,8 @@
 }
 
 .vocab-word:hover {
-  color: #9F7928;
-  border-bottom-color: #9F7928;
+  color: var(--annotation-word-hover);
+  border-bottom-color: var(--annotation-word-hover);
   border-bottom-style: dashed;
 }
 
@@ -25,7 +25,7 @@
 
 .translation {
   margin-left: 4px;
-  color: #2C2825;
+  color: var(--annotation-gloss-color);
   font-family: "Bookerly", Georgia, "Times New Roman", serif;
   font-size: 0.9em;
   opacity: 0.8;

@@ -6,7 +6,7 @@
  */
 import { ref } from 'vue'
 import { lookupWord } from '../api/lookup'
-import { addVocabulary, setMasteredByWord } from '../api/vocabulary'
+import { addVocabulary, fetchVocabulary, setMasteredByWord } from '../api/vocabulary'
 
 export function useWordLookup({
   getProfileId,
@@ -26,6 +26,8 @@ export function useWordLookup({
   const lookupTranslation = ref('')
   const lookupResult = ref(null)
   const lookupStyle = ref({})
+  let annotationLoadRevision = 0
+  let lookupRequestRevision = 0
 
   function normalizeWord(word = '') {
     return String(word).trim().toLowerCase()
@@ -68,6 +70,9 @@ export function useWordLookup({
   }
 
   function closeLookupBubble() {
+    // Invalidate an in-flight lookup so a late response cannot repopulate a
+    // bubble that the user closed or that belongs to a previous reading unit.
+    lookupRequestRevision += 1
     lookupVisible.value = false
     lookupLoading.value = false
     lookupSaving.value = false
@@ -76,8 +81,42 @@ export function useWordLookup({
   }
 
   function resetLookupAnnotations() {
+    annotationLoadRevision += 1
     manualAnnotations.value = new Map()
     hiddenAnnotations.value = new Set()
+  }
+
+  async function loadLookupAnnotations(unitId) {
+    const revision = ++annotationLoadRevision
+    if (!unitId) {
+      manualAnnotations.value = new Map()
+      hiddenAnnotations.value = new Set()
+      return
+    }
+
+    try {
+      const result = await fetchVocabulary({ unitId })
+      if (revision !== annotationLoadRevision) return
+
+      const restoredManual = new Map()
+      const restoredHidden = new Set()
+      for (const item of result.items) {
+        const key = normalizeWord(item.word)
+        if (!key) continue
+        if (item.mastered) {
+          restoredHidden.add(key)
+          continue
+        }
+        const translation = item.translation || item.global_translation
+        if (translation) restoredManual.set(key, translation)
+      }
+      manualAnnotations.value = restoredManual
+      hiddenAnnotations.value = restoredHidden
+    } catch {
+      if (revision !== annotationLoadRevision) return
+      manualAnnotations.value = new Map()
+      hiddenAnnotations.value = new Set()
+    }
   }
 
   async function handleReadingClick(event) {
@@ -89,6 +128,7 @@ export function useWordLookup({
 
     const word = cleanWord(target.dataset.word || target.textContent || '')
     if (!word) return
+    const revision = ++lookupRequestRevision
 
     lookupVisible.value = true
     lookupLoading.value = true
@@ -103,9 +143,11 @@ export function useWordLookup({
 
     try {
       const result = await lookupWord(word, lookupSentence.value, getProfileId?.())
+      if (revision !== lookupRequestRevision) return
       if (!result.word_cn && lookupTranslation.value) result.word_cn = lookupTranslation.value
       lookupResult.value = result
     } catch (error) {
+      if (revision !== lookupRequestRevision) return
       lookupError.value = error.message || '查词失败'
       if (lookupTranslation.value) {
         lookupResult.value = {
@@ -115,7 +157,7 @@ export function useWordLookup({
         }
       }
     } finally {
-      lookupLoading.value = false
+      if (revision === lookupRequestRevision) lookupLoading.value = false
     }
   }
 
@@ -188,6 +230,7 @@ export function useWordLookup({
     lookupTranslation,
     lookupVisible,
     lookupWordText,
+    loadLookupAnnotations,
     manualAnnotations,
     resetLookupAnnotations,
     stripAnnotationMarkers,

@@ -3,6 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { deleteVocabulary, fetchVocabulary, setMastered } from '../api/vocabulary'
 
 const props = defineProps({
+  collections: {
+    type: Array,
+    default: () => [],
+  },
   currentUnitId: {
     type: String,
     default: '',
@@ -14,10 +18,6 @@ const props = defineProps({
   selectedUnitId: {
     type: String,
     default: '',
-  },
-  chapters: {
-    type: Array,
-    default: () => [],
   },
   profileId: {
     type: String,
@@ -36,6 +36,9 @@ const loading = ref(false)
 const errorMessage = ref('')
 const tab = ref('active')
 const search = ref('')
+const selectedCollectionId = ref('')
+const selectedBookId = ref('')
+let vocabularyLoadRevision = 0
 
 const posLabels = {
   noun: '名词',
@@ -60,6 +63,11 @@ const profileCopy = computed(() => {
       eyebrow: 'Knowledge Points',
       title: '文言重点',
       allUnits: '全部篇目',
+      allCollections: '全部选集',
+      allBooks: '全部篇目',
+      collectionLabel: '选集',
+      bookLabel: '篇目',
+      chapterLabel: '章节',
       currentUnit: '当前篇目',
       searchPlaceholder: '字词 / 释义 / 原文语境',
       loading: '正在读取文言重点...',
@@ -70,6 +78,11 @@ const profileCopy = computed(() => {
     eyebrow: 'Vocabulary',
     title: '生词表',
     allUnits: '所有章节',
+    allCollections: 'All collections',
+    allBooks: 'All books',
+    collectionLabel: '系列',
+    bookLabel: '图书',
+    chapterLabel: '章节',
     currentUnit: '当前章节',
     searchPlaceholder: 'word / 译文 / context',
     loading: '正在读取生词...',
@@ -77,16 +90,37 @@ const profileCopy = computed(() => {
   }
 })
 
-const selectedChapterTitle = computed(() => {
-  if (!props.selectedUnitId) return profileCopy.value.allUnits
-  const chapter = props.chapters.find((item) => item.id === props.selectedUnitId)
-  if (!chapter) return props.currentTitle || profileCopy.value.currentUnit
-  return `${chapter.chapter_no}. ${chapter.chapter_title}`
+const selectedCollection = computed(() => {
+  return props.collections.find((collection) => collection.id === selectedCollectionId.value) || null
+})
+
+const availableBooks = computed(() => selectedCollection.value?.books || [])
+
+const selectedBook = computed(() => {
+  return availableBooks.value.find((book) => book.id === selectedBookId.value) || null
+})
+
+const availableChapters = computed(() => selectedBook.value?.chapters || [])
+
+const selectedChapter = computed(() => {
+  return availableChapters.value.find((chapter) => chapter.id === props.selectedUnitId) || null
+})
+
+const selectedScopeTitle = computed(() => {
+  if (selectedChapter.value) return `${selectedChapter.value.chapter_no}. ${selectedChapter.value.chapter_title}`
+  if (selectedBook.value) return selectedBook.value.title
+  if (selectedCollection.value) return selectedCollection.value.title
+  return profileCopy.value.allUnits
 })
 
 const scopedItems = computed(() => {
-  if (!props.selectedUnitId) return items.value
-  return items.value.filter((item) => item.unit_id === props.selectedUnitId)
+  if (props.selectedUnitId) return items.value.filter((item) => item.unit_id === props.selectedUnitId)
+  if (selectedBook.value) return items.value.filter((item) => item.book_id === selectedBook.value.id)
+  if (selectedCollection.value) {
+    const bookIds = new Set(selectedCollection.value.books.map((book) => book.id))
+    return items.value.filter((item) => bookIds.has(item.book_id))
+  }
+  return items.value
 })
 
 const filteredItems = computed(() => {
@@ -106,20 +140,48 @@ const filteredItems = computed(() => {
 const activeCount = computed(() => scopedItems.value.filter((item) => !item.mastered).length)
 const masteredCount = computed(() => scopedItems.value.filter((item) => item.mastered).length)
 
+function updateSelectedCollection(event) {
+  selectedCollectionId.value = event.target.value
+  selectedBookId.value = ''
+  emit('update:selectedUnitId', '')
+}
+
+function updateSelectedBook(event) {
+  selectedBookId.value = event.target.value
+  emit('update:selectedUnitId', '')
+}
+
 function updateSelectedUnitId(event) {
   emit('update:selectedUnitId', event.target.value)
 }
 
+function syncHierarchyFromUnit(unitId) {
+  if (!unitId) return
+  for (const collection of props.collections) {
+    for (const book of collection.books) {
+      if (book.chapters.some((chapter) => chapter.id === unitId)) {
+        selectedCollectionId.value = collection.id
+        selectedBookId.value = book.id
+        return
+      }
+    }
+  }
+}
+
 async function loadVocabulary() {
+  const revision = ++vocabularyLoadRevision
+  const profileId = props.profileId
   loading.value = true
   errorMessage.value = ''
   try {
-    const result = await fetchVocabulary({ profileId: props.profileId })
+    const result = await fetchVocabulary({ profileId })
+    if (revision !== vocabularyLoadRevision) return
     items.value = result.items
   } catch (error) {
+    if (revision !== vocabularyLoadRevision) return
     errorMessage.value = error.message || '生词表加载失败'
   } finally {
-    loading.value = false
+    if (revision === vocabularyLoadRevision) loading.value = false
   }
 }
 
@@ -144,7 +206,14 @@ async function removeItem(item) {
 }
 
 watch(() => props.refreshKey, loadVocabulary)
-watch(() => props.profileId, loadVocabulary)
+watch(() => props.profileId, () => {
+  selectedCollectionId.value = ''
+  selectedBookId.value = ''
+  emit('update:selectedUnitId', '')
+  loadVocabulary()
+})
+watch(() => props.selectedUnitId, syncHierarchyFromUnit, { immediate: true })
+watch(() => props.collections, () => syncHierarchyFromUnit(props.selectedUnitId), { deep: true })
 
 onMounted(loadVocabulary)
 </script>
@@ -155,7 +224,7 @@ onMounted(loadVocabulary)
       <div>
         <p class="small-label">{{ profileCopy.eyebrow }}</p>
         <h2>{{ profileCopy.title }}</h2>
-        <p>{{ selectedChapterTitle }}</p>
+        <p>{{ selectedScopeTitle }}</p>
       </div>
       <div class="vocab-stats">
         <span>{{ activeCount }} 未掌握</span>
@@ -172,19 +241,53 @@ onMounted(loadVocabulary)
         <span>搜索</span>
         <input v-model="search" type="search" :placeholder="profileCopy.searchPlaceholder" />
       </label>
-      <label class="chapter-select">
-        <span>章节</span>
-        <select :value="selectedUnitId" @change="updateSelectedUnitId">
-          <option value="">全部章节</option>
+      <div class="vocab-scope-filters" aria-label="生词范围">
+        <label class="chapter-select">
+          <span>{{ profileCopy.collectionLabel }}</span>
+          <select
+            :value="selectedCollectionId"
+            :aria-label="profileCopy.collectionLabel"
+            @change="updateSelectedCollection"
+          >
+            <option value="">{{ profileCopy.allCollections }}</option>
+            <option v-for="collection in collections" :key="collection.id" :value="collection.id">
+              {{ collection.title }}
+            </option>
+          </select>
+        </label>
+        <label class="chapter-select">
+          <span>{{ profileCopy.bookLabel }}</span>
+          <select
+            :value="selectedBookId"
+            :disabled="!selectedCollection"
+            :aria-label="profileCopy.bookLabel"
+            @change="updateSelectedBook"
+          >
+            <option value="">{{ profileCopy.allBooks }}</option>
+            <option v-for="book in availableBooks" :key="book.id" :value="book.id">
+              {{ book.title }}
+            </option>
+          </select>
+        </label>
+        <label class="chapter-select">
+          <span>{{ profileCopy.chapterLabel }}</span>
+          <select
+            :value="selectedUnitId"
+            :disabled="!selectedBook"
+            :aria-label="profileCopy.chapterLabel"
+            @change="updateSelectedUnitId"
+          >
+            <option value="">{{ profileCopy.allUnits }}</option>
           <option
-            v-for="chapter in chapters"
+            v-for="chapter in availableChapters"
             :key="chapter.id"
             :value="chapter.id"
           >
             {{ chapter.chapter_no }}. {{ chapter.chapter_title }}
           </option>
-        </select>
-      </label>
+          </select>
+        </label>
+      </div>
     </div>
 
     <p v-if="errorMessage" class="vocab-alert" role="status">{{ errorMessage }}</p>

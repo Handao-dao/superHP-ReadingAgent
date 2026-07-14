@@ -4,7 +4,7 @@
   --cc-paper-2: #efe2c8;
   --cc-ink: #1f1b17;
   --cc-muted: #766653;
-  --cc-blue: #315f73;
+  --cc-blue: var(--annotation-word-color);
   --cc-line: rgba(70, 50, 32, 0.16);
   --paper-background:
     linear-gradient(90deg, rgba(70, 50, 32, 0.055), transparent 8%, transparent 92%, rgba(70, 50, 32, 0.055)),
@@ -26,7 +26,9 @@
 
 .reader-layout.profile-classical_chinese .paper-surface {
   border-color: var(--paper-border);
-  background: var(--paper-background);
+  background-image: var(--paper-background);
+  background-position: var(--paper-background-position);
+  background-size: var(--paper-background-size);
   box-shadow: var(--paper-shadow);
 }
 
@@ -35,10 +37,6 @@
 }
 
 .reader-layout.profile-classical_chinese[data-reader-theme="white-paper"] {
-  --paper-background:
-    repeating-radial-gradient(ellipse at 18% 22%, rgba(63, 58, 50, 0.055) 0 0.55px, transparent 0.8px 3.1px),
-    repeating-radial-gradient(ellipse at 76% 68%, rgba(255, 255, 255, 0.8) 0 0.6px, transparent 0.9px 3.6px),
-    linear-gradient(118deg, #f5f5f1 0%, #ffffff 47%, #eeeeea 100%);
   --paper-border: rgba(55, 52, 46, 0.24);
   --paper-inner-border: rgba(55, 52, 46, 0.11);
   --paper-shadow: inset 0 0 32px rgba(55, 52, 46, 0.1), 0 30px 70px rgba(0, 0, 0, 0.38);
@@ -112,17 +110,17 @@
 }
 
 .classical-annotation:hover .classical-word {
-  color: #244c5f;
-  background: rgba(49, 95, 115, 0.08);
+  color: var(--annotation-word-hover);
+  background: var(--annotation-hover-background);
 }
 
 .classical-gloss {
   display: inline-block;
   margin-left: 0.14em;
-  border: 1px solid rgba(49, 95, 115, 0.16);
+  border: 1px solid var(--annotation-border-color);
   border-radius: 4px;
-  background: rgba(49, 95, 115, 0.065);
-  color: #52636a;
+  background: var(--annotation-background-color);
+  color: var(--annotation-gloss-color);
   padding: 0 0.28em 0.02em;
   font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
   font-size: 0.7em;

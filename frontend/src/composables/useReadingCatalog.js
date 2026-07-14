@@ -20,6 +20,7 @@ export function useReadingCatalog() {
   const listErrorMessage = ref('')
   const profileErrorMessage = ref('')
   const selectedProfileId = ref(localStorage.getItem(PROFILE_STORAGE_KEY) || 'english_novel')
+  let chapterLoadRevision = 0
 
   const currentProfile = computed(() => {
     return profiles.value.find((profile) => profile.id === selectedProfileId.value) || {
@@ -90,17 +91,21 @@ export function useReadingCatalog() {
   })
 
   async function loadChapterCatalog() {
+    const revision = ++chapterLoadRevision
+    const profileId = selectedProfileId.value
     listLoading.value = true
     listErrorMessage.value = ''
     try {
-      const loaded = await listChapters(selectedProfileId.value)
+      const loaded = await listChapters(profileId)
+      if (revision !== chapterLoadRevision) return null
       chapters.value = loaded
       return loaded
     } catch (error) {
+      if (revision !== chapterLoadRevision) return null
       listErrorMessage.value = error.message || '阅读单元列表加载失败'
       return null
     } finally {
-      listLoading.value = false
+      if (revision === chapterLoadRevision) listLoading.value = false
     }
   }
 

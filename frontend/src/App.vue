@@ -43,6 +43,7 @@ const {
 
 const {
   activeChapter,
+  annotationWarning,
   busy,
   canSend,
   cards,
@@ -84,6 +85,7 @@ const {
   lookupTranslation,
   lookupVisible,
   lookupWordText,
+  loadLookupAnnotations,
   manualAnnotations,
   resetLookupAnnotations,
   stripAnnotationMarkers,
@@ -324,12 +326,17 @@ async function handleLookupVocabularyChanged() {
 
 watch(
   () => activeChapter.value?.meta?.id + activeChapter.value?.body_kind,
-  () => {
+  async () => {
     resetPagination()
     completeCardsRequestedFor.value = ''
     resetLookupAnnotations()
     closeLookupBubble()
     recalculatePages()
+    const unitId = activeChapter.value?.meta?.id
+    if (unitId) {
+      await loadLookupAnnotations(unitId)
+      await recalculatePages()
+    }
   }
 )
 
@@ -426,6 +433,10 @@ onBeforeUnmount(() => {
           {{ errorMessage }}
         </div>
 
+        <div v-else-if="annotationWarning" class="paper-alert paper-alert-warning" role="status">
+          {{ annotationWarning }}
+        </div>
+
         <template v-if="readerMode === 'reading'">
           <ReadingTextPage
             :annotated="activeChapter?.body_kind === 'annotated'"
@@ -497,9 +508,9 @@ onBeforeUnmount(() => {
       <section v-else class="book-stage vocabulary-stage">
         <article class="paper-surface vocabulary-surface">
           <VocabularyPanel
+            :collections="libraryCollections"
             :current-unit-id="currentChapterId"
             :current-title="currentTitle"
-            :chapters="chapters"
             :profile-id="selectedProfileId"
             :refresh-key="vocabularyRefreshKey"
             v-model:selected-unit-id="selectedVocabularyUnitId"

@@ -4,7 +4,9 @@
   owned by useWordLookup; this component deliberately performs no API calls.
 -->
 <script setup>
-defineProps({
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+
+const props = defineProps({
   error: { type: String, default: '' },
   isAnnotated: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
@@ -18,11 +20,87 @@ defineProps({
 })
 
 defineEmits(['add', 'close', 'remove'])
+
+const bubble = ref(null)
+const dragPosition = ref(null)
+const dragging = ref(false)
+let dragState = null
+
+const positionedStyle = computed(() => {
+  if (!dragPosition.value) return props.style
+  return {
+    ...props.style,
+    left: `${dragPosition.value.left}px`,
+    top: `${dragPosition.value.top}px`,
+    right: 'auto',
+    bottom: 'auto',
+  }
+})
+
+function removeDragListeners() {
+  window.removeEventListener('pointermove', handlePointerMove)
+  window.removeEventListener('pointerup', finishDrag)
+  window.removeEventListener('pointercancel', finishDrag)
+}
+
+function startDrag(event) {
+  if (event.button !== 0 || event.target.closest('button') || !bubble.value) return
+  const rect = bubble.value.getBoundingClientRect()
+  dragState = {
+    pointerId: event.pointerId,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+  }
+  dragPosition.value = { left: rect.left, top: rect.top }
+  dragging.value = true
+  window.addEventListener('pointermove', handlePointerMove)
+  window.addEventListener('pointerup', finishDrag)
+  window.addEventListener('pointercancel', finishDrag)
+  event.preventDefault()
+}
+
+function handlePointerMove(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId || !bubble.value) return
+  const edge = 8
+  const rect = bubble.value.getBoundingClientRect()
+  const maxLeft = Math.max(edge, window.innerWidth - rect.width - edge)
+  const maxTop = Math.max(edge, window.innerHeight - rect.height - edge)
+  dragPosition.value = {
+    left: Math.min(maxLeft, Math.max(edge, event.clientX - dragState.offsetX)),
+    top: Math.min(maxTop, Math.max(edge, event.clientY - dragState.offsetY)),
+  }
+}
+
+function finishDrag(event) {
+  if (dragState && event?.pointerId !== undefined && event.pointerId !== dragState.pointerId) return
+  dragState = null
+  dragging.value = false
+  removeDragListeners()
+}
+
+watch(() => props.style, () => {
+  finishDrag()
+  dragPosition.value = null
+})
+
+watch(() => props.visible, (visible) => {
+  if (visible) return
+  finishDrag()
+  dragPosition.value = null
+})
+
+onBeforeUnmount(removeDragListeners)
 </script>
 
 <template>
-  <aside v-if="visible" class="lookup-bubble" :style="style">
-    <div class="lookup-head">
+  <aside
+    v-if="visible"
+    ref="bubble"
+    class="lookup-bubble"
+    :class="{ 'is-dragged': dragPosition, 'is-dragging': dragging }"
+    :style="positionedStyle"
+  >
+    <div class="lookup-head" title="拖动卡片" @pointerdown="startDrag">
       <div>
         <p class="small-label">Lookup</p>
         <h3>{{ word }}</h3>

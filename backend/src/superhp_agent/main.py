@@ -16,6 +16,7 @@ from superhp_agent.corpus import (
     ReadingUnitDocument,
 )
 from superhp_agent.domain.vocabulary import normalize_pos
+from superhp_agent.profiles import UnknownProfileError
 from superhp_agent.schemas import (
     AddBookmarkRequest,
     AddVocabularyRequest,
@@ -129,6 +130,16 @@ def _bookmark_entry(row: dict) -> BookmarkEntry:
     )
 
 
+def _require_known_profile(profile_id: str | None) -> None:
+    """Reject misspelled client Profile ids instead of silently changing policy."""
+    if profile_id is None:
+        return
+    try:
+        profile_registry.get(profile_id)
+    except UnknownProfileError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
@@ -150,6 +161,7 @@ async def list_profiles():
 
 @app.get("/api/library", response_model=list[LibraryCollectionMeta])
 async def list_library_collections(profile_id: str | None = None):
+    _require_known_profile(profile_id)
     return [
         LibraryCollectionMeta(
             id=collection.id,
@@ -166,6 +178,7 @@ async def list_library_collections(profile_id: str | None = None):
 
 @app.get("/api/units", response_model=list[ReadingUnitMeta])
 async def list_units(profile_id: str | None = None):
+    _require_known_profile(profile_id)
     return [
         _unit_meta(item)
         for item in corpus.list_units()
@@ -201,6 +214,7 @@ async def list_vocabulary(
     profile_id: str | None = Query(default=None),
     book_id: str | None = Query(default=None),
 ):
+    _require_known_profile(profile_id)
     return [
         _vocabulary_entry(row)
         for row in vocabulary_repository.list_vocabulary(
@@ -257,6 +271,7 @@ async def lookup_word(payload: WordLookupRequest):
     word = payload.word.strip()
     if not word:
         raise HTTPException(status_code=400, detail="word is required")
+    _require_known_profile(payload.profile_id)
     try:
         return await lookup_service.lookup(word, payload.sentence.strip(), profile_id=payload.profile_id)
     except Exception as exc:
@@ -306,6 +321,7 @@ async def delete_vocabulary(vocab_id: int):
 
 @app.post("/api/vocabulary/mark-by-word", response_model=MutationResponse)
 async def mark_vocabulary_by_word(payload: MarkByWordRequest):
+    _require_known_profile(payload.profile_id)
     vocabulary_repository.set_mastered_by_word(
         payload.word,
         payload.mastered,
@@ -321,6 +337,7 @@ async def get_agent_cards(
     profile_id: str | None = None,
     phase: str = Query(default="start"),
 ):
+    _require_known_profile(profile_id)
     return flow_router.inspect(
         current_chapter_id=current_chapter_id,
         current_unit_id=current_unit_id,
@@ -341,6 +358,7 @@ async def reading_socket(websocket: WebSocket):
         annotator_service=annotator_service,
         db=vocabulary_repository,
         selection_policy_resolver=library_catalog,
+        profile_registry=profile_registry,
     )
     try:
         await session.run()

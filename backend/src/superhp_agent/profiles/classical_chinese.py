@@ -194,6 +194,10 @@ class ClassicalChineseProfile:
         mastered_words: list[str] | None = None,
         selection_policy_id: str | None = None,
     ) -> ContextBundle:
+        if selection_policy_id is not None:
+            raise ValueError(
+                f"Profile {self.id} does not support selection policy: {selection_policy_id}"
+            )
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,
             user_blocks=(

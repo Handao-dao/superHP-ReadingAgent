@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
+
+if TYPE_CHECKING:
+    from superhp_agent.profiles import ProfileRegistry
 
 
 class LibraryCatalogError(ValueError):
@@ -95,6 +99,27 @@ class LibraryCatalogStore:
                 )
             )
         return sorted(parsed, key=lambda collection: (collection.order, collection.id))
+
+    def validate(self, profile_registry: ProfileRegistry) -> None:
+        """Fail fast when catalog Profile or optional policy ids are invalid."""
+        for collection in self.list_collections():
+            try:
+                profile = profile_registry.get(collection.profile_id)
+            except ValueError as exc:
+                raise LibraryCatalogError(
+                    f"Unknown profile in library collection {collection.id}: {collection.profile_id}"
+                ) from exc
+            if collection.selection_policy_id is None:
+                continue
+            try:
+                profile.build_annotator_base_context(
+                    selection_policy_id=collection.selection_policy_id,
+                )
+            except ValueError as exc:
+                raise LibraryCatalogError(
+                    "Invalid selection policy in library collection "
+                    f"{collection.id}: {collection.selection_policy_id}"
+                ) from exc
 
     def selection_policy_id_for_book(
         self,

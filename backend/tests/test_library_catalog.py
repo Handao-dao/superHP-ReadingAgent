@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from superhp_agent.library_catalog import LibraryCatalogError, LibraryCatalogStore
+from superhp_agent.profiles import create_default_registry
 
 
 def test_catalog_orders_collections_and_books(tmp_path: Path):
@@ -63,3 +64,50 @@ collections:
 
     with pytest.raises(LibraryCatalogError, match="multiple"):
         LibraryCatalogStore(path).list_collections()
+
+
+@pytest.mark.parametrize(
+    ("profile_id", "policy_id", "expected"),
+    [
+        ("missing", None, "Unknown profile"),
+        ("english_novel", "missing", "Invalid selection policy"),
+        ("classical_chinese", "harry_potter", "Invalid selection policy"),
+    ],
+)
+def test_catalog_validation_rejects_unknown_profile_or_policy(
+    tmp_path: Path,
+    profile_id: str,
+    policy_id: str | None,
+    expected: str,
+):
+    policy_line = f"\n    selection_policy_id: {policy_id}" if policy_id else ""
+    path = tmp_path / "catalog.yaml"
+    path.write_text(
+        f"""
+collections:
+  - id: invalid
+    profile_id: {profile_id}{policy_line}
+    title: Invalid
+    books: []
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(LibraryCatalogError, match=expected):
+        LibraryCatalogStore(path).validate(create_default_registry())
+
+
+def test_catalog_validation_allows_collection_without_policy(tmp_path: Path):
+    path = tmp_path / "catalog.yaml"
+    path.write_text(
+        """
+collections:
+  - id: general
+    profile_id: english_novel
+    title: General Novels
+    books: []
+""".strip(),
+        encoding="utf-8",
+    )
+
+    LibraryCatalogStore(path).validate(create_default_registry())

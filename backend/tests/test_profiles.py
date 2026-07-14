@@ -3,6 +3,7 @@ import pytest
 from superhp_agent.profiles import (
     ClassicalChineseProfile,
     EnglishNovelProfile,
+    UnknownProfileError,
     create_default_registry,
 )
 from superhp_agent.profiles.english_novel import ANNOTATION_EXAMPLES
@@ -15,8 +16,15 @@ def test_default_profile_registry_returns_english_novel():
 
     assert profile.id == "english_novel"
     assert profile.renderer_hint == "english_novel"
-    assert registry.get("missing").id == "english_novel"
     assert registry.get("classical_chinese").id == "classical_chinese"
+
+    with pytest.raises(UnknownProfileError, match="Unknown profile id: missing"):
+        registry.get("missing")
+
+
+def test_profile_registry_rejects_unknown_default():
+    with pytest.raises(UnknownProfileError, match="Unknown profile id: missing"):
+        create_default_registry("missing")
 
 
 def test_english_novel_profile_parses_legacy_markers():
@@ -77,6 +85,13 @@ def test_english_novel_profile_rejects_unknown_selection_policy():
 
     with pytest.raises(ValueError, match="Unknown English selection policy"):
         profile.build_annotator_base_context(selection_policy_id="missing")
+
+
+def test_classical_profile_rejects_selection_policy():
+    profile = ClassicalChineseProfile()
+
+    with pytest.raises(ValueError, match="does not support selection policy"):
+        profile.build_annotator_base_context(selection_policy_id="harry_potter")
 
 
 def test_english_annotation_examples_cover_word_and_phrase_boundaries():

@@ -21,6 +21,7 @@ from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
     VocabularyRepository,
 )
+from superhp_agent.profiles import ProfileRegistry, UnknownProfileError
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -76,6 +77,7 @@ class ReadingSocketSession:
         annotator_service: AnnotationService | None = None,
         db: VocabularyRepository | None = None,
         selection_policy_resolver: SelectionPolicyResolver | None = None,
+        profile_registry: ProfileRegistry | None = None,
     ):
         self.websocket = websocket
         self.flow_router = flow_router
@@ -90,6 +92,7 @@ class ReadingSocketSession:
         self.annotator_service = annotator_service
         self.db = db
         self.selection_policy_resolver = selection_policy_resolver
+        self.profile_registry = profile_registry
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
         self.current_unit_id: str | None = None
         self.current_profile_id: str | None = None
@@ -119,6 +122,11 @@ class ReadingSocketSession:
 
         if message.type == "hello":
             if message.profile_id:
+                if not await self.select_profile(
+                    message.profile_id,
+                    request_id=message.request_id,
+                ):
+                    return
                 self.current_profile_id = message.profile_id
             if message.current_unit_id or message.current_chapter_id:
                 self.current_unit_id = message.current_unit_id or message.current_chapter_id
@@ -137,6 +145,11 @@ class ReadingSocketSession:
 
         if message.type == "cards":
             if message.profile_id:
+                if not await self.select_profile(
+                    message.profile_id,
+                    request_id=message.request_id,
+                ):
+                    return
                 self.current_profile_id = message.profile_id
             if message.current_unit_id or message.current_chapter_id:
                 self.current_unit_id = message.current_unit_id or message.current_chapter_id
@@ -159,6 +172,26 @@ class ReadingSocketSession:
             message=f"未知消息类型：{message.type}",
             request_id=message.request_id,
         )
+
+    async def select_profile(
+        self,
+        profile_id: str,
+        *,
+        request_id: str | None = None,
+    ) -> bool:
+        """Validate a transport Profile id before changing session state."""
+        if self.profile_registry is None:
+            return True
+        try:
+            self.profile_registry.get(profile_id)
+        except UnknownProfileError as exc:
+            await self.send_error(
+                code="unknown_profile",
+                message=str(exc),
+                request_id=request_id,
+            )
+            return False
+        return True
 
     async def handle_action(
         self,

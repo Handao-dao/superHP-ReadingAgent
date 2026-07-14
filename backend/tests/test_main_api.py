@@ -104,6 +104,14 @@ def test_profile_api_lists_builtin_profiles():
     assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
 
 
+def test_profile_filtered_api_rejects_unknown_profile():
+    with TestClient(main.app) as client:
+        response = client.get("/api/units", params={"profile_id": "missing"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Unknown profile id: missing"
+
+
 def test_library_api_filters_collections_by_profile(monkeypatch):
     class FakeLibraryCatalog:
         def list_collections(self):

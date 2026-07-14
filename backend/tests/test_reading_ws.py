@@ -96,6 +96,7 @@ def build_session(tmp_path, *, with_memory=False, with_classical=False):
             corpus=corpus,
             event_log_store=memory,
             progress_repository=memory,
+            profile_registry=create_default_registry(),
         ),
         websocket,
         memory,
@@ -129,6 +130,29 @@ def test_socket_hello_can_select_profile_cards(tmp_path):
         assert websocket.events[1]["current_unit_id"] == "cc-lunyu-xueer-01"
         assert websocket.events[1]["cards"][0]["title"] == "准备研读"
         assert websocket.events[1]["cards"][0]["actions"][0]["label"] == "生成注释"
+
+    asyncio.run(run_case())
+
+
+def test_socket_hello_rejects_unknown_profile(tmp_path):
+    async def run_case():
+        session, websocket, _ = build_session(tmp_path)
+
+        await session.handle_raw_message(
+            {"type": "hello", "request_id": "r-profile", "profile_id": "missing"}
+        )
+
+        assert websocket.events == [
+            {
+                "type": "error",
+                "request_id": "r-profile",
+                "error": {
+                    "code": "unknown_profile",
+                    "message": "Unknown profile id: missing",
+                },
+            }
+        ]
+        assert session.current_profile_id is None
 
     asyncio.run(run_case())
 

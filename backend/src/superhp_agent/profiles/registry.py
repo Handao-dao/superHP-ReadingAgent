@@ -7,6 +7,14 @@ from dataclasses import dataclass
 from superhp_agent.profiles.base import AnnotationProfile
 
 
+class UnknownProfileError(ValueError):
+    """Raised when configuration or input names an unregistered Profile."""
+
+    def __init__(self, profile_id: str):
+        self.profile_id = profile_id
+        super().__init__(f"Unknown profile id: {profile_id}")
+
+
 @dataclass(frozen=True)
 class ProfileRegistry:
     """Small in-process registry for configured annotation profiles."""
@@ -14,12 +22,21 @@ class ProfileRegistry:
     profiles: dict[str, AnnotationProfile]
     default_profile_id: str = "english_novel"
 
+    def __post_init__(self) -> None:
+        if self.default_profile_id not in self.profiles:
+            raise UnknownProfileError(self.default_profile_id)
+        for profile_id, profile in self.profiles.items():
+            if profile.id != profile_id:
+                raise ValueError(
+                    f"Profile registry key does not match profile id: {profile_id} != {profile.id}"
+                )
+
     def get(self, profile_id: str | None = None) -> AnnotationProfile:
         key = profile_id or self.default_profile_id
         profile = self.profiles.get(key)
         if profile is not None:
             return profile
-        return self.profiles[self.default_profile_id]
+        raise UnknownProfileError(key)
 
     def list_profiles(self) -> list[AnnotationProfile]:
         """Return profiles with the default first, then stable id order."""
@@ -39,5 +56,5 @@ def create_default_registry(default_profile_id: str = "english_novel") -> Profil
     }
     return ProfileRegistry(
         profiles=profiles,
-        default_profile_id=default_profile_id if default_profile_id in profiles else english_novel.id,
+        default_profile_id=default_profile_id,
     )

@@ -62,6 +62,11 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 
 配置优先级遵循 `BaseSettings` 规则：真实环境变量高于 `.env`，`.env` 高于 `Settings` 类中的默认值。
 
+应用在 composition root 启动阶段会校验默认 Profile、语料 frontmatter 中的 Profile，以及
+`corpus/catalog.yaml` 中的 Profile 和可选 `selection_policy_id`。未知标识会直接阻止启动，避免
+配置拼写错误悄悄回退到另一套阅读策略。HTTP/WebSocket 运行时输入的未知 Profile 则返回明确的
+`400` 或 `unknown_profile` 错误；未配置 selection policy 仍是普通英文小说的合法默认路径。
+
 ## 文本与数据层
 
 原文、标注副本、单词、书签、阅读进度和事件日志的权威来源及迁移规划见

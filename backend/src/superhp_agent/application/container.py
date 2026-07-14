@@ -70,6 +70,14 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         default_profile_id=resolved_settings.default_profile_id,
     )
     library_catalog = LibraryCatalogStore(resolved_settings.corpus_dir / "catalog.yaml")
+    for unit in corpus.list_units():
+        try:
+            profile_registry.get(unit.profile_id)
+        except ValueError as exc:
+            raise ValueError(
+                f"Unknown profile in reading unit {unit.id}: {unit.profile_id}"
+            ) from exc
+    library_catalog.validate(profile_registry)
     event_log_store = EventLogStore(resolved_settings.event_log_path)
     db = AppDB(resolved_settings.db_path)
     vocabulary_repository = db.vocabulary_repository

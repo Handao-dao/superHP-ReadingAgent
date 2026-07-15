@@ -27,57 +27,39 @@ SuperHP 不把大模型当作拥有无限工具权限的自主 Agent。阅读流
 
 ## 系统架构
 
-```mermaid
-flowchart TB
-    UI["Vue 展示组件"] -->|用户意图| APP["App.vue 页面协调器"]
-    APP --> FC["领域 Composables"]
-    FC -->|HTTP / WebSocket| T["Transport"]
+```text
+┌──────────────────────────────────────────────────────┐
+│ Frontend                                             │
+│ 呈现阅读体验，并把用户意图转换为请求。                 │
+└──────────────────────────┬───────────────────────────┘
+                           │ HTTP / WebSocket
+┌──────────────────────────▼───────────────────────────┐
+│ Transport                                            │
+│ 处理通信协议、输入校验和事件返回。                     │
+└──────────────────────────┬───────────────────────────┘
+                           │ Query / Action
+┌──────────────────────────▼───────────────────────────┐
+│ Application Runtime                                  │
+│ Router 决定可选流程，Dispatcher 执行用户动作。         │
+└──────────────────────────┬───────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────┐
+│ Business Core                                        │
+│ Service 完成业务任务，Profile 定义文本策略。           │
+└──────────────────────────┬───────────────────────────┘
+                           │ Contracts / Ports
+┌──────────────────────────▼───────────────────────────┐
+│ Infrastructure & Data                                │
+│ 对接模型、数据库、语料和生成产物。                     │
+└──────────────────────────────────────────────────────┘
 
-    T -->|读取流程| R["Flow Router"]
-    T -->|执行 Action| D["Dispatcher"]
-    R --> RM["Reading State / Read Model"]
-    D --> H["Action Handler"]
-
-    H --> S["Application Services"]
-    H --> RP["Repository / Artifact Ports"]
-    S --> C["Context Builder"]
-    S --> P["Profile Policy"]
-    S --> LP["LLM Provider Port"]
-
-    C --> P
-    ROOT["Composition Root"] -->|选择并注入| LA["Provider Adapter"]
-    ROOT -->|选择并注入| SA["SQLite / File Adapters"]
-    LA -.实现.-> LP
-    SA -.实现.-> RP
-    RM --> RP
-
-    S --> E["Application Events"]
-    H --> E
-    E --> T
-    T --> FC
-
-    APP --> RR["Profile Renderer"]
-    RR --> UI
+Contracts / Ports  定义跨层数据和业务所需能力，隔离具体实现。
+Composition Root   创建具体实现，并把它们装配到各层。
 ```
 
-这张图中最重要的不是目录名称，而是依赖方向：上层只表达自己需要的能力，具体 Provider、SQLite
-和文件实现只在 `application/container.py` 中被选择并注入。业务代码不需要知道模型厂商、数据库
-连接方式或 WebSocket JSON 的细节。
-
-### 各层分别回答什么问题
-
-| 层 | 回答的问题 | 明确不负责 |
-| --- | --- | --- |
-| Transport | 消息从哪里进来，怎样返回给前端？ | 决定阅读流程、实现业务动作 |
-| Flow Router | 根据当前阅读状态，用户下一步可以做什么？ | 执行 Action、写数据库、调用模型 |
-| Dispatcher / Handler | 这个 Action 应交给谁，它需要组合哪些能力？ | 拼接 Prompt、实现模型协议 |
-| Service | 怎样完成译注、查词等明确业务任务？ | FastAPI、WebSocket、页面导航 |
-| Context Builder | 当前模型任务真正需要哪些上下文？ | 保存应用状态、执行副作用 |
-| Profile | 这类文本的 Prompt、标记、校验和展示语义是什么？ | 调用 Provider、访问数据库 |
-| Provider Port / Adapter | 业务需要怎样的模型能力，具体厂商如何实现？ | 阅读流程与文本策略 |
-| Repository Port / Storage Adapter | 上层需要什么数据能力，它如何持久化？ | Cards、Prompt 和 UI 协议 |
-| Contracts / Events | 模块之间交换什么稳定数据？ | 保存数据或执行行为 |
-| Composition Root | 当前部署选择并连接哪些具体实现？ | 承载业务规则 |
+图中最重要的是依赖方向：上层只表达自己需要的能力，具体 Provider、SQLite 和文件实现只在
+`application/container.py` 中被选择并注入。业务代码不需要知道模型厂商、数据库连接方式或
+WebSocket JSON 的细节。
 
 `Application Bus` 已被保留为未来边界，但目前没有为了形式完整而实例化。只有当入口、Command
 Handler 或事件订阅者明显增多时，Bus 才有足够价值；当前 Transport 直接连接 Router 和

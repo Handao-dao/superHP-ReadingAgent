@@ -42,6 +42,37 @@ def test_projection_uses_anchors_to_disambiguate_repeated_source():
     assert result.annotated_text == "The door opened, then the second [[door|译文|noun]] slammed shut."
 
 
+def test_projection_ignores_anchor_mismatch_when_source_is_unique():
+    source = "Harry raised his wand."
+
+    result = project_annotation_candidates(
+        source,
+        [candidate("wand", prefix="incorrect ", suffix=" anchors")],
+        allowed_pos=ALLOWED_POS,
+    )
+
+    assert result.annotated_text == "Harry raised his [[wand|译文|noun]]."
+    assert result.rejections == []
+
+
+def test_projection_distinguishes_anchor_mismatch_from_missing_source():
+    source = "The door opened, then the second door slammed shut."
+
+    result = project_annotation_candidates(
+        source,
+        [
+            candidate("door", prefix="wrong ", suffix=" context"),
+            candidate("window"),
+        ],
+        allowed_pos=ALLOWED_POS,
+    )
+
+    assert [issue.code for issue in result.rejections] == [
+        "anchor_mismatch",
+        "source_not_found",
+    ]
+
+
 def test_projection_rejects_ambiguous_item_without_losing_valid_items():
     source = "A wand lay beside another wand and a cloak."
 

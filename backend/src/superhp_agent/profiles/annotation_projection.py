@@ -63,9 +63,20 @@ def project_annotation_candidates(
             rejections.append(CandidateRejection(candidate_index, rejection_code))
             continue
 
-        positions = _matching_positions(source_text, candidate)
-        if not positions:
+        source_positions = _source_positions(source_text, candidate.source)
+        if not source_positions:
             rejections.append(CandidateRejection(candidate_index, "source_not_found"))
+            continue
+        if len(source_positions) == 1:
+            positions = source_positions
+        else:
+            positions = _anchor_matching_positions(
+                source_text,
+                candidate,
+                source_positions,
+            )
+        if not positions:
+            rejections.append(CandidateRejection(candidate_index, "anchor_mismatch"))
             continue
         if len(positions) > 1:
             rejections.append(CandidateRejection(candidate_index, "ambiguous_source"))
@@ -125,19 +136,30 @@ def _candidate_shape_error(candidate: AnnotationCandidate) -> str | None:
     return None
 
 
-def _matching_positions(source_text: str, candidate: AnnotationCandidate) -> list[int]:
+def _source_positions(source_text: str, source: str) -> list[int]:
     positions: list[int] = []
     cursor = 0
     while True:
-        start = source_text.find(candidate.source, cursor)
+        start = source_text.find(source, cursor)
         if start < 0:
             return positions
+        positions.append(start)
+        cursor = start + 1
+
+
+def _anchor_matching_positions(
+    source_text: str,
+    candidate: AnnotationCandidate,
+    source_positions: list[int],
+) -> list[int]:
+    positions: list[int] = []
+    for start in source_positions:
         end = start + len(candidate.source)
         prefix_matches = not candidate.prefix or source_text[:start].endswith(candidate.prefix)
         suffix_matches = not candidate.suffix or source_text[end:].startswith(candidate.suffix)
         if prefix_matches and suffix_matches:
             positions.append(start)
-        cursor = start + 1
+    return positions
 
 
 def _normalize_pos(pos: str, allowed_pos: frozenset[str]) -> str:

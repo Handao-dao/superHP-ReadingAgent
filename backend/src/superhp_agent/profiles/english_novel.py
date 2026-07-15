@@ -35,8 +35,8 @@ Select concise Chinese gloss candidates without rewriting or returning the passa
 Prioritize exact source preservation, importance-based selection, and concise context-specific glosses, in that order.
 
 Annotate only the words or expressions that most affect comprehension.
-For approximately every 300 English words, normally use no more than 8 annotations.
-Increase beyond 8 only when the passage contains an unusual concentration of indispensable comprehension obstacles, and never exceed 15 annotations.
+For approximately every 300 English words, normally use no more than 12 annotations.
+Increase beyond 12 only when the passage contains an unusual concentration of indispensable comprehension obstacles, and never exceed 20 annotations.
 These limits are not targets: do not use the extra capacity for lower-priority words, and use fewer annotations or none when appropriate.
 """.strip()
 

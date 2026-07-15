@@ -226,12 +226,6 @@ export function useReadingSocket(options = {}) {
         recordDegradedChunk(message.category)
         noticeMessage.value = annotationWarning.value
         return
-      case 'annotation.json_repair':
-        busy.value = true
-        loadStatus.value = 'json_repairing'
-        progressMessage.value = message.message || 'Repairing model output...'
-        noticeMessage.value = progressMessage.value
-        return
       case 'annotation.completed':
         if (message.status === 'degraded') {
           degradationCounts.value = {
@@ -257,12 +251,6 @@ export function useReadingSocket(options = {}) {
         progressMessage.value = ''
         busy.value = false
         loadStatus.value = 'failed'
-        return
-      case 'annotation.not_ready':
-        noticeMessage.value = message.message || '该功能尚未接入。'
-        progressMessage.value = noticeMessage.value
-        busy.value = false
-        loadStatus.value = 'idle'
         return
       case 'error':
         errorMessage.value = userFacingError(message.error?.message, '阅读会话发生错误。')

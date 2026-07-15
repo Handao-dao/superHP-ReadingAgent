@@ -286,30 +286,15 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 
 手动添加生词时会关联当前 `unit_id`，保存上下文和词性，并把词条重新置为未掌握。
 
-## 工具层
-
-### `src/superhp_agent/tools/`
-
-工具层把部分后端能力包装成 agent tool。
-
-当前阅读工具包括：
-
-- 列出阅读单元。
-- 按 id 读取一个阅读单元。
-
-这些工具仍然通过 `CorpusStore` 读取文本，因此继承了 corpus 的路径边界限制。也就是说，工具可以使用 corpus，但不能绕过 corpus 去读任意文件。
-
-## Prompt 与 Schema
-
-### `src/superhp_agent/prompts.py`
-
-集中存放译注、查词等 LLM 任务的 prompt 构造逻辑。
+## Transport Schema
 
 ### `src/superhp_agent/schemas.py`
 
-定义 API 和 WebSocket 事件会使用的 Pydantic schema。
+定义 HTTP API 使用的 Pydantic 请求和响应模型。跨层 Action、Reading、Annotation、Event 与 LLM
+模型位于 `contracts/`；WebSocket 输入模型和输出映射位于 `transport/`。
 
-schema 是后端和前端之间的契约。字段命名里还保留了一些 `chapter_id` 兼容字段，是为了让旧测试和旧前端迁移更平滑；新的核心概念应优先使用 `unit_id`。
+字段命名里还保留了一些 `chapter_id` 兼容字段；新的流程指针和 Action payload 优先使用
+`unit_id`。
 
 ## 一次典型阅读流程
 
@@ -318,8 +303,8 @@ schema 是后端和前端之间的契约。字段命名里还保留了一些 `ch
 3. `ReadingFlowRouter` 读取当前状态并返回 cards。
 4. 用户点击一个 card action。
 5. WebSocket session 把 action 交给 `ActionDispatcher`。
-6. 对应 handler 读取 corpus、写 memory、调用 annotator 或读取译注副本。
-7. 生成译注时按 `level` 写入 level-specific annotated copy，并写入 vocabulary DB。
+6. 对应 handler 读取 corpus、更新 SQLite 阅读进度、调用 annotator 或读取译注副本。
+7. 生成译注时写入该阅读单元唯一的 annotated copy，并更新 vocabulary repository。
 8. 后端通过 WebSocket 推送进度和结果。
 9. action 完成后重新生成 cards，等待用户下一次选择。
 

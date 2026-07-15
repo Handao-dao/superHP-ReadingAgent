@@ -169,7 +169,6 @@ superhp_Agent/
 ├── frontend/               # Vue 3 + Vite 阅读界面
 ├── corpus/                 # 原始阅读语料与 library catalog
 ├── tools/corpus_pipeline/  # 离线 EPUB 提取与语料维护，不在应用运行主链路
-├── docs/                   # 专题设计与历史规划文档
 └── start-dev.ps1           # 同时启动前后端的本地开发入口
 ```
 

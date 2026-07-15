@@ -68,8 +68,7 @@ type ReadingLoadStatus =
   | "completed"
 ```
 
-前端保留两个兼容状态分支 `json_repairing` 和 `annotation.not_ready`，但当前后端主链路不再发送
-对应事件。
+前端状态集合与当前后端事件保持一致，不为已经退出协议的状态保留兼容分支。
 
 ## 本地状态
 
@@ -441,7 +440,6 @@ type VocabularyEntry = {
 ## 已知边界与后续方向
 
 - 查词目前只支持点击单词；尚无框选短语交互。
-- `annotation.json_repair` 和 `annotation.not_ready` 仅剩前端兼容分支，可在后续清理。
 - 书签后续可增加备注、选中文本锚点和独立管理视图。
 - 生词复习可在当前列表之外扩展 flashcard 或 quiz。
 - 组件测试与 e2e 应优先覆盖三级目录、Profile 切换、显式书签、译注降级和分页边界。

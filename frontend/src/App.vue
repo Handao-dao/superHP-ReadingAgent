@@ -128,7 +128,7 @@ const {
 })
 
 const isGenerating = computed(() => {
-  return ['generating_annotation', 'model_retrying', 'json_repairing'].includes(loadStatus.value)
+  return ['generating_annotation', 'model_retrying'].includes(loadStatus.value)
 })
 
 const readerMode = computed(() => {

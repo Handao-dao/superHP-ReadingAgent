@@ -2,11 +2,8 @@ import asyncio
 
 import pytest
 
-from superhp_agent.prompts import (
-    BASE_ANNOTATOR_SYSTEM_PROMPT,
-    build_annotator_base_context,
-    build_annotator_user_prompt,
-)
+from superhp_agent.profiles import EnglishNovelProfile
+from superhp_agent.profiles.english_novel import BASE_ANNOTATOR_SYSTEM_PROMPT
 from superhp_agent.providers.base import LLMProvider, LLMResponse
 from superhp_agent.runtime.events import BackendEvent
 from superhp_agent.services import (
@@ -117,10 +114,10 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
 
 
 def test_annotator_prompt_uses_context_blocks():
-    prompt = build_annotator_user_prompt(
+    prompt = EnglishNovelProfile().build_annotator_context(
         "a wand on the table",
         mastered_words=["wand"],
-    )
+    ).render_role("user")
 
     assert "<density_profile" not in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
@@ -133,7 +130,7 @@ def test_annotator_prompt_uses_context_blocks():
 
 
 def test_annotator_base_context_excludes_reader_text():
-    context = build_annotator_base_context(mastered_words=["wand"])
+    context = EnglishNovelProfile().build_annotator_base_context(mastered_words=["wand"])
 
     user_prompt = context.render_role("user")
     system_prompt = context.render_role("system")

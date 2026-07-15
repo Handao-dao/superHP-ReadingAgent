@@ -88,7 +88,7 @@ Bus 不负责：
 
 - 接收 WebSocket。
 - 执行 Card Action。
-- 写入 Memory / DB。
+- 写入阅读进度或其他 Repository。
 - 调用模型。
 
 ### Dispatcher 与 Handler
@@ -389,12 +389,10 @@ Transport
   `AppDB` 只保留组合、关闭连接和旧方法转发。
 - `BackendEvent` 已成为纯 Application Contract，reading.v1 JSON 映射归属 Transport。
 
-以下问题继续按渐进方式修复，不要求一次移动所有目录：
+以下两个大文件继续以实际变化压力为准，不为了缩短行数而拆分：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
 2. `main.py` 仍同时承担全部 HTTP routes 和 DTO mapper。
-3. `tools/` 当前未进入实际运行链，需要后续决定接入或归档。
-4. `prompts.py` 已主要成为 English profile 的兼容包装层。
 
 ## 渐进重构路线
 
@@ -438,30 +436,16 @@ Transport
 - 已拆出 `SQLiteBookmarkRepository`，Composition Root 直接注入该实现。
 - 已拆出内部 `SQLiteUnitRepository`，供两个业务 Repository 共享 metadata 同步。
 - `AppDB` 现在只保留组合、连接生命周期和兼容转发，不再包含 SQL。
-- Corpus、Memory、Annotated Copy 保持不同的数据生命周期。
+- Corpus、Event Log、Annotated Copy 保持不同的数据生命周期。
 
-### 阶段 5：Composition Root 与 HTTP Routers（进行中）
+### 阶段 5：Composition Root（已完成）
 
 - 已新建 `AppContainer`，对象创建顺序移出 `main.py`。
 - 已将 `LazyLookupService` 移到独立 Service，并通过 provider factory 注入。
 - `main.py` 暂时保留 Container capability aliases，维持现有 routes 和测试兼容。
-- 按 profiles、units、bookmarks、vocabulary、cards 拆 HTTP routers。
-- `main.py` 最终只创建 app、装配 container 并注册 transport。
 
-### 阶段 6：评估 Bus
-
-仅在 Contracts 稳定且出现多个入口或事件消费者后执行：
-
-- Query → Flow Router / Query Handler。
-- Command → Dispatcher。
-- Event → Transport、日志或订阅者。
-- 保持 Bus 无业务逻辑、无存储逻辑。
-
-### 阶段 7：策略与实验代码整理
-
-- 提取 English / Classical Chinese Profile 中稳定重复的 marker 解析骨架。
-- 清理 `prompts.py` 兼容层。
-- 决定 `tools/` 正式接入或移动到 experimental。
+当前不继续拆 HTTP routers，也不实例化 Bus、Planner 或通用 Tool Registry。只有真实入口、Action
+或事件消费者明显增长时，才重新评估这些边界。
 
 ## 每一步的完成标准
 

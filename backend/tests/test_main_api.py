@@ -2,14 +2,17 @@ from fastapi.testclient import TestClient
 
 from superhp_agent import main
 from superhp_agent.artifacts import AnnotatedCopyStore
+from superhp_agent.contracts import ReadingProgressSnapshot
 from superhp_agent.corpus import CorpusError, ReadingUnit, ReadingUnitDocument
 from superhp_agent.library_catalog import CatalogBook, CatalogCollection
-from superhp_agent.memory import ReadingMemory
 
 
 class FakeMemoryStore:
     def load(self):
-        return ReadingMemory(current_unit_id="hp01-ch01", read_unit_ids=["hp01-ch01"])
+        return ReadingProgressSnapshot(
+            current_unit_id="hp01-ch01",
+            read_unit_ids=["hp01-ch01"],
+        )
 
 
 class FakeDB:

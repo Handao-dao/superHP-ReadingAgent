@@ -1,11 +1,9 @@
-"""Boundary and compatibility tests for backend events and their output port."""
+"""Boundary tests for backend events and their output port."""
 
 import pytest
 
 from superhp_agent.contracts import BackendEvent
-from superhp_agent.ports import EventSink, emit_backend_event
-from superhp_agent.runtime.events import BackendEvent as LegacyBackendEvent
-from superhp_agent.runtime.events import EventSink as LegacyEventSink
+from superhp_agent.ports import emit_backend_event
 
 
 class RecordingEventSink:
@@ -14,11 +12,6 @@ class RecordingEventSink:
 
     async def emit_event(self, event: BackendEvent) -> None:
         self.events.append(event)
-
-
-def test_runtime_events_keeps_legacy_contract_and_port_imports():
-    assert LegacyBackendEvent is BackendEvent
-    assert LegacyEventSink is EventSink
 
 
 @pytest.mark.asyncio

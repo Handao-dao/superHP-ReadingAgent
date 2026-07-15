@@ -3,9 +3,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from superhp_agent.contracts import AgentAction
 from superhp_agent.corpus import CorpusStore
 from superhp_agent.main import app
-from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.profiles import create_default_registry
 from superhp_agent.runtime import (
     ReadingCardBuilder,
@@ -18,8 +18,8 @@ from superhp_agent.runtime.actions import (
     OPEN_CHAPTER,
     READ_ORIGINAL,
 )
-from superhp_agent.schemas import AgentAction
 from superhp_agent.transport.reading_ws import ReadingSocketSession
+from tests.fakes import InMemoryReadingState
 
 
 class FakeWebSocket:
@@ -82,7 +82,7 @@ def build_session(tmp_path, *, with_memory=False, with_classical=False):
     corpus = CorpusStore(tmp_path)
     memory = None
     if with_memory:
-        memory = ReadingMemoryStore(tmp_path / "memory" / "reading_memory.json", tmp_path / "memory" / "events.jsonl")
+        memory = InMemoryReadingState()
     state_reader = ReadingStateReader(corpus, tmp_path / "annotated", memory)
     router = ReadingFlowRouter(
         state_reader,

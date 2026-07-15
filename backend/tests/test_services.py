@@ -2,10 +2,10 @@ import asyncio
 
 import pytest
 
+from superhp_agent.contracts import BackendEvent, LLMResponse
 from superhp_agent.profiles import EnglishNovelProfile
 from superhp_agent.profiles.english_novel import BASE_ANNOTATOR_SYSTEM_PROMPT
-from superhp_agent.providers.base import LLMProvider, LLMResponse
-from superhp_agent.runtime.events import BackendEvent
+from superhp_agent.providers.base import BaseLLMProvider
 from superhp_agent.services import (
     AnnotationChunker,
     AnnotatorService,
@@ -21,7 +21,7 @@ class EventCollector:
         self.events.append(event)
 
 
-class ScriptedProvider(LLMProvider):
+class ScriptedProvider(BaseLLMProvider):
     def __init__(self, responses):
         super().__init__()
         self.responses = list(responses)
@@ -40,7 +40,7 @@ class ScriptedProvider(LLMProvider):
         return "scripted"
 
 
-class CoordinatedProvider(LLMProvider):
+class CoordinatedProvider(BaseLLMProvider):
     """Hold concurrent calls so cancellation behavior can be asserted."""
 
     def __init__(self, *, call_count: int, fail_first: bool = False):

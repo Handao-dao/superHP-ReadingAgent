@@ -17,12 +17,7 @@ from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitM
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.domain.vocabulary import extract_vocabulary_candidates
-from superhp_agent.ports.events import (
-    EventEmitter,
-    EventLogger,
-    EventSink,
-    emit_backend_event,
-)
+from superhp_agent.ports.events import EventLogger, EventSink, emit_backend_event
 from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
     VocabularyRepository,
@@ -34,9 +29,6 @@ from superhp_agent.runtime.actions import (
     OPEN_CHAPTER,
     READ_ORIGINAL,
     START_NEXT_CHAPTER,
-)
-from superhp_agent.runtime.events import (
-    CallableEventSink,
 )
 
 
@@ -89,10 +81,9 @@ class ActionContext:
     """Explicit capability bundle passed from transport to action handlers.
 
     Handlers only receive what they need: corpus reads, event emission, optional
-    memory/storage services, and the connection's current unit id.
+    repositories/artifact services, and the connection's current unit id.
     """
     corpus: CorpusStore
-    emit: EventEmitter | None = None
     event_sink: EventSink | None = None
     event_log_store: EventLogger | None = None
     progress_repository: ReadingProgressRepository | None = None
@@ -104,8 +95,6 @@ class ActionContext:
     current_unit_id: str | None = None
 
     def __post_init__(self) -> None:
-        if self.event_sink is None and self.emit is not None:
-            self.event_sink = CallableEventSink(self.emit)
         if self.annotated_copies is None and self.annotated_dir is not None:
             self.annotated_copies = AnnotatedCopyStore(self.annotated_dir)
 

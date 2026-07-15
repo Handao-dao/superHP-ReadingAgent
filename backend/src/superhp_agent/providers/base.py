@@ -1,8 +1,7 @@
 """Shared implementation base for retry-aware LLM provider adapters.
 
 Application services depend on ``ports.llm.LLMProvider``. This module owns
-generation defaults, retry behavior, and provider implementation helpers while
-retaining the historical ``LLMProvider`` class name as a compatibility alias.
+generation defaults, retry behavior, and provider implementation helpers.
 """
 
 from __future__ import annotations
@@ -295,8 +294,4 @@ class BaseLLMProvider(ABC):
         return max(0.1, (dt - dt.now(dt.tzinfo)).total_seconds())
 
 
-# Compatibility alias: new Services use the Protocol in ``ports.llm`` while
-# existing provider subclasses may continue inheriting this historical name.
-LLMProvider = BaseLLMProvider
-
-__all__ = ["BaseLLMProvider", "GenerationSettings", "LLMProvider", "LLMResponse"]
+__all__ = ["BaseLLMProvider", "GenerationSettings"]

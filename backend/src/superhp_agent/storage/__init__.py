@@ -1,22 +1,12 @@
-"""SQLite storage implementations and compatibility exports.
+"""SQLite storage implementations and their composition entrypoint.
 
 Upper layers should depend on Store or Repository Ports. This package exposes
-the historical AppDB entrypoint as a composition and lifecycle facade over the
+the AppDB entrypoint as a composition and lifecycle facade over the
 separated connection, migration, and repository implementations.
 """
 
-from superhp_agent.storage.app_db import (
-    ANNOTATION_MARKER_RE,
-    VALID_BODY_KINDS,
-    AppDB,
-    normalize_pos,
-    strip_annotation_markers,
-)
+from superhp_agent.storage.app_db import AppDB
 
 __all__ = [
-    "ANNOTATION_MARKER_RE",
-    "VALID_BODY_KINDS",
     "AppDB",
-    "normalize_pos",
-    "strip_annotation_markers",
 ]

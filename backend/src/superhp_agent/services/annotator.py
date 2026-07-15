@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from superhp_agent.context import ContextBlock, ContextBundle
 from superhp_agent.contracts.annotation import (
     AnnotationChunkOutcome,
-    AnnotationItem,
     AnnotationResult,
     ServiceIssue,
 )
@@ -27,8 +26,6 @@ from superhp_agent.profiles import (
     EnglishNovelProfile,
     ProfileRegistry,
 )
-
-VocabItem = AnnotationItem
 
 
 @dataclass(frozen=True)

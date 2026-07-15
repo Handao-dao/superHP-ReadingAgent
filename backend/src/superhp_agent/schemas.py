@@ -1,27 +1,6 @@
-"""Shared API schemas and compatibility exports.
-
-New cross-layer contracts live under ``superhp_agent.contracts``. This module
-keeps their historical import paths available while the remaining API models
-are migrated incrementally.
-"""
+"""HTTP request and response schemas owned by the API adapter."""
 
 from pydantic import BaseModel
-
-from superhp_agent.contracts import (
-    AgentAction as AgentAction,
-)
-from superhp_agent.contracts import (
-    AgentCard as AgentCard,
-)
-from superhp_agent.contracts import (
-    ReadingUnitDetail as ReadingUnitDetail,
-)
-from superhp_agent.contracts import (
-    ReadingUnitMeta as ReadingUnitMeta,
-)
-
-ChapterMeta = ReadingUnitMeta
-ChapterDetail = ReadingUnitDetail
 
 
 class ProfileMeta(BaseModel):

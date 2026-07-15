@@ -2,13 +2,14 @@ import asyncio
 from types import SimpleNamespace
 
 from superhp_agent.config import Settings
-from superhp_agent.providers.base import GenerationSettings, LLMProvider, LLMResponse
+from superhp_agent.contracts import LLMResponse
+from superhp_agent.providers.base import BaseLLMProvider, GenerationSettings
 from superhp_agent.providers.factory import make_provider
 from superhp_agent.providers.openai_compat import OpenAICompatProvider
 from superhp_agent.providers.registry import find_by_name, match_by_model
 
 
-class ScriptedProvider(LLMProvider):
+class ScriptedProvider(BaseLLMProvider):
     def __init__(self, responses):
         super().__init__()
         self.responses = list(responses)

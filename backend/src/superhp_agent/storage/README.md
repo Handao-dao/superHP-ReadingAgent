@@ -117,8 +117,8 @@ UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 
 ## 阅读进度：ReadingProgressRepository
 
-生产运行时现在以 SQLite 为 current/opened/read 状态的唯一来源。旧 `reading_memory.json` 已从
-应用启动和日常读写链路移除；`memory.py` 只暂时保留为离线迁移与兼容测试模块。
+生产运行时现在以 SQLite 为 current/opened/read 状态的唯一来源。旧
+`reading_memory.json`、JSON Memory 实现和一次性导入逻辑均已移除。
 
 当前结构为：
 

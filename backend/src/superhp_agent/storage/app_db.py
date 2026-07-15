@@ -1,9 +1,7 @@
-"""Transitional all-in-one SQLite storage implementation.
+"""Composition facade for the application's SQLite repositories.
 
 AppDB composes the shared connection, migration, unit, vocabulary, and bookmark
-repository implementations. It contains no repository SQL and remains only as
-the historical ``superhp_agent.storage.AppDB`` lifecycle and compatibility
-facade.
+repository implementations. It contains no repository SQL.
 """
 
 from __future__ import annotations
@@ -12,12 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
-from superhp_agent.domain.vocabulary import normalize_pos as normalize_pos
 from superhp_agent.storage.database import SQLiteDatabase
 from superhp_agent.storage.migrations import initialize_schema
-from superhp_agent.storage.sqlite.bookmarks import (
-    VALID_BODY_KINDS as VALID_BODY_KINDS,
-)
 from superhp_agent.storage.sqlite.bookmarks import (
     SQLiteBookmarkRepository,
 )
@@ -26,18 +20,12 @@ from superhp_agent.storage.sqlite.reading_progress import (
 )
 from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import (
-    ANNOTATION_MARKER_RE as ANNOTATION_MARKER_RE,
-)
-from superhp_agent.storage.sqlite.vocabulary import (
     SQLiteVocabularyRepository,
-)
-from superhp_agent.storage.sqlite.vocabulary import (
-    strip_annotation_markers as strip_annotation_markers,
 )
 
 
 class AppDB:
-    """Compatibility facade that composes SQLite repository implementations."""
+    """Lifecycle facade that composes SQLite repository implementations."""
 
     def __init__(self, db_path: str | Path):
         self.database = SQLiteDatabase(db_path)

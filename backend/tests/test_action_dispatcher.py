@@ -3,9 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from superhp_agent.contracts.annotation import ServiceIssue
+from superhp_agent.contracts import AgentAction
+from superhp_agent.contracts.annotation import (
+    AnnotationItem,
+    AnnotationResult,
+    ServiceIssue,
+)
 from superhp_agent.corpus import CorpusStore
-from superhp_agent.memory import ReadingMemoryStore
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -18,9 +22,8 @@ from superhp_agent.runtime.actions import (
     OPEN_CHAPTER,
     START_NEXT_CHAPTER,
 )
-from superhp_agent.schemas import AgentAction
-from superhp_agent.services.annotator import AnnotationResult, VocabItem
 from superhp_agent.storage import AppDB
+from tests.fakes import InMemoryReadingState, RecordingEventSink
 
 
 class FakeAnnotator:
@@ -44,7 +47,7 @@ class FakeAnnotator:
         self.selection_policy_ids.append(selection_policy_id)
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
-            vocabulary=[VocabItem(word="text", translation="文本", context="Body text.")],
+            vocabulary=[AnnotationItem(word="text", translation="文本", context="Body text.")],
             validated_chunk_count=1,
             total_chunk_count=1,
         )
@@ -131,23 +134,21 @@ profile_id: classical_chinese
     )
 
 
-def memory_store(tmp_path):
-    return ReadingMemoryStore(tmp_path / "memory" / "reading_memory.json", tmp_path / "memory" / "events.jsonl")
+def memory_store():
+    return InMemoryReadingState()
 
 
 def test_dispatch_open_unit_emits_events_and_updates_context(tmp_path):
     async def run_case():
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
-        events = []
+        sink = RecordingEventSink()
+        events = sink.events
 
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
-
-        memory = memory_store(tmp_path)
+        memory = memory_store()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
         )
@@ -171,15 +172,13 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
     async def run_case():
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
-        events = []
+        sink = RecordingEventSink()
+        events = sink.events
 
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
-
-        memory = memory_store(tmp_path)
+        memory = memory_store()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
             current_unit_id="hp01-ch01",
@@ -203,15 +202,13 @@ def test_dispatch_start_next_marks_completed_and_selects_next_unit(tmp_path):
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
         write_second_unit(corpus_root)
-        events = []
+        sink = RecordingEventSink()
+        events = sink.events
 
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
-
-        memory = memory_store(tmp_path)
+        memory = memory_store()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
         )
@@ -244,12 +241,10 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
     async def run_case():
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
-        events = []
+        sink = RecordingEventSink()
+        events = sink.events
 
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
-
-        memory = memory_store(tmp_path)
+        memory = memory_store()
         annotated_dir = tmp_path / "data" / "annotated"
         db = AppDB(tmp_path / "app.sqlite3")
         corpus = CorpusStore(corpus_root)
@@ -271,7 +266,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
         annotator = FakeAnnotator()
         context = ActionContext(
             corpus=corpus,
-            emit=emit,
+            event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
             annotated_dir=annotated_dir,
@@ -369,18 +364,13 @@ def test_dispatch_returns_original_without_persisting_fully_degraded_result(tmp_
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
         annotated_dir = tmp_path / "data" / "annotated"
-        memory = ReadingMemoryStore(
-            tmp_path / "data" / "memory.json",
-            tmp_path / "data" / "events.jsonl",
-        )
-        events = []
-
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
+        memory = InMemoryReadingState()
+        sink = RecordingEventSink()
+        events = sink.events
 
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
             annotated_dir=annotated_dir,
@@ -419,14 +409,12 @@ def test_dispatch_open_annotated_copy_reads_saved_body(tmp_path):
             "---\nbody_kind: annotated\n---\n\nSaved [[body|正文]].\n",
             encoding="utf-8",
         )
-        events = []
-
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
+        sink = RecordingEventSink()
+        events = sink.events
 
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             annotated_dir=annotated_dir,
         )
         dispatcher = ActionDispatcher()
@@ -449,15 +437,13 @@ def test_dispatch_open_annotated_copy_generates_missing_copy(tmp_path):
         write_unit(corpus_root)
         annotated_dir = tmp_path / "data" / "annotated"
         annotated_dir.mkdir(parents=True)
-        events = []
-
-        async def emit(event_type, **payload):
-            events.append({"type": event_type, **payload})
+        sink = RecordingEventSink()
+        events = sink.events
 
         annotator = FakeAnnotator()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
-            emit=emit,
+            event_sink=sink,
             annotated_dir=annotated_dir,
             annotator_service=annotator,
         )
@@ -484,10 +470,7 @@ def test_dispatch_unknown_action_raises(tmp_path):
         corpus_root = tmp_path / "corpus"
         write_unit(corpus_root)
 
-        async def emit(event_type, **payload):
-            return None
-
-        context = ActionContext(corpus=CorpusStore(corpus_root), emit=emit)
+        context = ActionContext(corpus=CorpusStore(corpus_root))
         dispatcher = ActionDispatcher()
 
         with pytest.raises(UnsupportedActionError):

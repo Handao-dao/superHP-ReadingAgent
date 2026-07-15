@@ -73,7 +73,6 @@ class ReadingUnitState:
         return cls.from_unit(unit, **kwargs)
 
 
-ChapterState = ReadingUnitState
 
 
 class ReadingStateReader:

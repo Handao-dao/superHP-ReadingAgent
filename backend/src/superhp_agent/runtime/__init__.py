@@ -9,7 +9,6 @@ from superhp_agent.runtime.action_dispatcher import (
 from superhp_agent.runtime.action_router import ReadingFlowRouter
 from superhp_agent.runtime.cards import ReadingCardBuilder
 from superhp_agent.runtime.reading_state import (
-    ChapterState,
     ReadingStateReader,
     ReadingUnitState,
 )
@@ -17,7 +16,6 @@ from superhp_agent.runtime.reading_state import (
 __all__ = [
     "ActionContext",
     "ActionDispatcher",
-    "ChapterState",
     "MissingActionPayloadError",
     "ReadingCardBuilder",
     "ReadingFlowRouter",

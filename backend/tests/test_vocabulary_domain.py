@@ -1,4 +1,4 @@
-"""Domain and compatibility tests for vocabulary classification rules."""
+"""Domain tests for vocabulary classification rules."""
 
 import pytest
 
@@ -7,7 +7,6 @@ from superhp_agent.domain import (
     normalize_pos,
     normalize_word,
 )
-from superhp_agent.storage import normalize_pos as legacy_normalize_pos
 
 
 def test_normalize_word_builds_case_insensitive_identity():
@@ -40,7 +39,3 @@ def test_extract_vocabulary_candidates_supports_short_phrases_and_cjk():
 )
 def test_normalize_pos(raw, expected):
     assert normalize_pos(raw) == expected
-
-
-def test_storage_keeps_legacy_normalize_pos_import():
-    assert legacy_normalize_pos is normalize_pos

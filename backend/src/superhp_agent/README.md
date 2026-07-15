@@ -160,7 +160,7 @@ Profile 不负责调用 Provider、访问数据库、保存文件、发送 WebSo
 
 纯领域规则位于 `domain/`，可以同时被 Service 与 Infrastructure 使用，但不依赖两者。
 当前 `domain/vocabulary.py` 负责合法词性集合、英文简写映射和未知词性回退；它不解析模型响应、
-访问 SQLite 或构造 API DTO。`storage.normalize_pos` 暂时保留为兼容导出。
+访问 SQLite 或构造 API DTO。调用方统一从 `domain.vocabulary` 导入该规则。
 
 ### Provider
 
@@ -175,7 +175,7 @@ Provider 是模型基础设施适配器，负责：
 
 Provider 回答“怎样调用模型”；Service 回答“为了完成业务任务，模型应怎样被使用”。
 Service 只依赖最小 `LLMProvider` Protocol。`BaseLLMProvider` 负责 generation 默认值和重试，
-OpenAI-compatible Adapter 继承该实现基类；旧的 `providers.base.LLMProvider` 名称仅作为兼容别名。
+OpenAI-compatible Adapter 继承该实现基类。
 
 ### Contracts
 
@@ -197,13 +197,11 @@ contracts/
 - Event 使用过去式语义，例如 `AnnotationCompleted`。
 - Transport DTO 只描述边界 JSON，不应成为 Runtime 的内部模型。
 
-当前 `schemas.py` 混合了部分 HTTP DTO、WebSocket payload 和应用模型。迁移时保留 `schemas.py` 作为兼容 re-export，逐步修改 import，避免一次破坏所有 API 和测试。
-
 目前 `AgentAction` 已迁入 `contracts/actions.py`；`ReadingUnitMeta`、`ReadingUnitDetail` 和
 `AgentCard` 已迁入 `contracts/reading.py`。Transport、Runtime 与 Composition Root 直接依赖
-新 Contract，`schemas.py` 保留同名 re-export 和 `ChapterMeta` / `ChapterDetail` 旧命名别名。
+新 Contract；`schemas.py` 只保留 HTTP adapter 自己的请求和响应 DTO。
 `BackendEvent` 位于 `contracts/events.py`，事件输出能力由 `ports/events.py` 中的
-`EventSink` 定义；`runtime/events.py` 仅保留适配器与旧导入兼容。前端 reading.v1 扁平 JSON
+`EventSink` 定义。前端 reading.v1 扁平 JSON
 由 `transport/event_mapper.py` 转换，Application Event 不再了解 WebSocket 格式。
 `AnnotationResult`、`AnnotationChunkOutcome`、`AnnotationItem` 和 `ServiceIssue` 位于
 `contracts/annotation.py`；Provider 与内容校验失败以稳定的 `category/code` 传递，不依赖异常文案。
@@ -270,8 +268,8 @@ HTTP Handler
 
 ```text
 storage/
-├── __init__.py            # AppDB 等历史入口兼容导出
-├── app_db.py              # 当前过渡门面，等待继续拆分
+├── __init__.py            # 导出 SQLite 组合入口 AppDB
+├── app_db.py              # 组合各 SQLite Repository 的生命周期门面
 ├── database.py            # SQLite 连接、锁与关闭
 ├── migrations.py          # schema 初始化和增量升级
 └── sqlite/                # Repository 的 SQLite 实现
@@ -415,7 +413,7 @@ Transport
 - 已完成第三刀：抽出 `contracts/events.py` 中的 `BackendEvent`。
 - 已完成第四刀：抽出 `contracts/llm.py` 中厂商无关的 `LLMResponse`。
 - 已将 reading.v1 Event JSON 映射移到 Transport，WebSocket 消息保持不变。
-- 保留 `schemas.py` 兼容 re-export。
+- 已移除 `schemas.py` 中的 Contract 兼容 re-export，跨层模型统一从 `contracts/` 导入。
 - 当前最小范围已区分 Action、Reading、Event、LLM Contract 与 Transport mapping。
 
 ### 阶段 3：通用 Ports（已完成）
@@ -472,6 +470,6 @@ uv run ruff check .
 - 暂不引入自主规划式 Agent Loop。
 - 暂不一次性迁移全部目录到完整 DDD 结构。
 - 暂不让 LLM 直接决定并执行任意工具调用。
-- 暂不移除 legacy chapter 字段和 `schemas.py` 兼容入口。
+- 暂不移除对外协议中的 legacy chapter 字段。
 
 先修正依赖方向和职责所有权，再自然移动目录；不要为了形式上的分层制造空壳抽象。

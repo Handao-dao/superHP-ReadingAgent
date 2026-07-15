@@ -5,7 +5,6 @@ WebSocket, logger, or runtime implementation. This module does not decide event
 recipients or perform transport serialization.
 """
 
-from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
 from superhp_agent.contracts.events import BackendEvent
@@ -21,9 +20,6 @@ class EventLogger(Protocol):
     """Capability required by code that records append-only behavior events."""
 
     def log_event(self, event_type: str, **payload: Any) -> None: ...
-
-
-EventEmitter = Callable[..., Awaitable[None]]
 
 
 async def emit_backend_event(

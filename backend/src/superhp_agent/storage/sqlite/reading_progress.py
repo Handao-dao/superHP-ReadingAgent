@@ -1,7 +1,7 @@
 """SQLite implementation of single-user reading progress persistence.
 
 The singleton table owns the current pointer; ``unit_progress`` owns opened and
-read timestamps. Legacy JSON is imported only when both SQLite tables are empty.
+read timestamps.
 """
 
 from superhp_agent.contracts.reading import ReadingProgressSnapshot
@@ -46,29 +46,6 @@ class SQLiteReadingProgressRepository:
             self.database.connection.commit()
         return self.load()
 
-    def import_legacy(self, snapshot: ReadingProgressSnapshot) -> bool:
-        """Import one legacy JSON snapshot only into an empty SQLite state."""
-        with self.database.lock:
-            if not self._is_empty():
-                return False
-            ordered_ids = dict.fromkeys(
-                [*snapshot.opened_unit_ids, *snapshot.read_unit_ids]
-            )
-            for unit_id in ordered_ids:
-                self.database.connection.execute(
-                    "INSERT INTO unit_progress (unit_id, opened_at) VALUES (?, datetime('now'))",
-                    (unit_id,),
-                )
-            for unit_id in snapshot.read_unit_ids:
-                self.database.connection.execute(
-                    "UPDATE unit_progress SET read_at = datetime('now') WHERE unit_id = ?",
-                    (unit_id,),
-                )
-            if snapshot.current_unit_id:
-                self._mark_opened(snapshot.current_unit_id)
-            self.database.connection.commit()
-            return bool(snapshot.current_unit_id or ordered_ids)
-
     def _mark_opened(self, unit_id: str) -> None:
         self.database.connection.execute(
             """
@@ -89,15 +66,6 @@ class SQLiteReadingProgressRepository:
             """,
             (unit_id,),
         )
-
-    def _is_empty(self) -> bool:
-        current = self.database.connection.execute(
-            "SELECT 1 FROM reading_progress LIMIT 1"
-        ).fetchone()
-        unit = self.database.connection.execute(
-            "SELECT 1 FROM unit_progress LIMIT 1"
-        ).fetchone()
-        return current is None and unit is None
 
     @staticmethod
     def _require_unit_id(unit_id: str) -> str:

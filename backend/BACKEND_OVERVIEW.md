@@ -97,18 +97,8 @@ HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接�
 `EventLogStore` 只负责向 UTF-8 JSONL 文件追加诊断事件。它不读取阅读进度，也不参与 Cards
 计算。生产运行时的 current/opened/read 状态由 SQLite `ReadingProgressRepository` 负责。
 
-旧 `memory.py` 已退出应用运行主链路，只暂时保留给离线迁移工具和兼容测试。
-
-旧 JSON 曾记录：
-
-- 当前阅读单元。
-- 打开过的单元。
-- 已读单元。
-- 行为事件日志。
-
-已生成译注的状态不再写入 Memory，而是由 `AnnotatedCopyStore` 根据文件实际存在性判断。
-
-SQLite 进度为空时启动流程会导入一次旧状态，已有 SQLite 状态不会被旧文件覆盖。
+旧 JSON Memory 与一次性导入逻辑已经移除。已生成译注的状态由
+`AnnotatedCopyStore` 根据文件实际存在性判断。
 
 ### `src/superhp_agent/storage/`
 
@@ -173,7 +163,7 @@ SQLite 进度为空时启动流程会导入一次旧状态，已有 SQLite 状�
 - 打开译注副本。
 - 标记已读。
 - 调用译注服务生成 annotated Markdown。
-- 写入 memory、event log、vocabulary DB。
+- 写入 SQLite 阅读进度、event log 和 vocabulary repository。
 - 打开译注时会按 action payload 中的 `level` 查找 `{unit_id}.{level}.annotated.md`；如果当前 level 不存在，则自动生成该密度版本。
 - legacy `{unit_id}.annotated.md` 作为 intermediate fallback 读取，不做强制迁移。
 
@@ -181,16 +171,15 @@ SQLite 进度为空时启动流程会导入一次旧状态，已有 SQLite 状�
 
 ## 后端事件 Hook
 
-### `src/superhp_agent/runtime/events.py`
+### `src/superhp_agent/contracts/events.py` 与 `ports/events.py`
 
 `EventSink` 是后端行为回传的轻量 hook。业务层可以通过它报告进度和中间状态，但不需要知道这些事件最终会发给 WebSocket、测试收集器，还是未来的 HTTP stream。
 
-当前包含：
+当前边界包含：
 
-- `BackendEvent`：统一事件对象。
-- `EventSink`：事件接收协议。
-- `CallableEventSink`：兼容旧的 `emit(event_type, **payload)` 函数。
-- `NullEventSink`：无输出场景的空实现。
+- `BackendEvent`：Transport 无关的统一事件对象。
+- `EventSink`：事件输出能力协议。
+- `emit_backend_event`：构造并交给 Sink 的公共辅助函数。
 
 模型译注流程已经接入这个 hook，用于回传模型重试和 JSON 修复状态。WebSocket 传输层通过 `ReadingSocketEventSink` 把这些事件转成前端协议消息。
 
@@ -315,4 +304,4 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 - 新增模型能力：优先加 service，不要直接在 transport 或 router 中调用 provider。
 - 新增进度回传：优先通过 `EventSink` 发事件，不要让服务层直接依赖 WebSocket。
 - 新增工具：通过 tools 层包装已有能力，避免工具绕过核心边界。
-- 新增持久化数据：先判断是流程状态还是可查询数据，再决定放 memory 还是 SQLite。
+- 新增持久化数据：先判断是原始语料、生成产物、业务状态还是诊断事件，再选择对应 Store/Repository。

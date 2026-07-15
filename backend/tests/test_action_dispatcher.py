@@ -443,7 +443,7 @@ def test_dispatch_persists_projection_with_candidate_rejection_details(tmp_path)
 
         completed = next(event for event in sink.events if event["type"] == "annotation.completed")
         logged = next(event for event in memory.logged_events if event["type"] == "annotation_completed")
-        assert completed["status"] == "degraded"
+        assert completed["status"] == "completed"
         assert completed["candidate_rejection_count"] == 1
         assert completed["degraded_chunk_count"] == 0
         assert logged["issues"] == [

@@ -34,7 +34,7 @@ export function useReadingSocket(options = {}) {
   const progressMessage = ref('')
   const errorMessage = ref('')
   const cardsRevision = ref(0)
-  const degradationCounts = ref({ provider: 0, validation: 0, other: 0, candidate: 0 })
+  const degradationCounts = ref({ provider: 0, validation: 0, other: 0 })
 
   let socket = null
   let intentionalClose = false
@@ -42,18 +42,17 @@ export function useReadingSocket(options = {}) {
   const canSend = computed(() => connected.value && socket?.readyState === WebSocket.OPEN)
   const selectedProfileId = () => options.profileId?.value || options.profileId || ''
   const annotationWarning = computed(() => {
-    const { provider, validation, other, candidate } = degradationCounts.value
+    const { provider, validation, other } = degradationCounts.value
     const parts = []
     if (provider) parts.push(`${provider} 个分块在模型调用重试后仍失败`)
     if (validation) parts.push(`${validation} 个分块未通过格式或原文校验`)
     if (other) parts.push(`${other} 个分块未能生成有效译注`)
     const chunkWarning = parts.length ? `${parts.join('，')}，已回退为原文` : ''
-    const candidateWarning = candidate ? `${candidate} 处候选标注无法安全定位，已忽略` : ''
-    return [chunkWarning, candidateWarning].filter(Boolean).join('；')
+    return chunkWarning
   })
 
   function resetAnnotationWarning() {
-    degradationCounts.value = { provider: 0, validation: 0, other: 0, candidate: 0 }
+    degradationCounts.value = { provider: 0, validation: 0, other: 0 }
   }
 
   function recordDegradedChunk(category) {
@@ -226,11 +225,9 @@ export function useReadingSocket(options = {}) {
         noticeMessage.value = annotationWarning.value
         return
       case 'annotation.candidate_rejected':
-        degradationCounts.value = {
-          ...degradationCounts.value,
-          candidate: degradationCounts.value.candidate + 1,
-        }
-        noticeMessage.value = annotationWarning.value
+        // A rejected candidate is a backend diagnostic, not a reading
+        // failure: the original text remains intact and other annotations
+        // continue to work. Do not interrupt the reader with this event.
         return
       case 'annotation.completed':
         if (message.status === 'degraded') {
@@ -243,7 +240,6 @@ export function useReadingSocket(options = {}) {
                 - (Number(message.provider_error_count) || 0)
                 - (Number(message.validation_error_count) || 0),
             ),
-            candidate: Number(message.candidate_rejection_count) || 0,
           }
         } else {
           resetAnnotationWarning()

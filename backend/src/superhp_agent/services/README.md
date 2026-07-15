@@ -118,7 +118,8 @@ truncated_output
 降级信息使用 `contracts/annotation.py` 中的 `ServiceIssue`、`AnnotationChunkOutcome` 和
 `AnnotationResult` 传递。Service 同时发送 `annotation.degraded` 事件，事件包含稳定的
 `category`、`code` 和 `chunk_index`；单项忽略使用 `annotation.candidate_rejected`，额外携带
-`item_index`。前端不应依赖可变的错误文案判断类型。
+`item_index`。单项候选忽略只是诊断信息，不会把整章标记为 `degraded`，也不应向
+读者显示警告；只有整个 chunk 回退原文时才属于降级。前端不应依赖可变的错误文案判断类型。
 
 ## 已掌握词动态筛选
 

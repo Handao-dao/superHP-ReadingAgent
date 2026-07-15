@@ -340,7 +340,11 @@ class GenerateAnnotationHandler:
         # back, return the readable source text without recording a fake
         # annotated copy, so the user can retry later.
         persisted = not result.fully_degraded
-        status = "degraded" if result.issues or result.candidate_issues else "completed"
+        # Individual projection candidates are allowed to be rejected without
+        # degrading the reading result: the source text stays intact and the
+        # remaining annotations are still useful. Keep those rejections in
+        # diagnostics below; reserve ``degraded`` for whole-chunk fallback.
+        status = "degraded" if result.issues else "completed"
         stored_vocabulary_count = 0
         if persisted:
             context.require_annotated_copies().write(

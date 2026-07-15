@@ -123,8 +123,9 @@ def test_annotator_prompt_uses_context_blocks():
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
     assert "Return only the passage text with any selected inline annotations." in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "normally use no more than 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "never exceed 15 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "approximately B1-B2 English level" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "aim for about 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "increase up to 15" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 

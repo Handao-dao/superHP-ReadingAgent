@@ -26,10 +26,10 @@ Add selective inline Chinese glosses without translating, rewriting, or otherwis
 
 Prioritize exact source preservation, importance-based selection, and concise context-specific glosses, in that order.
 
-Annotate only the words or expressions that most affect comprehension.
-For approximately every 300 English words, normally use no more than 8 annotations.
-Increase beyond 8 only when the passage contains an unusual concentration of indispensable comprehension obstacles, and never exceed 15 annotations.
-These limits are not targets: do not use the extra capacity for lower-priority words, and use fewer annotations or none when appropriate.
+Target a Chinese reader at approximately B1-B2 English level.
+Annotate words that this reader is likely not to know or whose meaning is unclear in context.
+For approximately every 300 English words, aim for about 8 annotations.
+Use fewer when the passage is easy, and increase up to 15 when it contains more relevant difficult words.
 """.strip()
 
 ANNOTATION_CONTRACT = """

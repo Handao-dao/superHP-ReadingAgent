@@ -59,8 +59,9 @@ def test_english_novel_profile_builds_prompt_context():
     assert "English novels" in system_prompt
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
-    assert "normally use no more than 8 annotations" in system_prompt
-    assert "never exceed 15 annotations" in system_prompt
+    assert "approximately B1-B2 English level" in system_prompt
+    assert "aim for about 8 annotations" in system_prompt
+    assert "increase up to 15" in system_prompt
     assert "<selection_policy>" not in system_prompt
     assert "Harry Potter" not in system_prompt
     assert "widely established Chinese rendering" not in system_prompt

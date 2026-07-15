@@ -47,7 +47,7 @@ class AnnotationChunker:
         r"|[^\s]"
     )
 
-    def __init__(self, *, max_chunk_words: int = 1500):
+    def __init__(self, *, max_chunk_words: int = 1000):
         self.max_chunk_words = max(1, int(max_chunk_words))
 
     def split(self, text: str) -> list[TextChunk]:
@@ -391,7 +391,7 @@ class LazyAnnotatorService:
         *,
         profile: AnnotationProfile | None = None,
         profile_registry: ProfileRegistry | None = None,
-        max_chunk_words: int = 1500,
+        max_chunk_words: int = 1000,
         max_concurrency: int = 8,
     ):
         self.provider_factory = provider_factory

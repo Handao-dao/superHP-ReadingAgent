@@ -13,7 +13,7 @@ def test_settings_defaults_are_independent_of_cwd(monkeypatch, tmp_path):
 
     assert settings.data_dir == BACKEND_ROOT / "data"
     assert settings.corpus_dir == PROJECT_ROOT / "corpus"
-    assert settings.annotation_max_chunk_words == 1500
+    assert settings.annotation_max_chunk_words == 1000
     assert settings.annotation_max_concurrency == 8
 
 

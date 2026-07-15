@@ -70,7 +70,7 @@ Dispatcher，结构更清晰。
 1. 前端从 guided card 发出一个标准 Action，而不是发送自由聊天指令。
 2. WebSocket Transport 校验消息，Dispatcher 将 Action 交给对应 Handler。
 3. Handler 读取 Corpus、已掌握词和系列配置，再调用 `AnnotatorService`。
-4. Service 先按自然段组织文本，以约 `1500` 个粗略单位为单块上限，并以默认 `8` 路并发处理。
+4. Service 先按自然段组织文本，以约 `1000` 个粗略单位为单块上限，并以默认 `8` 路并发处理。
 5. Context Builder 组合稳定 system blocks、当前熟词和 reader text；Profile 注入文本场景规则及
    可选的系列 selection policy。
 6. Provider Adapter 调用模型并执行 retry；Service 校验标记格式，并通过还原左侧原文确认模型

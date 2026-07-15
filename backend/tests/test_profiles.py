@@ -97,15 +97,12 @@ def test_classical_profile_rejects_selection_policy():
         profile.build_annotator_base_context(selection_policy_id="harry_potter")
 
 
-def test_english_annotation_examples_prefer_core_words_and_limit_phrases():
-    assert "Default to annotating one core word" in ANNOTATION_CONTRACT
-    assert "normal verb with its object, adverb, or prepositional modifier" in ANNOTATION_CONTRACT
+def test_english_annotation_examples_prefer_words_and_limit_phrases():
+    assert "Prefer single-word annotations" in ANNOTATION_CONTRACT
+    assert "fixed or idiomatic expression" in ANNOTATION_CONTRACT
     assert "[[bewildered|困惑的|adjective]]" in ANNOTATION_EXAMPLES
-    assert "[[muttered|低声嘟囔|verb]] under his breath" in ANNOTATION_EXAMPLES
     assert "[[made up his mind|下定决心|phrase]]" in ANNOTATION_EXAMPLES
-    assert "[[muttered under his breath|" not in ANNOTATION_EXAMPLES
     assert "[[wand|" not in ANNOTATION_EXAMPLES
-    assert "duplicates the source word" in ANNOTATION_EXAMPLES
 
 
 def test_english_lookup_prompt_is_generic_and_context_specific():

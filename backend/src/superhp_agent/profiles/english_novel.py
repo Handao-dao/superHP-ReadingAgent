@@ -43,12 +43,9 @@ Annotation syntax:
 - Use [[exact source span|context-specific Chinese gloss|pos]].
 - The source field must exactly match the text it replaces.
 - Do not include |, [, or ] inside any field.
-- Default to annotating one core word: use the shortest source span that resolves the comprehension obstacle.
-- Annotate multiple words only when they form a lexical unit whose contextual meaning would be lost or misleading if only one word were glossed, such as a phrasal verb, idiom, or established fixed expression.
-- A normal verb with its object, adverb, or prepositional modifier is not a phrase target when glossing the core verb is sufficient. The same applies to ordinary adjective-noun and noun-noun combinations.
-- Do not widen a source span merely to make the Chinese gloss read like a complete phrase.
+- Prefer single-word annotations. Annotate a phrase only when it is a fixed or idiomatic expression whose meaning would be lost or misunderstood by annotating the key word alone.
 The pos value must be one of: noun, verb, adjective, adverb, phrase, other.
-Use phrase only for a qualifying multi-word lexical unit, not for an ordinary compositional word sequence.
+Use phrase for qualifying multi-word expressions.
 
 Gloss quality:
 - The Chinese gloss must match the source span's exact meaning in context.
@@ -56,37 +53,17 @@ Gloss quality:
 """.strip()
 
 ANNOTATION_EXAMPLES = """
-Prefer the smallest unit that carries the actual difficulty. A single core word is the default.
-
-Single-word example input:
+Single-word input:
 Harry remained bewildered as the portraits whispered among themselves and refused to explain what had happened.
 
-Single-word example output:
+Output:
 Harry remained [[bewildered|困惑的|adjective]] as the portraits whispered among themselves and refused to explain what had happened.
-
-Compositional wording input:
-Harry picked up his wand, looked toward the closed door, and muttered under his breath before returning to his seat.
-
-Good output:
-Harry picked up his wand, looked toward the closed door, and [[muttered|低声嘟囔|verb]] under his breath before returning to his seat.
-
-Reason:
-"under his breath" only modifies how he muttered; the core verb is enough to resolve the vocabulary difficulty.
 
 Fixed-expression input:
 Harry finally made up his mind to enter the room.
 
-Good output:
+Output:
 Harry finally [[made up his mind|下定决心|phrase]] to enter the room.
-
-Reason:
-"made up his mind" is an established expression whose meaning cannot be recovered by glossing "made" alone.
-
-Incorrect replacement:
-Harry remained bewildered [[bewildered|困惑的|adjective]] as the portraits whispered.
-
-Reason:
-The incorrect replacement duplicates the source word instead of replacing it.
 """.strip()
 
 OUTPUT_CONTRACT = """

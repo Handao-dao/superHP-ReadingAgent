@@ -195,18 +195,6 @@ async def get_unit(unit_id: str):
     return _unit_detail(doc)
 
 
-# Compatibility endpoints keep older frontend/tests working while the domain
-# language moves from whole chapters to finer reading units.
-@app.get("/api/chapters", response_model=list[ReadingUnitMeta])
-async def list_chapters():
-    return await list_units()
-
-
-@app.get("/api/chapters/{chapter_id}", response_model=ReadingUnitDetail)
-async def get_chapter(chapter_id: str):
-    return await get_unit(chapter_id)
-
-
 @app.get("/api/vocabulary", response_model=list[VocabularyEntry])
 async def list_vocabulary(
     unit_id: str | None = Query(default=None),
@@ -332,14 +320,12 @@ async def mark_vocabulary_by_word(payload: MarkByWordRequest):
 
 @app.get("/api/agent-cards", response_model=list[AgentCard])
 async def get_agent_cards(
-    current_chapter_id: str | None = Query(default=None),
     current_unit_id: str | None = Query(default=None),
     profile_id: str | None = None,
     phase: str = Query(default="start"),
 ):
     _require_known_profile(profile_id)
     return flow_router.inspect(
-        current_chapter_id=current_chapter_id,
         current_unit_id=current_unit_id,
         profile_id=profile_id,
         phase=phase,

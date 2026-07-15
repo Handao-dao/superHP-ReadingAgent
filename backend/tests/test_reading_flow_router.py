@@ -80,8 +80,7 @@ def test_router_starts_with_first_unit_when_no_current_unit():
     assert cards[0].id == "unit-hp01-ch01-start"
     assert "Chapter 1" in cards[0].body
     assert action_ids(cards[0]) == [GENERATE_ANNOTATION, READ_ORIGINAL]
-    assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch01"
-    assert cards[0].actions[0].payload["unit_id"] == "hp01-ch01"
+    assert cards[0].actions[0].payload == {"unit_id": "hp01-ch01"}
 
 
 def test_router_uses_memory_current_unit_when_no_explicit_unit():
@@ -151,7 +150,6 @@ def test_complete_unit_offers_next_review_and_reopen():
         REVIEW_CHAPTER_VOCAB,
         OPEN_ANNOTATED_COPY,
     ]
-    assert cards[0].actions[0].payload["chapter_id"] == "hp01-ch02"
     assert cards[0].actions[0].payload["unit_id"] == "hp01-ch02"
     assert cards[0].actions[0].payload["completed_unit_id"] == "hp01-ch01"
 

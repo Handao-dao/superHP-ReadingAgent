@@ -44,15 +44,15 @@ class ReadingCardBuilder:
         copy = self._copy_for(unit)
         actions = []
         if unit.has_annotated_copy:
-            actions.append(action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id))
+            actions.append(action(OPEN_ANNOTATED_COPY, unit_id=unit.id))
             actions[-1].label = copy.open_annotated_label
         else:
-            actions.append(action(GENERATE_ANNOTATION, chapter_id=unit.id, unit_id=unit.id))
+            actions.append(action(GENERATE_ANNOTATION, unit_id=unit.id))
             actions[-1].label = copy.generate_annotation_label
-        actions.append(action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id))
+        actions.append(action(READ_ORIGINAL, unit_id=unit.id))
         actions[-1].label = copy.read_original_label
         if unit.has_annotated_copy and unit.vocab_count > 0:
-            actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
+            actions.append(action(REVIEW_CHAPTER_VOCAB, unit_id=unit.id))
             actions[-1].label = copy.review_items_label
 
         return [
@@ -72,21 +72,20 @@ class ReadingCardBuilder:
             actions.append(
                 action(
                     START_NEXT_CHAPTER,
-                    chapter_id=unit.next_unit_id,
                     unit_id=unit.next_unit_id,
                     completed_unit_id=unit.id,
                 )
             )
             actions[-1].label = copy.start_next_label
         if unit.vocab_count > 0:
-            actions.append(action(REVIEW_CHAPTER_VOCAB, chapter_id=unit.id, unit_id=unit.id))
+            actions.append(action(REVIEW_CHAPTER_VOCAB, unit_id=unit.id))
             actions[-1].label = copy.review_items_label
         if unit.has_annotated_copy:
-            back_action = action(OPEN_ANNOTATED_COPY, chapter_id=unit.id, unit_id=unit.id)
+            back_action = action(OPEN_ANNOTATED_COPY, unit_id=unit.id)
             back_action.label = copy.back_to_annotated_label
             actions.append(back_action)
         else:
-            back_action = action(READ_ORIGINAL, chapter_id=unit.id, unit_id=unit.id)
+            back_action = action(READ_ORIGINAL, unit_id=unit.id)
             back_action.label = copy.back_to_source_label
             actions.append(back_action)
 
@@ -100,9 +99,6 @@ class ReadingCardBuilder:
                 actions=actions,
             )
         ]
-
-    def chapter_cards(self, unit: ReadingUnitState) -> list[AgentCard]:
-        return self.unit_cards(unit)
 
     def unit_cards(self, unit: ReadingUnitState) -> list[AgentCard]:
         """Select the card variant from the user's progress on one unit."""

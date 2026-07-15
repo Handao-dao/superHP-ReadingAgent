@@ -31,15 +31,6 @@ class ReadingUnitState:
     next_unit_id: str | None = None
     profile_id: str = "english_novel"
 
-    @property
-    def summary_zh(self) -> str:
-        return self.summary
-
-    @property
-    def next_chapter_id(self) -> str | None:
-        """Compatibility alias for older action payload naming."""
-        return self.next_unit_id
-
     @classmethod
     def from_unit(
         cls,
@@ -66,14 +57,6 @@ class ReadingUnitState:
             next_unit_id=next_unit_id,
             profile_id=unit.profile_id,
         )
-
-    @classmethod
-    def from_chapter(cls, unit: ReadingUnit, **kwargs: object) -> ReadingUnitState:
-        """Compatibility constructor for older tests/imports."""
-        return cls.from_unit(unit, **kwargs)
-
-
-
 
 class ReadingStateReader:
     """Build unit states from corpus, progress/vocabulary repositories, and artifacts."""

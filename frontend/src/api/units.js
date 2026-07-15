@@ -1,4 +1,5 @@
-export async function listChapters(profileId = '') {
+/** Load reading-unit metadata; grouping units into books belongs to the catalog layer. */
+export async function listUnits(profileId = '') {
   const params = new URLSearchParams()
   if (profileId) params.set('profile_id', profileId)
   const query = params.toString()

@@ -1,9 +1,8 @@
 const BASE = '/api/vocabulary'
 
-export async function fetchVocabulary({ unitId = '', chapterId = '', profileId = '' } = {}) {
+export async function fetchVocabulary({ unitId = '', profileId = '' } = {}) {
   const params = new URLSearchParams()
   if (unitId) params.set('unit_id', unitId)
-  if (chapterId) params.set('chapter_id', chapterId)
   if (profileId) params.set('profile_id', profileId)
   const query = params.toString()
   const response = await fetch(query ? `${BASE}?${query}` : BASE)

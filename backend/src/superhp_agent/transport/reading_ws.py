@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import WebSocket
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, BackendEvent
@@ -37,10 +37,11 @@ from superhp_agent.transport.event_mapper import event_to_websocket_message
 
 class ReadingSocketMessage(BaseModel):
     """Validated client message for the reading.v1 protocol."""
+    model_config = ConfigDict(extra="forbid")
+
     type: str
     request_id: str | None = None
     action: AgentAction | None = None
-    current_chapter_id: str | None = None
     current_unit_id: str | None = None
     profile_id: str | None = None
     phase: str | None = None
@@ -128,8 +129,8 @@ class ReadingSocketSession:
                 ):
                     return
                 self.current_profile_id = message.profile_id
-            if message.current_unit_id or message.current_chapter_id:
-                self.current_unit_id = message.current_unit_id or message.current_chapter_id
+            if message.current_unit_id:
+                self.current_unit_id = message.current_unit_id
             self._log_event(
                 "session_hello",
                 current_unit_id=self.current_unit_id,
@@ -151,8 +152,8 @@ class ReadingSocketSession:
                 ):
                     return
                 self.current_profile_id = message.profile_id
-            if message.current_unit_id or message.current_chapter_id:
-                self.current_unit_id = message.current_unit_id or message.current_chapter_id
+            if message.current_unit_id:
+                self.current_unit_id = message.current_unit_id
             await self.send_cards(request_id=message.request_id, phase=message.phase or "start")
             return
 
@@ -284,7 +285,6 @@ class ReadingSocketSession:
         await self.send_event(
             "cards.updated",
             request_id=request_id,
-            current_chapter_id=resolved_unit_id,
             current_unit_id=resolved_unit_id,
             profile_id=self.current_profile_id,
             phase=phase,

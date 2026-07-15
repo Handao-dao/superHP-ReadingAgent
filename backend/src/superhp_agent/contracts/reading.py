@@ -39,11 +39,6 @@ class ReadingUnitMeta(BaseModel):
     profile_id: str = "english_novel"
     language_id: str = "en"
 
-    @property
-    def summary_zh(self) -> str:
-        return self.summary
-
-
 class ReadingUnitDetail(BaseModel):
     """One reading unit together with source or annotated body text."""
 

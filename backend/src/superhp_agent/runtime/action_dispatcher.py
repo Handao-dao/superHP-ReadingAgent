@@ -161,7 +161,6 @@ class OpenUnitHandler:
         await context.emit_event(
             "chapter.loading",
             request_id=request_id,
-            chapter_id=unit_id,
             unit_id=unit_id,
             body_kind="source",
         )
@@ -203,7 +202,6 @@ class OpenAnnotatedUnitHandler:
         await context.emit_event(
             "chapter.loading",
             request_id=request_id,
-            chapter_id=unit_id,
             unit_id=unit_id,
             body_kind="annotated",
         )
@@ -230,7 +228,7 @@ class MarkReadHandler:
         *,
         request_id: str | None = None,
     ) -> None:
-        unit_id = _payload_unit_id(action.payload) or context.current_unit_id
+        unit_id = _unit_id(action.payload) or context.current_unit_id
         if not unit_id:
             raise MissingActionPayloadError("unit_id")
 
@@ -240,7 +238,6 @@ class MarkReadHandler:
         await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
-            chapter_id=unit_id,
             unit_id=unit_id,
         )
 
@@ -261,7 +258,6 @@ class StartNextUnitHandler:
             await context.emit_event(
                 "unit.marked_read",
                 request_id=request_id,
-                chapter_id=completed_unit_id,
                 unit_id=completed_unit_id,
             )
 
@@ -280,14 +276,14 @@ class GenerateAnnotationHandler:
         *,
         request_id: str | None = None,
     ) -> None:
-        unit_id = _payload_unit_id(action.payload) or context.current_unit_id
+        unit_id = _unit_id(action.payload) or context.current_unit_id
         if not unit_id:
             raise MissingActionPayloadError("unit_id")
         if context.annotator_service is None:
             raise ActionExecutionError("annotator_not_configured", "译注服务尚未配置模型 provider。")
 
         context.log_event("annotation_requested", unit_id=unit_id)
-        await context.emit_event("annotation.started", request_id=request_id, unit_id=unit_id, chapter_id=unit_id)
+        await context.emit_event("annotation.started", request_id=request_id, unit_id=unit_id)
         doc = context.corpus.get_unit(unit_id)
         context.current_unit_id = doc.meta.id
 
@@ -297,7 +293,6 @@ class GenerateAnnotationHandler:
             "annotation.progress",
             request_id=request_id,
             unit_id=unit_id,
-            chapter_id=unit_id,
             stage="llm",
             message="正在生成译注...",
         )
@@ -337,7 +332,6 @@ class GenerateAnnotationHandler:
                 "annotation.failed",
                 request_id=request_id,
                 unit_id=unit_id,
-                chapter_id=unit_id,
                 message=str(exc),
             )
             return
@@ -382,7 +376,6 @@ class GenerateAnnotationHandler:
             "annotation.completed",
             request_id=request_id,
             unit_id=unit_id,
-            chapter_id=unit_id,
             status=status,
             persisted=persisted,
             vocabulary_count=len(result.vocabulary),
@@ -417,14 +410,14 @@ def default_action_handlers() -> dict[str, ActionHandler]:
     }
 
 
-def _payload_unit_id(payload: dict[str, Any]) -> str:
-    """Accept both new unit_id and legacy chapter_id payload names."""
-    value = payload.get("unit_id") or payload.get("chapter_id")
+def _unit_id(payload: dict[str, Any]) -> str:
+    """Read the canonical reading-unit identifier from an action payload."""
+    value = payload.get("unit_id")
     return str(value) if value else ""
 
 
 def _require_unit_id(payload: dict[str, Any]) -> str:
-    unit_id = _payload_unit_id(payload)
+    unit_id = _unit_id(payload)
     if not unit_id:
         raise MissingActionPayloadError("unit_id")
     return unit_id
@@ -439,8 +432,6 @@ async def _emit_opened_unit(
     request_id: str | None,
     action_id: str,
 ) -> None:
-    # Keep legacy chapter fields in the payload while the frontend migrates to
-    # reading-unit terminology.
     detail = ReadingUnitDetail(
         meta=ReadingUnitMeta(
             id=doc.meta.id,
@@ -462,6 +453,5 @@ async def _emit_opened_unit(
         "chapter.opened",
         request_id=request_id,
         action_id=action_id,
-        chapter=detail.model_dump(),
         unit=detail.model_dump(),
     )

@@ -5,9 +5,9 @@
  * This composable does not open chapters or send reading actions.
  */
 import { computed, ref, watch } from 'vue'
-import { listChapters } from '../api/chapters'
 import { listLibraryCollections } from '../api/library'
 import { listProfiles } from '../api/profiles'
+import { listUnits } from '../api/units'
 
 const PROFILE_STORAGE_KEY = 'superhp_profile_id'
 
@@ -96,7 +96,7 @@ export function useReadingCatalog() {
     listLoading.value = true
     listErrorMessage.value = ''
     try {
-      const loaded = await listChapters(profileId)
+      const loaded = await listUnits(profileId)
       if (revision !== chapterLoadRevision) return null
       chapters.value = loaded
       return loaded

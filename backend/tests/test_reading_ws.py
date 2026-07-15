@@ -134,6 +134,24 @@ def test_socket_hello_can_select_profile_cards(tmp_path):
     asyncio.run(run_case())
 
 
+def test_socket_rejects_removed_current_chapter_alias(tmp_path):
+    async def run_case():
+        session, websocket, _ = build_session(tmp_path)
+
+        await session.handle_raw_message(
+            {
+                "type": "hello",
+                "request_id": "r-legacy-field",
+                "current_chapter_id": "hp01-ch01",
+            }
+        )
+
+        assert websocket.events[0]["type"] == "error"
+        assert websocket.events[0]["error"]["code"] == "invalid_message"
+
+    asyncio.run(run_case())
+
+
 def test_socket_hello_rejects_unknown_profile(tmp_path):
     async def run_case():
         session, websocket, _ = build_session(tmp_path)
@@ -179,8 +197,9 @@ def test_socket_open_unit_sends_loading_opened_and_cards(tmp_path):
             "cards.updated",
         ]
         assert websocket.events[0]["unit_id"] == "hp01-ch01"
-        assert websocket.events[1]["chapter"]["body"] == "Body text."
-        assert websocket.events[1]["chapter"]["meta"]["chapter_id"] == "hp01-ch01"
+        assert websocket.events[1]["unit"]["body"] == "Body text."
+        assert websocket.events[1]["unit"]["meta"]["chapter_id"] == "hp01-ch01"
+        assert "chapter" not in websocket.events[1]
         assert websocket.events[2]["current_unit_id"] == "hp01-ch01"
 
     asyncio.run(run_case())

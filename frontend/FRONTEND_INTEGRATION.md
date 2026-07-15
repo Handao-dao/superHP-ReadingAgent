@@ -133,7 +133,7 @@ Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units
 
 直接读取一个原文单元，主要用于调试或 HTTP 兜底。常规阅读通过 WebSocket action 打开正文。
 
-`/api/chapters` 和 `/api/chapters/{chapter_id}` 是旧命名兼容入口。
+阅读内容只通过 `/api/units` 访问，不再提供旧 `/api/chapters` 别名。
 
 ### 查词与词表
 
@@ -233,7 +233,7 @@ type WordLookupResult = {
 
 #### `GET /api/agent-cards`
 
-可选查询参数：`current_unit_id`、兼容字段 `current_chapter_id`、`profile_id` 和 `phase`。
+可选查询参数：`current_unit_id`、`profile_id` 和 `phase`。
 它是 WebSocket cards 的 HTTP 兜底入口。
 
 ## WebSocket
@@ -256,7 +256,7 @@ type WordLookupResult = {
 }
 ```
 
-连接建立后发送。`current_chapter_id` 仍作为兼容字段同时发送。
+连接建立后发送；阅读会话指针统一使用 `current_unit_id`。
 
 #### `cards`
 
@@ -282,8 +282,7 @@ type WordLookupResult = {
     "id": "generate_annotation",
     "label": "Generate",
     "payload": {
-      "unit_id": "ac01-ch01",
-      "chapter_id": "ac01-ch01"
+      "unit_id": "ac01-ch01"
     }
   }
 }
@@ -315,7 +314,7 @@ type WordLookupResult = {
 - `ready`：WebSocket 可用，包含 `protocol=reading.v1`。
 - `cards.updated`：替换当前 cards，并更新 `current_unit_id`。
 - `chapter.loading`：正文即将打开，包含 `unit_id` 和 `body_kind`。
-- `chapter.opened`：正文已打开；优先读取 `unit`，`chapter` 是旧命名兼容副本。
+- `chapter.opened`：正文已打开，正文详情位于 `unit`。
 - `unit.marked_read`：阅读单元已标记完成。
 - `pong`：心跳响应。
 - `error`：传输或 Action 错误，结构为 `{ error: { code, message } }`。
@@ -425,6 +424,10 @@ type VocabularyEntry = {
 }
 ```
 
+`unit_id` 是所有读取、Action 和会话指针的唯一标识。`ReadingUnitMeta.chapter_id` 不是它的
+兼容别名，而是章节归组字段：当一章拆成多个阅读单元时，这些 unit 可以共享同一个
+`chapter_id`。
+
 ## 前端对齐原则
 
 1. Guided flow 以服务端 cards 为准；前端只处理明确的本地 action。
@@ -433,9 +436,10 @@ type VocabularyEntry = {
 4. 译注副本按 unit 唯一；原文与译注通过 `body_kind` 区分。
 5. 书中词条按书隔离，语言级掌握状态共享。
 6. 模型重试、chunk 降级和整章失败是不同状态，不根据易变文案判断类型。
-7. 前端渲染覆盖层可以即时增加或隐藏单词，但不修改后端保存的原文或译注 Markdown。
-8. 断线和错误时保留最后正文、cards 和书签上下文。
-9. 可被重复触发的异步读取使用 request revision，只有最新请求可以更新页面状态。
+7. Action、WebSocket 与单元读取统一使用 `unit_id`；不要用 `chapter_id` 代替单元标识。
+8. 前端渲染覆盖层可以即时增加或隐藏单词，但不修改后端保存的原文或译注 Markdown。
+9. 断线和错误时保留最后正文、cards 和书签上下文。
+10. 可被重复触发的异步读取使用 request revision，只有最新请求可以更新页面状态。
 
 ## 已知边界与后续方向
 

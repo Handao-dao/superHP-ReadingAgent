@@ -282,8 +282,8 @@ Provider 层抽象模型调用。业务服务依赖 `LLMProvider`，而不是某
 定义 HTTP API 使用的 Pydantic 请求和响应模型。跨层 Action、Reading、Annotation、Event 与 LLM
 模型位于 `contracts/`；WebSocket 输入模型和输出映射位于 `transport/`。
 
-字段命名里还保留了一些 `chapter_id` 兼容字段；新的流程指针和 Action payload 优先使用
-`unit_id`。
+流程指针、Action payload 和运行事件统一使用 `unit_id`。`chapter_id` 只保留在阅读单元元数据
+和关联记录中，用于把同一章拆分后的多个 unit 归组，不再作为 `unit_id` 的兼容别名。
 
 ## 一次典型阅读流程
 

@@ -216,12 +216,12 @@ async function loadChapterList() {
 
 function handleAction(action) {
   if (action.id === 'review_chapter_vocab') {
-    selectedVocabularyUnitId.value = action.payload?.unit_id || action.payload?.chapter_id || currentChapterId.value || ''
+    selectedVocabularyUnitId.value = action.payload?.unit_id || currentChapterId.value || ''
     activeView.value = 'vocabulary'
     closeLookupBubble()
     return
   }
-  const actionUnitId = action.payload?.unit_id || action.payload?.chapter_id
+  const actionUnitId = action.payload?.unit_id
   if (actionUnitId) currentChapterId.value = actionUnitId
   sendAction(action)
 }
@@ -262,7 +262,6 @@ function handleOpenBookmark(bookmark) {
     label: bookmark.body_kind === 'annotated' ? 'Annotated' : 'Original',
     payload: {
       unit_id: bookmark.unit_id,
-      chapter_id: bookmark.unit_id,
     },
   }
   sendAction(action)

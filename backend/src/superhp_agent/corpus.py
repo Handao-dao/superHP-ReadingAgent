@@ -31,22 +31,12 @@ class ReadingUnit:
     profile_id: str = "english_novel"
     language_id: str = "en"
 
-    @property
-    def summary_zh(self) -> str:
-        """Compatibility alias for older code paths."""
-        return self.summary
-
-
 @dataclass(frozen=True)
 class ReadingUnitDocument:
     """Full source document returned when a user opens one reading unit."""
 
     meta: ReadingUnit
     body: str
-
-
-CorpusChapter = ReadingUnit
-ChapterDocument = ReadingUnitDocument
 
 
 class CorpusError(ValueError):
@@ -81,14 +71,6 @@ class CorpusStore:
         raw = unit.path.read_text(encoding="utf-8")
         _, body = self._split_frontmatter(raw, unit.path)
         return ReadingUnitDocument(meta=unit, body=body.strip())
-
-    def list_chapters(self) -> list[ReadingUnit]:
-        """Compatibility alias for older chapter-oriented callers."""
-        return self.list_units()
-
-    def get_chapter(self, chapter_id: str) -> ReadingUnitDocument:
-        """Compatibility alias: accepts a reading unit id."""
-        return self.get_unit(chapter_id)
 
     def refresh(self) -> None:
         """Rescan corpus files; useful after adding Markdown during development."""
@@ -154,7 +136,7 @@ class CorpusStore:
         chapter_id = str(data.get("chapter_id") or _derive_chapter_id(unit_id))
         section_no = int(data.get("section_no") or 1)
         section_count = int(data.get("section_count") or 1)
-        summary = str(data.get("summary") or data.get("summary_zh") or "")
+        summary = str(data.get("summary") or "")
         profile_id = str(data.get("profile_id") or default_profile_id)
         language_id = str(
             data.get("language_id")

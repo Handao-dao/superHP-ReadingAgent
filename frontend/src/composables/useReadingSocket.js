@@ -91,7 +91,6 @@ export function useReadingSocket(options = {}) {
         type: 'hello',
         request_id: makeRequestId(),
         current_unit_id: currentChapterId.value,
-        current_chapter_id: currentChapterId.value,
         profile_id: selectedProfileId(),
       })
     })
@@ -157,7 +156,6 @@ export function useReadingSocket(options = {}) {
       type: 'cards',
       request_id: makeRequestId(),
       current_unit_id: targetUnitId,
-      current_chapter_id: targetUnitId,
       profile_id: selectedProfileId(),
       phase,
     })
@@ -180,21 +178,21 @@ export function useReadingSocket(options = {}) {
           activeChapter.value = null
         }
         cards.value = message.cards || []
-        currentChapterId.value = message.current_unit_id || message.current_chapter_id || currentChapterId.value
+        currentChapterId.value = message.current_unit_id || currentChapterId.value
         cardsRevision.value += 1
         busy.value = false
         if (!['failed', 'offline'].includes(loadStatus.value)) loadStatus.value = 'idle'
         return
       case 'chapter.loading':
         resetAnnotationWarning()
-        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
+        currentChapterId.value = message.unit_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'loading_unit'
         progressMessage.value = message.body_kind === 'annotated' ? 'Opening annotated copy...' : 'Loading original text...'
         statusMessage.value = 'Loading reading unit...'
         return
       case 'chapter.opened':
-        activeChapter.value = message.unit || message.chapter
+        activeChapter.value = message.unit
         currentChapterId.value = activeChapter.value?.meta?.id || currentChapterId.value
         statusMessage.value = 'Reading unit opened'
         progressMessage.value = ''
@@ -203,14 +201,14 @@ export function useReadingSocket(options = {}) {
         return
       case 'annotation.started':
         resetAnnotationWarning()
-        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
+        currentChapterId.value = message.unit_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'generating_annotation'
         noticeMessage.value = 'Starting annotation...'
         progressMessage.value = 'Starting annotation...'
         return
       case 'annotation.progress':
-        currentChapterId.value = message.unit_id || message.chapter_id || currentChapterId.value
+        currentChapterId.value = message.unit_id || currentChapterId.value
         busy.value = true
         loadStatus.value = 'generating_annotation'
         progressMessage.value = message.message || 'Generating annotations...'

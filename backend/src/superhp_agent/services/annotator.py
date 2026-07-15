@@ -145,11 +145,17 @@ class AnnotatorService:
 
         annotated_text = "\n\n".join(outcome.text.strip() for outcome in outcomes)
         issues = [outcome.issue for outcome in outcomes if outcome.issue is not None]
+        candidate_issues = [
+            issue
+            for outcome in outcomes
+            for issue in outcome.candidate_issues
+        ]
 
         return AnnotationResult(
             annotated_text=annotated_text,
             vocabulary=self.profile.parse_annotation_items(annotated_text),
             issues=issues,
+            candidate_issues=candidate_issues,
             validated_chunk_count=sum(not outcome.degraded for outcome in outcomes),
             total_chunk_count=len(outcomes),
         )
@@ -197,6 +203,12 @@ class AnnotatorService:
                         event_sink,
                         request_id=request_id,
                         issue=outcome.issue,
+                    )
+                for issue in outcome.candidate_issues:
+                    await self._emit_candidate_rejected(
+                        event_sink,
+                        request_id=request_id,
+                        issue=issue,
                     )
                 await self._emit_progress(
                     event_sink,
@@ -266,6 +278,36 @@ class AnnotatorService:
             )
 
         annotated_text = self.profile.normalize_annotated_text(response.content)
+        projection_method = getattr(self.profile, "project_annotation_response", None)
+        if callable(projection_method):
+            try:
+                projection = projection_method(
+                    source_text=chunk.text,
+                    content=response.content,
+                )
+            except ValueError:
+                return self._degraded_outcome(
+                    chunk,
+                    category="validation",
+                    code="malformed_candidate_output",
+                    message="The model returned an invalid annotation candidate document.",
+                )
+            if projection is not None:
+                candidate_issues = tuple(
+                    ServiceIssue(
+                        category="candidate",
+                        code=rejection.code,
+                        message="One annotation candidate could not be applied safely.",
+                        chunk_index=chunk.index,
+                        item_index=rejection.candidate_index,
+                    )
+                    for rejection in projection.rejections
+                )
+                return AnnotationChunkOutcome(
+                    index=chunk.index,
+                    text=projection.annotated_text,
+                    candidate_issues=candidate_issues,
+                )
         if not annotated_text:
             return self._degraded_outcome(
                 chunk,
@@ -358,6 +400,27 @@ class AnnotatorService:
             "annotation.degraded",
             request_id=request_id,
             chunk_index=issue.chunk_index,
+            category=issue.category,
+            code=issue.code,
+            message=issue.message,
+        )
+
+    @staticmethod
+    async def _emit_candidate_rejected(
+        event_sink: EventSink | None,
+        *,
+        request_id: str | None,
+        issue: ServiceIssue,
+    ) -> None:
+        """Report one ignored candidate without degrading its whole chunk."""
+        if event_sink is None:
+            return
+        await emit_backend_event(
+            event_sink,
+            "annotation.candidate_rejected",
+            request_id=request_id,
+            chunk_index=issue.chunk_index,
+            item_index=issue.item_index,
             category=issue.category,
             code=issue.code,
             message=issue.message,

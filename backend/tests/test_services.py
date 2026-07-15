@@ -122,10 +122,10 @@ def test_annotator_prompt_uses_context_blocks():
     assert "<density_profile" not in prompt
     assert "<mastered_words>\n[\"wand\"]\n</mastered_words>" in prompt
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
-    assert "Return only the passage text with any selected inline annotations." in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "Return one valid JSON object" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "normally use no more than 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "never exceed 15 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "source, translation, pos, prefix, and suffix" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 
 
@@ -152,6 +152,65 @@ def test_annotator_service_deduplicates_vocabulary():
         result = await service.annotate_text("a wand and another wand.")
 
         assert [item.word for item in result.vocabulary] == ["wand"]
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_projects_candidate_json_onto_source():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(
+                content=(
+                    '{"annotations":['
+                    '{"source":"wand","translation":"魔杖","pos":"noun",'
+                    '"prefix":"a ","suffix":" on the table"}'
+                    ']}'
+                )
+            )
+        ])
+        service = AnnotatorService(provider)
+
+        result = await service.annotate_text("a wand on the table")
+
+        assert result.annotated_text == "a [[wand|魔杖|noun]] on the table"
+        assert [item.word for item in result.vocabulary] == ["wand"]
+        assert result.issues == []
+        assert result.candidate_issues == []
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_rejects_one_candidate_without_falling_back_chunk():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(
+                content=(
+                    '{"annotations":['
+                    '{"source":"wand","translation":"魔杖","pos":"noun",'
+                    '"prefix":"","suffix":""},'
+                    '{"source":"cloak","translation":"斗篷","pos":"noun",'
+                    '"prefix":"a ","suffix":"."}'
+                    ']}'
+                )
+            )
+        ])
+        events = EventCollector()
+        service = AnnotatorService(provider)
+
+        result = await service.annotate_text(
+            "a wand, another wand, and a cloak.",
+            event_sink=events,
+        )
+
+        assert result.annotated_text == "a wand, another wand, and a [[cloak|斗篷|noun]]."
+        assert result.validated_chunk_count == 1
+        assert result.issues == []
+        assert result.candidate_issues[0].code == "ambiguous_source"
+        rejected = next(
+            event for event in events.events
+            if event.type == "annotation.candidate_rejected"
+        )
+        assert rejected.payload["item_index"] == 1
 
     asyncio.run(run_case())
 

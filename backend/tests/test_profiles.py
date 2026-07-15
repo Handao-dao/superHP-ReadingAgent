@@ -52,7 +52,7 @@ def test_english_novel_profile_builds_prompt_context():
     assert "<mastered_words_policy>" in system_prompt
     assert "ignoring letter case and surrounding whitespace" in system_prompt
     assert "does not exclude a longer expression" in system_prompt
-    assert "character-for-character identical" in system_prompt
+    assert "character-for-character from the input" in system_prompt
     assert "English novels" in system_prompt
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
@@ -62,8 +62,8 @@ def test_english_novel_profile_builds_prompt_context():
     assert "Harry Potter" not in system_prompt
     assert "widely established Chinese rendering" not in system_prompt
     assert "1-4 Chinese characters" not in system_prompt
-    assert "Return only the passage text with any selected inline annotations." in profile.base_annotator_system_prompt
-    assert "return the input passage unchanged" in profile.base_annotator_system_prompt
+    assert "Return one valid JSON object" in profile.base_annotator_system_prompt
+    assert '{"annotations":[]}' in profile.base_annotator_system_prompt
 
 
 def test_english_novel_profile_adds_harry_potter_policy_when_selected():
@@ -95,10 +95,10 @@ def test_classical_profile_rejects_selection_policy():
 
 
 def test_english_annotation_examples_cover_word_and_phrase_boundaries():
-    assert "[[bewildered|困惑的|adjective]]" in ANNOTATION_EXAMPLES
-    assert "[[muttered under his breath|低声嘟囔|phrase]]" in ANNOTATION_EXAMPLES
-    assert "[[wand|" not in ANNOTATION_EXAMPLES
-    assert "duplicates the source expression" in ANNOTATION_EXAMPLES
+    assert '"source":"bewildered"' in ANNOTATION_EXAMPLES
+    assert '"source":"muttered under his breath"' in ANNOTATION_EXAMPLES
+    assert '"prefix":"Harry remained "' in ANNOTATION_EXAMPLES
+    assert '"suffix":" before returning"' in ANNOTATION_EXAMPLES
 
 
 def test_english_lookup_prompt_is_generic_and_context_specific():

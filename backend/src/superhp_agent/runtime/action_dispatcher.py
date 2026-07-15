@@ -340,7 +340,7 @@ class GenerateAnnotationHandler:
         # back, return the readable source text without recording a fake
         # annotated copy, so the user can retry later.
         persisted = not result.fully_degraded
-        status = "degraded" if result.issues else "completed"
+        status = "degraded" if result.issues or result.candidate_issues else "completed"
         stored_vocabulary_count = 0
         if persisted:
             context.require_annotated_copies().write(
@@ -362,6 +362,7 @@ class GenerateAnnotationHandler:
         validation_error_count = sum(
             issue.category == "validation" for issue in result.issues
         )
+        candidate_rejection_count = len(result.candidate_issues)
         context.log_event(
             "annotation_completed",
             unit_id=unit_id,
@@ -370,6 +371,16 @@ class GenerateAnnotationHandler:
             vocabulary_count=len(result.vocabulary),
             stored_vocabulary_count=stored_vocabulary_count,
             degraded_chunk_count=len(result.issues),
+            candidate_rejection_count=candidate_rejection_count,
+            issues=[
+                {
+                    "category": issue.category,
+                    "code": issue.code,
+                    "chunk_index": issue.chunk_index,
+                    "item_index": issue.item_index,
+                }
+                for issue in [*result.issues, *result.candidate_issues]
+            ],
         )
 
         await context.emit_event(
@@ -385,6 +396,7 @@ class GenerateAnnotationHandler:
             degraded_chunk_count=len(result.issues),
             provider_error_count=provider_error_count,
             validation_error_count=validation_error_count,
+            candidate_rejection_count=candidate_rejection_count,
         )
         await _emit_opened_unit(
             context,

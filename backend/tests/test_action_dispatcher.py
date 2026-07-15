@@ -71,6 +71,25 @@ class FullyDegradedAnnotator:
         )
 
 
+class PartiallyProjectedAnnotator:
+    async def annotate_text(self, text, **kwargs):
+        return AnnotationResult(
+            annotated_text="Body [[text|文本|noun]].",
+            vocabulary=[AnnotationItem(word="text", translation="文本", context=text)],
+            candidate_issues=[
+                ServiceIssue(
+                    category="candidate",
+                    code="ambiguous_source",
+                    message="One candidate was ambiguous.",
+                    chunk_index=1,
+                    item_index=2,
+                )
+            ],
+            validated_chunk_count=1,
+            total_chunk_count=1,
+        )
+
+
 def write_unit(root: Path):
     path = root / "hp01" / "hp01-ch01.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -395,6 +414,46 @@ def test_dispatch_returns_original_without_persisting_fully_degraded_result(tmp_
         assert opened["unit"]["body"] == "Body text."
         assert opened["unit"]["body_kind"] == "original"
         assert not annotated_dir.exists()
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_persists_projection_with_candidate_rejection_details(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        memory = InMemoryReadingState()
+        sink = RecordingEventSink()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            event_sink=sink,
+            event_log_store=memory,
+            annotated_dir=tmp_path / "annotated",
+            annotator_service=PartiallyProjectedAnnotator(),
+        )
+
+        await ActionDispatcher().dispatch(
+            AgentAction(
+                id=GENERATE_ANNOTATION,
+                label="生成译注",
+                payload={"unit_id": "hp01-ch01"},
+            ),
+            context,
+        )
+
+        completed = next(event for event in sink.events if event["type"] == "annotation.completed")
+        logged = next(event for event in memory.logged_events if event["type"] == "annotation_completed")
+        assert completed["status"] == "degraded"
+        assert completed["candidate_rejection_count"] == 1
+        assert completed["degraded_chunk_count"] == 0
+        assert logged["issues"] == [
+            {
+                "category": "candidate",
+                "code": "ambiguous_source",
+                "chunk_index": 1,
+                "item_index": 2,
+            }
+        ]
 
     asyncio.run(run_case())
 

@@ -6,7 +6,15 @@ import json
 import re
 
 from superhp_agent.context import ContextBlock, ContextBundle
-from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
+from superhp_agent.contracts.annotation import (
+    AnnotationCandidate,
+    AnnotationItem,
+    ServiceIssue,
+)
+from superhp_agent.profiles.annotation_projection import (
+    AnnotationProjection,
+    project_annotation_candidates,
+)
 from superhp_agent.profiles.base import CardCopy
 from superhp_agent.profiles.english_selection_policies import (
     get_english_selection_policy,
@@ -22,7 +30,7 @@ ANNOTATION_POS = frozenset(
 SYSTEM_POLICY = """
 You are an English-Chinese lexical annotation assistant for Chinese learners reading English novels.
 
-Add selective inline Chinese glosses without translating, rewriting, or otherwise altering the passage.
+Select concise Chinese gloss candidates without rewriting or returning the passage.
 
 Prioritize exact source preservation, importance-based selection, and concise context-specific glosses, in that order.
 
@@ -33,17 +41,21 @@ These limits are not targets: do not use the extra capacity for lower-priority w
 """.strip()
 
 ANNOTATION_CONTRACT = """
-Transform one passage from an English novel by replacing selected source spans with inline annotations.
+Identify the most useful source spans in one English-novel passage.
 
-Source preservation:
-- After replacing every annotation marker with its left-hand source field, the result must be character-for-character identical to the input.
-- Do not rewrite, summarize, reorder, correct, add, or remove any other text.
+Source selection:
+- Copy each source span, prefix, and suffix character-for-character from the input.
+- The source span must be the smallest complete unit that carries the actual difficulty.
+- Prefix and suffix are short exact strings immediately adjacent to the source span; use them to distinguish repeated text.
+- Use an empty prefix or suffix at a passage boundary.
 
-Annotation syntax:
-- Use [[exact source span|context-specific Chinese gloss|pos]].
-- The source field must exactly match the text it replaces.
-- Do not include |, [, or ] inside any field.
-- Prefer one marker for the complete expression when that expression is the meaningful unit.
+Candidate fields:
+- source: the exact source span.
+- translation: its concise context-specific Chinese gloss.
+- pos: one allowed label.
+- prefix and suffix: exact adjacent source anchors, kept as short as possible while locating the intended occurrence.
+- Do not include |, [, or ] inside source or translation.
+- Prefer one candidate for the complete expression when that expression is the meaningful unit.
 The pos value must be one of: noun, verb, adjective, adverb, phrase, other.
 Use phrase for multi-word expressions, phrasal verbs, idioms, and fixed collocations.
 
@@ -59,26 +71,20 @@ Single-word example input:
 Harry remained bewildered as the portraits whispered among themselves and refused to explain what had happened.
 
 Single-word example output:
-Harry remained [[bewildered|困惑的|adjective]] as the portraits whispered among themselves and refused to explain what had happened.
+{"annotations":[{"source":"bewildered","translation":"困惑的","pos":"adjective","prefix":"Harry remained ","suffix":" as the portraits"}]}
 
 Phrase example input:
 Harry picked up his wand, looked toward the closed door, and muttered under his breath before returning to his seat.
 
 Phrase example output:
-Harry picked up his wand, looked toward the closed door, and [[muttered under his breath|低声嘟囔|phrase]] before returning to his seat.
-
-Incorrect replacement:
-Harry picked up his wand, looked toward the closed door, and muttered under his breath [[muttered under his breath|低声嘟囔|phrase]] before returning to his seat.
-
-Reason:
-The incorrect replacement duplicates the source expression instead of replacing it.
+{"annotations":[{"source":"muttered under his breath","translation":"低声嘟囔","pos":"phrase","prefix":"and ","suffix":" before returning"}]}
 """.strip()
 
 OUTPUT_CONTRACT = """
-Return only the passage text with any selected inline annotations.
-Do not output JSON, a vocabulary list, or a code fence.
-Do not add any explanation or commentary around the passage.
-If no annotation is needed, return the input passage unchanged.
+Return one valid JSON object with exactly one annotations array.
+Each annotation object must contain source, translation, pos, prefix, and suffix.
+Do not return the passage, Markdown, a code fence, or commentary.
+If no annotation is needed, return {"annotations":[]}.
 """.strip()
 
 MASTERED_WORDS_POLICY = """
@@ -191,6 +197,29 @@ class EnglishNovelProfile:
             text = legacy_json_text.strip()
         return text
 
+    def project_annotation_response(
+        self,
+        *,
+        source_text: str,
+        content: str,
+    ) -> AnnotationProjection | None:
+        """Parse candidate JSON and project it; retain legacy inline fallback."""
+        text = _strip_code_fence(content).strip()
+        if not text.startswith(("{", "[")) or text.startswith("[["):
+            return None
+        if '"annotated_text"' in text:
+            return None
+        payload = json.loads(text)
+        raw_candidates = payload.get("annotations") if isinstance(payload, dict) else payload
+        if not isinstance(raw_candidates, list):
+            raise ValueError("annotations must be a list")
+        candidates = [_annotation_candidate(item) for item in raw_candidates]
+        return project_annotation_candidates(
+            source_text,
+            candidates,
+            allowed_pos=ANNOTATION_POS,
+        )
+
     def validate_annotated_text(
         self,
         *,
@@ -230,6 +259,23 @@ def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:
         "mastered_words",
         json.dumps(mastered_words or [], ensure_ascii=False),
         role="user",
+    )
+
+
+def _annotation_candidate(value: object) -> AnnotationCandidate:
+    if not isinstance(value, dict):
+        return AnnotationCandidate(source="", translation="")
+
+    def field(name: str) -> str:
+        raw = value.get(name)
+        return raw if isinstance(raw, str) else ""
+
+    return AnnotationCandidate(
+        source=field("source"),
+        translation=field("translation"),
+        pos=field("pos"),
+        prefix=field("prefix"),
+        suffix=field("suffix"),
     )
 
 

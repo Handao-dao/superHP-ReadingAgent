@@ -70,7 +70,7 @@ chunk_2 request = shared_base_context + reader_text(chunk_2)
 稳定的额外选词边界时才配置 `selection_policy_id`；没有配置时，英文 Profile 不插入空 block，
 也不会附加任何题材说明。
 
-## AnnotatorService 的两层兜底
+## AnnotatorService 的分层兜底
 
 译注以单个 chunk 为独立模型任务。每个 chunk 的处理流程如下：
 
@@ -81,9 +81,13 @@ Provider 调用与 retry
     ├── 最终失败 → 原文回退，provider 类警告
     └── 返回内容
             ↓
-        格式和原文校验
-            ├── 不合规 → 原文回退，validation 类警告
-            └── 合规 → 使用译注
+        英文候选 JSON 解析
+            ├── 文档损坏 → 原文回退，validation 类警告
+            └── 候选列表
+                    ↓
+              逐项定位并投影到原文
+                ├── 单项不可靠 → 只忽略该候选
+                └── 单项可靠 → 在原文上生成译注标记
 ```
 
 第一层由 Provider 提供，解决网络超时、限流和临时服务错误。重试耗尽后，Service 不让一个
@@ -94,22 +98,26 @@ category = provider
 code = provider_failed
 ```
 
-第二层由 Profile 校验器提供，解决模型虽然成功返回、但内容不可信的问题。校验器要求新生成
-结果使用三字段 `[[原文|翻译|pos]]` 标记，将所有标记还原成左侧原文，并与输入 chunk 精确比较。
-标记损坏、POS 非法、输出为空或截断、正文被增删改时，Service 同样回退原文，并生成
-`validation` 类问题，例如：
+英文小说主路径不再要求模型复述整段正文，而只返回包含 `source/translation/pos/prefix/suffix`
+的候选 JSON。`annotation_projection.py` 使用精确前后锚点定位候选，并始终从原始 chunk 重建
+最终文本；模型生成的普通正文不会被保存。候选不存在、位置有歧义、相互重叠或字段非法时，
+只忽略该候选并生成 `candidate` 类问题，不再回退整个 chunk。未知词性安全归一为 `other`。
+
+候选 JSON 整体损坏、输出为空或截断时，仍回退整个 chunk，并生成 `validation` 类问题，例如：
 
 ```text
-malformed_marker
-invalid_pos
-source_mismatch
+malformed_candidate_output
 empty_output
 truncated_output
 ```
 
+实验分支仍识别旧的内联三字段响应，其他 Profile 也继续使用原有的严格还原校验，便于与新协议
+对照测试；这不是要求所有 Profile 对称迁移。
+
 降级信息使用 `contracts/annotation.py` 中的 `ServiceIssue`、`AnnotationChunkOutcome` 和
 `AnnotationResult` 传递。Service 同时发送 `annotation.degraded` 事件，事件包含稳定的
-`category`、`code` 和 `chunk_index`；前端不应依赖可变的错误文案判断类型。
+`category`、`code` 和 `chunk_index`；单项忽略使用 `annotation.candidate_rejected`，额外携带
+`item_index`。前端不应依赖可变的错误文案判断类型。
 
 ## 已掌握词动态筛选
 

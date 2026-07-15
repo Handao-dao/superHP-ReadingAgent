@@ -2,6 +2,7 @@
 
 from superhp_agent.contracts.actions import AgentAction
 from superhp_agent.contracts.annotation import (
+    AnnotationCandidate,
     AnnotationChunkOutcome,
     AnnotationItem,
     AnnotationResult,
@@ -19,6 +20,7 @@ from superhp_agent.contracts.reading import (
 __all__ = [
     "AgentAction",
     "AgentCard",
+    "AnnotationCandidate",
     "AnnotationChunkOutcome",
     "AnnotationItem",
     "AnnotationResult",

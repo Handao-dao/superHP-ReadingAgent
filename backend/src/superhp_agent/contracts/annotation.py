@@ -20,6 +20,17 @@ class AnnotationItem:
 
 
 @dataclass(frozen=True)
+class AnnotationCandidate:
+    """One model-proposed gloss with short exact-text location anchors."""
+
+    source: str
+    translation: str
+    pos: str = "other"
+    prefix: str = ""
+    suffix: str = ""
+
+
+@dataclass(frozen=True)
 class ServiceIssue:
     """Machine-readable degradation information safe to pass across layers.
 
@@ -32,6 +43,7 @@ class ServiceIssue:
     code: str
     message: str
     chunk_index: int | None = None
+    item_index: int | None = None
 
 
 @dataclass(frozen=True)
@@ -41,6 +53,7 @@ class AnnotationChunkOutcome:
     index: int
     text: str
     issue: ServiceIssue | None = None
+    candidate_issues: tuple[ServiceIssue, ...] = ()
 
     @property
     def degraded(self) -> bool:
@@ -61,6 +74,7 @@ class AnnotationResult:
     validated_chunk_count: int
     total_chunk_count: int
     issues: list[ServiceIssue] = field(default_factory=list)
+    candidate_issues: list[ServiceIssue] = field(default_factory=list)
 
     @property
     def fully_degraded(self) -> bool:

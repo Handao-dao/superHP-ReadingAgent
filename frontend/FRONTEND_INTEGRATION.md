@@ -327,6 +327,8 @@ type WordLookupResult = {
 - `annotation.progress`：分块进度，可能包含 `stage/current/total/chunk_index/message`。
 - `annotation.model_retry`：Provider 正在重试某个 chunk，包含 `chunk_index` 和 `message`。
 - `annotation.degraded`：单个 chunk 已回退原文，包含 `category/code/chunk_index/message`。
+- `annotation.candidate_rejected`：单个候选无法安全定位并被忽略，包含
+  `code/chunk_index/item_index/message`；该 chunk 的其他候选仍然有效。
 - `annotation.completed`：流程完成，随后会发送 `chapter.opened`。
 - `annotation.failed`：未分类异常导致整章任务失败。
 
@@ -344,14 +346,15 @@ type AnnotationCompletedPayload = {
   degraded_chunk_count: number
   provider_error_count: number
   validation_error_count: number
+  candidate_rejection_count: number
 }
 ```
 
 部分 chunk 降级时，后端会合并并保存可用结果；全部 chunk 降级时 `persisted=false`，随后以
 `body_kind=source` 打开完整原文。前端不应把 `annotation.degraded` 当作整章失败。
 
-当前 `useReadingSocket` 会显示 retry、progress 和最终状态，并按 `provider`、`validation` 汇总
-`annotation.degraded`。降级提示独立于整章错误显示，随后自动打开正文时仍会保留；未知事件会被安全忽略。
+当前 `useReadingSocket` 会显示 retry、progress 和最终状态，并分别汇总整块回退与单项候选忽略。
+降级提示独立于整章错误显示，随后自动打开正文时仍会保留；未知事件会被安全忽略。
 
 常见 WebSocket error code：
 

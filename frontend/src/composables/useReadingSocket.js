@@ -45,7 +45,7 @@ export function useReadingSocket(options = {}) {
     const { provider, validation, other } = degradationCounts.value
     const parts = []
     if (provider) parts.push(`${provider} 个分块在模型调用重试后仍失败`)
-    if (validation) parts.push(`${validation} 个分块未通过格式或原文校验`)
+    if (validation) parts.push(`${validation} 个分块输出为空或被截断`)
     if (other) parts.push(`${other} 个分块未能生成有效译注`)
     if (!parts.length) return ''
     return `${parts.join('，')}，已回退为原文；其他分块仍可正常阅读。`

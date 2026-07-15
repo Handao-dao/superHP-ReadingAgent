@@ -273,21 +273,12 @@ class AnnotatorService:
                 code="empty_output",
                 message="The model returned no text and this section uses the original text.",
             )
-        issue = self.profile.validate_annotated_text(
-            source_text=chunk.text,
-            annotated_text=annotated_text,
-        )
-        if issue is not None:
-            return AnnotationChunkOutcome(
-                index=chunk.index,
-                text=chunk.text,
-                issue=ServiceIssue(
-                    category=issue.category,
-                    code=issue.code,
-                    message=issue.message,
-                    chunk_index=chunk.index,
-                ),
-            )
+        # Match the original reading behavior from 2026-06-27: once the
+        # Provider returns non-empty, non-truncated text, use it directly.
+        # Whole-passage models commonly normalize blank lines, quotes, or
+        # punctuation; exact source reconstruction made those harmless edits
+        # look like failed chunks. Profile validators remain available for
+        # offline diagnostics, but no longer gate the reading path.
         return AnnotationChunkOutcome(index=chunk.index, text=annotated_text)
 
     @staticmethod

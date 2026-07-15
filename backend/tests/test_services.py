@@ -156,7 +156,7 @@ def test_annotator_service_deduplicates_vocabulary():
     asyncio.run(run_case())
 
 
-def test_annotator_service_degrades_legacy_two_part_model_markers():
+def test_annotator_service_accepts_legacy_two_part_model_markers():
     async def run_case():
         provider = ScriptedProvider([
             LLMResponse(content="a [[wand|魔杖]] and a [[spell|咒语|noun]].")
@@ -165,9 +165,25 @@ def test_annotator_service_degrades_legacy_two_part_model_markers():
 
         result = await service.annotate_text("a wand and a spell")
 
-        assert result.annotated_text == "a wand and a spell"
-        assert result.vocabulary == []
-        assert result.issues[0].code == "malformed_marker"
+        assert result.annotated_text == "a [[wand|魔杖]] and a [[spell|咒语|noun]]."
+        assert [item.word for item in result.vocabulary] == ["wand", "spell"]
+        assert result.issues == []
+
+    asyncio.run(run_case())
+
+
+def test_annotator_service_accepts_harmless_source_format_changes():
+    async def run_case():
+        provider = ScriptedProvider([
+            LLMResponse(content="a [[wand|魔杖|noun]]\non the table")
+        ])
+        service = AnnotatorService(provider)
+
+        result = await service.annotate_text("a wand\n\non the table")
+
+        assert result.annotated_text == "a [[wand|魔杖|noun]]\non the table"
+        assert [item.word for item in result.vocabulary] == ["wand"]
+        assert result.issues == []
 
     asyncio.run(run_case())
 

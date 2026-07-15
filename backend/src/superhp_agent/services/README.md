@@ -47,8 +47,8 @@ User / Chunk Data
 - `output_contract`：约束响应外壳，并明确零标注时原样返回输入。
 
 英文译注不再按高、中、低分级。每约 300 个英文单词通常不超过 8 处标注；只有局部必要难点密集时
-才可超过 8 处，但绝对不超过 15 处。上限不是必须凑满的配额。Prompt 对原文的要求与后端校验一致：
-将所有 marker 还原为左侧源文后，必须与输入逐字符一致。
+才可超过 8 处，但绝对不超过 15 处。上限不是必须凑满的配额。Prompt 仍要求模型尽量保持原文，
+但阅读主链路不再使用逐字符一致性作为整块成功与否的判定条件。
 
 ### 整章复用与 prompt caching
 
@@ -81,9 +81,9 @@ Provider 调用与 retry
     ├── 最终失败 → 原文回退，provider 类警告
     └── 返回内容
             ↓
-        格式和原文校验
-            ├── 不合规 → 原文回退，validation 类警告
-            └── 合规 → 使用译注
+        基础可用性检查
+            ├── 空输出或截断 → 原文回退，validation 类警告
+            └── 其他非空输出 → 使用译注
 ```
 
 第一层由 Provider 提供，解决网络超时、限流和临时服务错误。重试耗尽后，Service 不让一个
@@ -94,18 +94,15 @@ category = provider
 code = provider_failed
 ```
 
-第二层由 Profile 校验器提供，解决模型虽然成功返回、但内容不可信的问题。校验器要求新生成
-结果使用三字段 `[[原文|翻译|pos]]` 标记，将所有标记还原成左侧原文，并与输入 chunk 精确比较。
-标记损坏、POS 非法、输出为空或截断、正文被增删改时，Service 同样回退原文，并生成
-`validation` 类问题，例如：
+第二层只检查输出是否为空或因 token 上限截断，并生成 `validation` 类问题：
 
 ```text
-malformed_marker
-invalid_pos
-source_mismatch
 empty_output
 truncated_output
 ```
+
+Profile 仍保留格式与原文还原校验器，供测试或离线诊断使用，但它不再作为阅读主链路的
+强制闸门。整段生成模型对空行、引号或标点的轻微调整会被直接接受，不会导致 chunk 回退。
 
 降级信息使用 `contracts/annotation.py` 中的 `ServiceIssue`、`AnnotationChunkOutcome` 和
 `AnnotationResult` 传递。Service 同时发送 `annotation.degraded` 事件，事件包含稳定的

@@ -6,7 +6,10 @@ from superhp_agent.profiles import (
     UnknownProfileError,
     create_default_registry,
 )
-from superhp_agent.profiles.english_novel import ANNOTATION_EXAMPLES
+from superhp_agent.profiles.english_novel import (
+    ANNOTATION_CONTRACT,
+    ANNOTATION_EXAMPLES,
+)
 
 
 def test_default_profile_registry_returns_english_novel():
@@ -94,11 +97,15 @@ def test_classical_profile_rejects_selection_policy():
         profile.build_annotator_base_context(selection_policy_id="harry_potter")
 
 
-def test_english_annotation_examples_cover_word_and_phrase_boundaries():
+def test_english_annotation_examples_prefer_core_words_and_limit_phrases():
+    assert "Default to annotating one core word" in ANNOTATION_CONTRACT
+    assert "normal verb with its object, adverb, or prepositional modifier" in ANNOTATION_CONTRACT
     assert "[[bewildered|困惑的|adjective]]" in ANNOTATION_EXAMPLES
-    assert "[[muttered under his breath|低声嘟囔|phrase]]" in ANNOTATION_EXAMPLES
+    assert "[[muttered|低声嘟囔|verb]] under his breath" in ANNOTATION_EXAMPLES
+    assert "[[made up his mind|下定决心|phrase]]" in ANNOTATION_EXAMPLES
+    assert "[[muttered under his breath|" not in ANNOTATION_EXAMPLES
     assert "[[wand|" not in ANNOTATION_EXAMPLES
-    assert "duplicates the source expression" in ANNOTATION_EXAMPLES
+    assert "duplicates the source word" in ANNOTATION_EXAMPLES
 
 
 def test_english_lookup_prompt_is_generic_and_context_specific():

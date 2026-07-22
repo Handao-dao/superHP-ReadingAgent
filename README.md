@@ -1,14 +1,35 @@
+<div align="center">
+
 # SuperHP Reading Agent
 
-一个面向英文小说阅读的、确定性流程驱动、Profile 可扩展的 LLM 辅助精读系统。
+**一个确定性流程驱动、Profile 可扩展的 LLM 辅助精读系统**
 
-SuperHP 不把大模型当作拥有无限工具权限的自主 Agent。阅读流程由可测试的 Router 和 Action
-控制，LLM 只在明确的业务边界内完成译注与查词。这使系统既能利用模型能力，也能保留稳定、
-可恢复、可验证的阅读体验。
+[![CI](https://github.com/Handao-dao/superHP-ReadingAgent/actions/workflows/ci.yml/badge.svg)](https://github.com/Handao-dao/superHP-ReadingAgent/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3-42B883?logo=vuedotjs&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-persistence-003B57?logo=sqlite&logoColor=white)
 
-当前产品主路径是英文小说阅读，内置《哈利·波特》与阿加莎·克里斯蒂精选作品；
-`classical_chinese` Profile 用来证明同一套 Service、Context、Provider 和降级框架可以迁移到
-其他文本场景，但不反向限制英文阅读体验的设计。
+让 LLM 负责开放式内容生成，让可测试的应用代码掌握流程、权限与副作用。
+
+</div>
+
+SuperHP 面向英文小说精读，提供章节译注、点击查词、生词管理、阅读引导和书签恢复。它不把
+大模型当作拥有无限工具权限的自主 Agent：Router 决定可选流程，Dispatcher 执行动作，LLM 只在
+明确的业务边界内生成内容。
+
+项目已持续用于真实阅读近一个月，完成 12 个章节的译注阅读并沉淀 400+ 生词；当前后端的
+157 项测试分布在 25 个测试模块中，覆盖 Runtime、Provider、Service、Storage、WebSocket 与 API 等关键边界。
+
+## 项目一览
+
+| 关注点 | 设计 |
+| --- | --- |
+| Agent 控制 | Guided cards + Router/Dispatcher，不向模型开放任意流程和存储副作用 |
+| Context 工程 | 组合稳定 system blocks、Profile 策略、用户熟词和当前正文 |
+| 失败恢复 | Provider retry、输出校验、逐 chunk 原文回退和分类事件提示 |
+| 扩展边界 | Profile、Provider、Repository 和前端 Renderer 可独立替换 |
+| 工程验证 | 157 项后端测试 + Ruff + Pytest + Vue production build |
 
 ## 设计重点
 
@@ -27,34 +48,23 @@ SuperHP 不把大模型当作拥有无限工具权限的自主 Agent。阅读流
 
 ## 系统架构
 
-```text
-┌──────────────────────────────────────────────────────┐
-│ Frontend                                             │
-│ 呈现阅读体验，并把用户意图转换为请求。                 │
-└──────────────────────────┬───────────────────────────┘
-                           │ HTTP / WebSocket
-┌──────────────────────────▼───────────────────────────┐
-│ Transport                                            │
-│ 处理通信协议、输入校验和事件返回。                     │
-└──────────────────────────┬───────────────────────────┘
-                           │ Query / Action
-┌──────────────────────────▼───────────────────────────┐
-│ Application Runtime                                  │
-│ Router 决定可选流程，Dispatcher 执行用户动作。         │
-└──────────────────────────┬───────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────┐
-│ Business Core                                        │
-│ Service 完成业务任务，Profile 定义文本策略。           │
-└──────────────────────────┬───────────────────────────┘
-                           │ Contracts / Ports
-┌──────────────────────────▼───────────────────────────┐
-│ Infrastructure & Data                                │
-│ 对接模型、数据库、语料和生成产物。                     │
-└──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    UI["Vue Reader UI"] -->|"HTTP / WebSocket"| T["Transport<br/>协议、校验、事件映射"]
+    T --> R["Application Runtime<br/>Router + Dispatcher"]
+    R --> S["Business Services<br/>Annotator + Lookup"]
+    S --> P["Profiles<br/>Prompt、协议、校验策略"]
+    S --> C["Contracts / Ports"]
+    C --> L["LLM Provider Adapter"]
+    C --> D["SQLite Repositories"]
+    C --> A["Corpus & Artifacts"]
 
-Contracts / Ports  定义跨层数据和业务所需能力，隔离具体实现。
-Composition Root   创建具体实现，并把它们装配到各层。
+    classDef boundary fill:#eef6ff,stroke:#4a78c2,color:#172033;
+    classDef core fill:#f4f0ff,stroke:#7657b5,color:#241b33;
+    classDef adapter fill:#effaf3,stroke:#4a8f62,color:#17321f;
+    class UI,T,R boundary;
+    class S,P,C core;
+    class L,D,A adapter;
 ```
 
 图中最重要的是依赖方向：上层只表达自己需要的能力，具体 Provider、SQLite 和文件实现只在
@@ -153,7 +163,7 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 ## 项目结构
 
 ```text
-superhp_Agent/
+superHP-ReadingAgent/
 ├── backend/
 │   ├── src/superhp_agent/
 │   │   ├── application/    # Composition Root
@@ -179,13 +189,13 @@ superhp_Agent/
 ```powershell
 # 后端依赖与配置
 cd backend
-uv sync --extra dev
+uv sync --locked --extra dev
 Copy-Item .env.example .env
 # 在 .env 中填写 LLM_API_KEY，并按需修改模型配置
 
 # 前端依赖
 cd ../frontend
-npm install
+npm ci
 
 # 从项目根目录同时启动前后端
 cd ..
@@ -231,6 +241,9 @@ Chapter body...
 selection policy；运行时只能通过 `unit_id` 读取 Corpus，不能让前端传入任意文件路径。
 
 ## 验证
+
+每次 push 和 pull request 都会通过 [GitHub Actions](.github/workflows/ci.yml) 自动执行后端静态检查、
+测试以及前端 production build。本地可运行同一组检查：
 
 ```powershell
 cd backend

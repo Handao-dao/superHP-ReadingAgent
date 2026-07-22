@@ -30,3 +30,6 @@ backend/data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local scratch files
+.tmp_*

@@ -5,7 +5,7 @@
 
 ## 职责边界
 
-Service 负责完成一个明确的后端业务任务，例如译注生成和上下文查词。它可以组合
+Service 负责完成一个明确的后端业务任务，例如译注生成、上下文查词和推荐候选匹配。它可以组合
 Profile、Context 和 Provider Port，但不负责：
 
 - 接收 HTTP 或 WebSocket 消息。
@@ -15,6 +15,21 @@ Profile、Context 和 Provider Port，但不负责：
 
 Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责判断最终模型结果在当前业务中
 是否可用，并以 Contracts 中的结构化结果向上层传递状态。
+
+## RecommendationCandidateService 的严格匹配
+
+`RecommendationCandidateService` 依赖 `BookDifficultyCatalog` Port，负责对本地图书候选做
+第二次边界校验、去重和排序。第一版严格保持调用方给出的条件：
+
+- 蓝思区间必须与候选区间重叠；
+- 指定题材时，候选至少匹配其中一个标签；
+- 指定单本、系列或合集类型时，不返回其他类型；
+- 明确排除的目录 id 不参与排序；
+- 优先匹配更多题材标签，其次选择更接近目标区间中心的候选；
+- 无结果时返回空的 `BookCandidateMatchResult`，不自行扩大蓝思区间或删除题材条件。
+
+Agent 使用的 `BookCatalogSearchTool` 位于 `agent_tools/`。它只做参数规范化和结果序列化；
+“下一次是否放宽条件”属于未来 Agent 的显式决策，不能隐藏在 Service 或 SQLite Adapter 中。
 
 ## 英文译注 Context 组织
 

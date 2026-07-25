@@ -17,6 +17,8 @@ from superhp_agent.contracts.reading import (
 )
 from superhp_agent.contracts.recommendation import (
     BookCandidate,
+    BookCandidateMatch,
+    BookCandidateMatchResult,
     BookDifficulty,
     BookEntryKind,
     BookRecommendationHandoff,
@@ -39,6 +41,8 @@ __all__ = [
     "AnnotationResult",
     "BackendEvent",
     "BookCandidate",
+    "BookCandidateMatch",
+    "BookCandidateMatchResult",
     "BookDifficulty",
     "BookEntryKind",
     "BookRecommendationHandoff",

@@ -6,6 +6,8 @@ import pytest
 
 from superhp_agent.contracts import (
     BookCandidate,
+    BookCandidateMatch,
+    BookCandidateMatchResult,
     BookDifficulty,
     BookEntryKind,
     BookRecommendationHandoff,
@@ -86,6 +88,29 @@ def test_catalog_candidate_supports_exact_values_and_series_ranges():
     assert series.difficulty.exact_measure is None
 
 
+def test_candidate_match_result_exposes_strict_match_evidence():
+    query = BookSearchQuery(categories=("mystery",))
+    candidate = BookCandidate(
+        catalog_id="candidate",
+        title_en="Candidate",
+        difficulty=BookDifficulty(700, 700),
+        genres=("mystery",),
+    )
+    result = BookCandidateMatchResult(
+        query=query,
+        matches=(
+            BookCandidateMatch(
+                candidate=candidate,
+                matched_genres=("mystery",),
+                difficulty_distance=25,
+            ),
+        ),
+    )
+
+    assert result.found is True
+    assert result.matches[0].difficulty_distance == 25
+
+
 @pytest.mark.parametrize(
     ("factory", "message"),
     [
@@ -120,6 +145,17 @@ def test_catalog_candidate_supports_exact_values_and_series_ranges():
         (
             lambda: BookSearchQuery(limit=0),
             "limit",
+        ),
+        (
+            lambda: BookCandidateMatch(
+                candidate=BookCandidate(
+                    catalog_id="candidate",
+                    title_en="Candidate",
+                    difficulty=BookDifficulty(700, 700),
+                ),
+                difficulty_distance=-1,
+            ),
+            "difficulty_distance",
         ),
     ],
 )

@@ -193,6 +193,32 @@ class BookCandidate:
 
 
 @dataclass(frozen=True)
+class BookCandidateMatch:
+    """One candidate plus deterministic evidence used to rank it."""
+
+    candidate: BookCandidate
+    matched_genres: tuple[str, ...] = ()
+    difficulty_distance: int = 0
+
+    def __post_init__(self) -> None:
+        if self.difficulty_distance < 0:
+            raise ValueError("difficulty_distance must not be negative")
+
+
+@dataclass(frozen=True)
+class BookCandidateMatchResult:
+    """Strict local-catalog matches returned to an agent-facing tool."""
+
+    query: BookSearchQuery
+    matches: tuple[BookCandidateMatch, ...] = ()
+
+    @property
+    def found(self) -> bool:
+        """Whether the strict query produced at least one candidate."""
+        return bool(self.matches)
+
+
+@dataclass(frozen=True)
 class RecommendationOutcome:
     """Reading evidence collected after the user selected a recommendation."""
 

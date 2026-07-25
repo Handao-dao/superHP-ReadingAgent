@@ -27,6 +27,7 @@ LLM 负责译注和查词，不负责自主规划下一步，也不直接取得�
 - Dispatcher 决定“把 Action 交给哪个 Handler”。
 - Handler 决定“这项动作怎样完成”。
 - Service 定义模型业务任务。
+- Agent Tool 把模型可用的窄参数转换为应用调用，不承载业务规则。
 - Context Builder 只构造当前模型任务所需上下文。
 - Profile 定义文本场景策略。
 - Provider 封装模型 SDK、协议和重试。
@@ -112,7 +113,8 @@ Dispatcher 本身不应继续承载译注文件路径、Markdown 序列化、API
 
 ### Service
 
-当前对应 `services/annotator.py` 和 `services/lookup.py`。
+当前对应 `services/annotator.py`、`services/lookup.py` 和
+`services/recommendation.py`。
 Service 的局部职责、译注校验和降级流程见 [`services/README.md`](services/README.md)。
 
 Service 负责一个明确的后端业务能力，例如：
@@ -120,8 +122,26 @@ Service 负责一个明确的后端业务能力，例如：
 - 文本分块和并发译注。
 - 模型结果校验、原文降级、合并与解析。
 - 上下文查词和 JSON 修复。
+- 按明确条件过滤和排序推荐候选。
 
 Service 可以依赖 Profile、Context 和 Provider Port，但不应依赖 FastAPI、WebSocket、具体 SQLite 实现或页面流程。
+
+### Agent Tool
+
+当前由 `agent_tools/book_catalog.py` 建立第一条边界。Agent Tool 负责把模型容易调用的
+JSON 基础类型转换为 Contracts，并把 Service 结果序列化为结构化证据。它不直接访问 SQLite、
+不调用外部书目网站，也不自行放宽用户要求。
+
+```text
+Agent
+    → BookCatalogSearchTool（模型工具边界）
+    → RecommendationCandidateService（严格匹配与排序）
+    → BookDifficultyCatalog（内部 Port）
+    → SQLiteBookDifficultyCatalog（Storage Adapter）
+```
+
+`agent_tools/` 不绑定某个 Agent SDK；后续接入 function tool 或 Agents SDK 时，只在注册层适配
+`run()`，不把业务规则重新复制到模型工具函数中。
 
 ### Context Builder
 
@@ -258,6 +278,10 @@ HTTP Handler
 因此，`ports/` 可以类比为后端内部的“所需能力清单”，但不同于直接暴露给 Agent 的 ToolList；
 `storage/` 则只实现其中与持久化有关的一组能力。具体实现只应由 Composition Root 选择并注入，
 业务层不应直接构造 SQLite Repository。
+
+当前选书能力进一步证明了这个区别：Agent 看到的是
+`agent_tools.BookCatalogSearchTool`，而不是 `ports.BookDifficultyCatalog`；前者使用
+JSON 友好的窄输入，后者是 Service 与 Adapter 之间的内部能力接口。
 
 ### Storage / Repository / Artifact Store
 

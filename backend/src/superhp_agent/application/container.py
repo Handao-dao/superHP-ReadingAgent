@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from superhp_agent.agent_tools import BookCatalogSearchTool
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
 from superhp_agent.corpus import CorpusStore
@@ -27,6 +28,7 @@ from superhp_agent.runtime import (
 )
 from superhp_agent.services.annotator import LazyAnnotatorService
 from superhp_agent.services.lazy_lookup import LazyLookupService
+from superhp_agent.services.recommendation import RecommendationCandidateService
 from superhp_agent.storage import AppDB
 from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
@@ -51,6 +53,8 @@ class AppContainer:
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
+    recommendation_candidate_service: RecommendationCandidateService
+    book_catalog_search_tool: BookCatalogSearchTool
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -86,6 +90,10 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
     book_difficulty_catalog = db.book_difficulty_catalog
+    recommendation_candidate_service = RecommendationCandidateService(
+        book_difficulty_catalog
+    )
+    book_catalog_search_tool = BookCatalogSearchTool(recommendation_candidate_service)
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
 
     def provider_factory():
@@ -127,6 +135,8 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
         book_difficulty_catalog=book_difficulty_catalog,
+        recommendation_candidate_service=recommendation_candidate_service,
+        book_catalog_search_tool=book_catalog_search_tool,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

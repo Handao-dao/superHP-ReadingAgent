@@ -317,20 +317,36 @@ Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，�
 - 题材、篇幅和内容偏好；
 - 推荐后的真实阅读结果。
 
-### `BookDifficultyCatalog`
+### `BookCatalogSearchTool`
 
-按稳定 id 查询条目，或按难度区间、题材和单本/系列类型搜索候选：
+这是实际暴露给 Agent 的只读工具。它接收 JSON 友好的蓝思上下限、风格标签、条目类型、
+排除 id 和结果数量，返回候选及匹配证据：
 
 ```python
-class BookDifficultyCatalog(Protocol):
-    async def find_by_id(self, catalog_id: str) -> BookCandidate | None:
-        ...
-
-    async def search_books(self, query: BookSearchQuery) -> list[BookCandidate]:
-        ...
+await search_local_book_catalog(
+    lexile_min=500,
+    lexile_max=700,
+    genres=["mystery", "adventure"],
+    entry_kinds=["book", "series"],
+    excluded_ids=["current-book"],
+    limit=5,
+)
 ```
 
-第一版由 SQLite Repository 实现；正式接入外部数据时仍可在不修改 Agent 的情况下替换 Adapter。
+第一版只返回严格匹配，不会在无结果时静默扩大蓝思区间或删除题材条件。Agent 可以根据空结果、
+当前对话和剩余轮次，明确决定补问用户或再次调用工具；每次放宽都体现在新的工具参数中。
+
+内部调用链为：
+
+```text
+BookCatalogSearchTool
+    → RecommendationCandidateService
+    → BookDifficultyCatalog Port
+    → SQLiteBookDifficultyCatalog
+```
+
+`BookDifficultyCatalog` 仍是应用内部 Port，不直接作为 ToolList 暴露给 Agent。正式接入其他合法
+书目来源时可以替换 Adapter，而不修改 Agent 工具参数和候选匹配 Service。
 
 ### `BookSampleAnalyzer`（后续可选）
 
@@ -346,7 +362,7 @@ Agent 的推荐循环为：
     → 查询目录
     → 比较单本/系列类型、蓝思区间和内容偏好
     → 淘汰不合适候选
-    → 候选不足时调整条件或向用户补问
+    → 候选不足时显式调整下一次工具参数或向用户补问
     → 得到足够候选后排序并解释
 ```
 

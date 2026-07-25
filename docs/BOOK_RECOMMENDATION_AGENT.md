@@ -305,17 +305,11 @@ Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，�
 2. 后续正式接入：购买 Lexile Titles Database API 授权；
 3. Agent 始终依赖统一 Port，不感知具体数据来源。
 
-## 7. Agent 可使用的最小工具
+## 7. Agent 工具
 
-### `ReadingProfileReader`
-
-读取结构化阅读事实：
-
-- 当前和历史阅读图书；
-- 长期查词趋势；
-- 已接受或拒绝的推荐；
-- 题材、篇幅和内容偏好；
-- 推荐后的真实阅读结果。
+当前只实现一个 `ToolRegistry` 和一个本地目录工具。Registry 负责显式注册、向模型描述、
+按 Agent allowlist 授权和执行，不做插件扫描或通用工作流编排。工具已注册不代表任意 Agent
+都能调用；`BookRecommendationAgent` 当前只获得本地图书检索权限。
 
 ### `BookCatalogSearchTool`
 
@@ -348,9 +342,11 @@ BookCatalogSearchTool
 `BookDifficultyCatalog` 仍是应用内部 Port，不直接作为 ToolList 暴露给 Agent。正式接入其他合法
 书目来源时可以替换 Adapter，而不修改 Agent 工具参数和候选匹配 Service。
 
-### `BookSampleAnalyzer`（后续可选）
+### 后续可选工具
 
-在合法获得正文样本的前提下，补充分析句法、词汇和叙事特点。它只提供辅助证据，不能把自己的估算冒充认证 Lexile Measure。
+- `search_book_lexile`：通过合法授权的数据源查询蓝思值，并返回来源与可信度；
+- 受控文件编辑：只在明确授权、限定目录的 Agent 中启用，不默认授予选书 Agent；
+- `BookSampleAnalyzer`：在合法获得正文样本时补充文本特征，不能冒充认证 Lexile Measure。
 
 ## 8. Agent Loop 与停止条件
 
@@ -361,10 +357,12 @@ RecommendationAgentSession
     ↓
 Observe：请求、对话、已观察候选、剩余工具次数
     ↓
-RecommendationAgentModel.decide()
-    ├── ask_user       → 暂停为 awaiting_user
-    ├── search_catalog → 执行唯一允许的目录工具并继续 Observe
-    └── finalize       → 校验候选来源并完成
+RecommendationContextBuilder
+    ↓
+LLMProvider
+    ├── ask_user  → 暂停为 awaiting_user
+    ├── call_tool → ToolRegistry 执行已授权工具并继续 Observe
+    └── finalize  → 校验候选来源并完成
 ```
 
 Session 保存：
@@ -375,9 +373,9 @@ Session 保存：
 - 已使用的工具次数；
 - 工具曾返回的目录 id。
 
-循环本身不关心模型使用原生 tool calling 还是受校验 JSON。模型 Adapter 只需实现
-`RecommendationAgentModel` Port，每次返回一个规范化 Decision。这样 Provider 协议解析不会
-进入 Agent 状态机。
+当前使用受校验的 JSON 决策，不修改 Provider 协议，也不额外建立功能重复的 Model Port。
+ContextBuilder 负责固定提示词、工具说明和动态 Observation；Loop 负责解析 Decision、执行工具
+和更新状态；Provider 继续负责底层模型调用与 retry。
 
 当前守卫条件：
 
@@ -388,8 +386,9 @@ Session 保存：
 - 无效搜索、超额参数和未知候选作为 Tool Observation 返回，允许模型在剩余预算内修正；
 - 达到决策上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
 
-当前第一步只实现 Agent Loop、Contracts 和 Model Port，并使用脚本模型完成测试。真实模型
-Adapter、会话 Repository 和前端 Transport 尚未接入。
+当前实现已经把 Loop 直接连接到现有 Provider，并用假的 Provider 完成确定性测试。会话数据库、
+阅读监控、推荐反馈和前端自动衔接都不属于当前最小 Agent；用户收到 1～3 本候选后，自行进入
+已有阅读区和标注工作流。
 
 建议的停止条件：
 
@@ -452,6 +451,9 @@ Agent 每次只读取聚合后的事实和可修正判断，不依赖无限增�
 
 ## 10. 与现有后端分层的关系
 
+本节记录未来“阅读困难后主动换书”的可能连接点，不属于当前初次选书 Agent 的实现范围。
+当前 Agent 在返回 1～3 本候选后即结束，用户自行进入已有阅读区。
+
 ```text
 Reading Monitor / Adaptation Policy
     │ 产生长期困难状态
@@ -482,7 +484,8 @@ Flow Router
 - Repository 保存阅读事实、用户授权、冷却状态和推荐结果；
 - Composition Root 选择本地图书目录或未来的授权 API Adapter。
 
-该扩展会增加新的入口和事件消费者，届时可以重新评估 Application Bus 是否具有实际价值；不应仅为了这份规划提前实例化通用 Bus 或 Tool Registry。
+该扩展会增加新的入口和事件消费者，届时可以重新评估 Application Bus 是否具有实际价值。
+当前只保留显式注册和 allowlist 的轻量 ToolRegistry，不提前建设插件扫描或通用工具生态。
 
 ## 11. 渐进实现路线
 

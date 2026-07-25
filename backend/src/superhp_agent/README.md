@@ -129,7 +129,7 @@ Service 负责一个明确的后端业务能力，例如：
 
 Service 可以依赖 Profile、Context 和 Provider Port，但不应依赖 FastAPI、WebSocket、具体 SQLite 实现或页面流程。
 
-### Agent Tool
+### Agent Tool / ToolRegistry
 
 当前由 `agent_tools/book_catalog.py` 建立第一条边界。Agent Tool 负责把模型容易调用的
 JSON 基础类型转换为 Contracts，并把 Service 结果序列化为结构化证据。它不直接访问 SQLite、
@@ -137,25 +137,29 @@ JSON 基础类型转换为 Contracts，并把 Service 结果序列化为结构�
 
 ```text
 Agent
+    → ToolRegistry（注册、描述、allowlist 与执行）
     → BookCatalogSearchTool（模型工具边界）
     → RecommendationCandidateService（严格匹配与排序）
     → BookDifficultyCatalog（内部 Port）
     → SQLiteBookDifficultyCatalog（Storage Adapter）
 ```
 
-`agent_tools/` 不绑定某个 Agent SDK；后续接入 function tool 或 Agents SDK 时，只在注册层适配
-`run()`，不把业务规则重新复制到模型工具函数中。
+`ToolRegistry` 是显式、小型的能力表，不扫描插件，也不因为工具已注册就自动授权给所有 Agent。
+当前选书 Agent 只允许调用本地目录检索；以后可以按 Agent 单独加入合法的联网书目查询或受控
+文件编辑工具，不把业务规则重新复制到模型工具函数中。
 
 ### Book Recommendation Agent
 
 `agents/book_recommendation.py` 实现选书场景专用的 Observe → Decide → Act 循环。它不是控制
-阅读主流程的通用 Planner，也不维护任意工具注册表。
+阅读主流程的通用 Planner。
 
 ```text
 RecommendationAgentSession
     → RecommendationAgentObservation
-    → RecommendationAgentModel.decide()
-    → ask_user / search_catalog / finalize
+    → RecommendationContextBuilder
+    → LLMProvider
+    → ask_user / call_tool / finalize
+    → ToolRegistry（仅在 call_tool 时执行）
     → 确定性校验和状态更新
 ```
 
@@ -163,9 +167,9 @@ RecommendationAgentSession
 继续。模型只能推荐目录工具已经返回过的稳定 id。工具调用、单次候选数和每轮内部决策均有硬性
 预算，越界、无效条件和未知候选会作为 Tool Observation 返回给模型修正。
 
-`ports/recommendation_agent.py` 中的 `RecommendationAgentModel` 只负责返回一个规范化 Decision。
-当前 Agent Loop 不依赖原生 function calling，也不解析供应商响应；真实 Provider Adapter 将作为
-后续独立步骤实现。
+Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Model Port。专用
+`RecommendationContextBuilder` 组织固定规则、可用工具和当前 Observation；模型返回的 JSON
+在 Loop 边界被解析为规范化 Decision。Provider 仍统一负责 SDK、模型配置和 retry。
 
 ### Context Builder
 
@@ -492,8 +496,8 @@ Transport
 - 已将 `LazyLookupService` 移到独立 Service，并通过 provider factory 注入。
 - `main.py` 暂时保留 Container capability aliases，维持现有 routes 和测试兼容。
 
-当前不继续拆 HTTP routers，也不实例化 Bus、Planner 或通用 Tool Registry。只有真实入口、Action
-或事件消费者明显增长时，才重新评估这些边界。
+当前不继续拆 HTTP routers，也不实例化 Bus 或 Planner。选书 Agent 只使用显式注册和
+allowlist 的轻量 ToolRegistry；插件扫描、自动发现和通用工具生态仍等到真实需求增长后再评估。
 
 ## 每一步的完成标准
 

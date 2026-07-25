@@ -37,6 +37,9 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             container.book_catalog_search_tool.service
             is container.recommendation_candidate_service
         )
+        assert container.recommendation_tool_registry.describe(
+            ("search_local_book_catalog",)
+        )[0]["name"] == "search_local_book_catalog"
         assert (
             container.state_reader.progress_repository
             is container.reading_progress_repository

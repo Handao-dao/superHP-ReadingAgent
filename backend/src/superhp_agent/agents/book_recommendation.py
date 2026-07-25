@@ -1,19 +1,26 @@
-"""Bounded Agent loop for initial and difficulty-triggered book selection.
+"""Bounded Agent loop for conversational English-book recommendation.
 
-The loop lets a model choose whether to ask the reader, search the local
-catalog, or finalize recommendations. Deterministic guards own tool budgets,
-candidate provenance, state transitions, and failure handling.
+The loop directly composes the existing ContextBuilder pattern, LLM Provider,
+and an explicitly authorized ToolRegistry. It owns only the repeated
+observe-decide-act control flow and its small safety budget.
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import replace
-from typing import Protocol
 from uuid import uuid4
 
+from superhp_agent.agent_tools import (
+    AgentToolNotAllowedError,
+    ToolRegistry,
+    UnknownAgentToolError,
+)
+from superhp_agent.agents.recommendation_context import (
+    RecommendationContextBuilder,
+)
 from superhp_agent.contracts import (
-    BookSearchQuery,
     RecommendationAgentDecision,
     RecommendationAgentDecisionKind,
     RecommendationAgentMessage,
@@ -24,51 +31,49 @@ from superhp_agent.contracts import (
     RecommendationAgentSession,
     RecommendationRequest,
 )
-from superhp_agent.ports import RecommendationAgentModel
-
-
-class BookCatalogTool(Protocol):
-    """The one concrete capability available to this Agent."""
-
-    async def run(
-        self,
-        *,
-        lexile_min: int | None = None,
-        lexile_max: int | None = None,
-        genres=(),
-        entry_kinds=(),
-        excluded_ids=(),
-        limit: int = 5,
-    ) -> dict[str, object]: ...
+from superhp_agent.ports import LLMProvider
 
 
 class RecommendationAgentStateError(RuntimeError):
     """Raised when a caller attempts an invalid session transition."""
 
 
+class RecommendationDecisionParseError(ValueError):
+    """Raised when model text cannot be normalized into one valid decision."""
+
+
+class RecommendationModelCallError(RuntimeError):
+    """Raised when the Provider cannot return usable model text."""
+
+
 class BookRecommendationAgent:
-    """Run bounded observe-decide-act cycles over one catalog tool."""
+    """Run a bounded observe-decide-act loop over explicitly allowed tools."""
 
     def __init__(
         self,
-        model: RecommendationAgentModel,
-        catalog_tool: BookCatalogTool,
+        provider: LLMProvider,
+        context_builder: RecommendationContextBuilder,
+        tool_registry: ToolRegistry,
         *,
+        allowed_tools: tuple[str, ...] = ("search_local_book_catalog",),
         max_tool_calls: int = 3,
         max_decisions_per_run: int = 5,
-        max_candidates_per_search: int = 10,
     ):
+        if not allowed_tools:
+            raise ValueError("allowed_tools must not be empty")
         if max_tool_calls < 1:
             raise ValueError("max_tool_calls must be at least 1")
         if max_decisions_per_run < 1:
             raise ValueError("max_decisions_per_run must be at least 1")
-        if max_candidates_per_search < 1:
-            raise ValueError("max_candidates_per_search must be at least 1")
-        self.model = model
-        self.catalog_tool = catalog_tool
+        # Resolve descriptions now so missing tool registrations fail during
+        # composition rather than halfway through a user conversation.
+        self.tool_descriptions = tool_registry.describe(allowed_tools)
+        self.provider = provider
+        self.context_builder = context_builder
+        self.tool_registry = tool_registry
+        self.allowed_tools = allowed_tools
         self.max_tool_calls = max_tool_calls
         self.max_decisions_per_run = max_decisions_per_run
-        self.max_candidates_per_search = max_candidates_per_search
 
     def start(
         self,
@@ -103,18 +108,18 @@ class BookRecommendationAgent:
                 ),
             )
             try:
-                decision = await self.model.decide(observation)
+                decision = await self._decide(observation)
+            except RecommendationDecisionParseError:
+                return self._failed_reply(
+                    session,
+                    message="选书助手返回了无法识别的决策，请稍后重试。",
+                    error_code="invalid_model_decision",
+                )
             except Exception:
                 return self._failed_reply(
                     session,
                     message="选书助手暂时无法继续思考，请稍后重试。",
                     error_code="model_error",
-                )
-            if not isinstance(decision, RecommendationAgentDecision):
-                return self._failed_reply(
-                    session,
-                    message="选书助手返回了无法识别的决策，请稍后重试。",
-                    error_code="invalid_model_decision",
                 )
 
             if decision.kind is RecommendationAgentDecisionKind.ASK_USER:
@@ -129,8 +134,8 @@ class BookRecommendationAgent:
                     message=decision.message,
                 )
 
-            if decision.kind is RecommendationAgentDecisionKind.SEARCH_CATALOG:
-                session = await self._search(session, decision.search_query)
+            if decision.kind is RecommendationAgentDecisionKind.CALL_TOOL:
+                session = await self._call_tool(session, decision)
                 continue
 
             unknown_ids = tuple(
@@ -167,6 +172,19 @@ class BookRecommendationAgent:
             error_code="decision_limit_reached",
         )
 
+    async def _decide(
+        self,
+        observation: RecommendationAgentObservation,
+    ) -> RecommendationAgentDecision:
+        messages = self.context_builder.build(
+            observation,
+            self.tool_descriptions,
+        )
+        response = await self.provider.chat_with_retry(messages)
+        if response.is_error or not response.content:
+            raise RecommendationModelCallError("provider returned no usable content")
+        return _parse_decision(response.content)
+
     def _accept_user_message(
         self,
         session: RecommendationAgentSession,
@@ -195,56 +213,73 @@ class BookRecommendationAgent:
             phase=RecommendationAgentPhase.COLLECTING_PREFERENCES,
         )
 
-    async def _search(
+    async def _call_tool(
         self,
         session: RecommendationAgentSession,
-        query: BookSearchQuery | None,
+        decision: RecommendationAgentDecision,
     ) -> RecommendationAgentSession:
-        if query is None:
-            return self._append_tool_observation(
-                session,
-                {"ok": False, "error": "missing_search_query"},
-            )
         if session.tool_call_count >= self.max_tool_calls:
-            return self._append_tool_observation(
-                session,
-                {"ok": False, "error": "tool_call_limit_reached"},
-            )
-
-        next_count = session.tool_call_count + 1
-        session = replace(
-            session,
-            phase=RecommendationAgentPhase.SEARCHING,
-            tool_call_count=next_count,
-        )
-        if query.limit > self.max_candidates_per_search:
             return self._append_tool_observation(
                 session,
                 {
                     "ok": False,
-                    "error": "candidate_limit_too_large",
-                    "maximum": self.max_candidates_per_search,
+                    "tool": decision.tool_name,
+                    "arguments": decision.tool_arguments,
+                    "error": "tool_call_limit_reached",
                 },
             )
 
+        session = replace(
+            session,
+            phase=RecommendationAgentPhase.SEARCHING,
+            tool_call_count=session.tool_call_count + 1,
+        )
         try:
-            result = await self.catalog_tool.run(
-                lexile_min=query.lexile_min,
-                lexile_max=query.lexile_max,
-                genres=query.categories,
-                entry_kinds=tuple(kind.value for kind in query.entry_kinds),
-                excluded_ids=query.excluded_ids,
-                limit=query.limit,
+            result = await self.tool_registry.execute(
+                decision.tool_name,
+                decision.tool_arguments,
+                allowed_tools=self.allowed_tools,
             )
-        except ValueError as exc:
+        except UnknownAgentToolError:
             return self._append_tool_observation(
                 session,
-                {"ok": False, "error": "invalid_search", "detail": str(exc)},
+                {
+                    "ok": False,
+                    "tool": decision.tool_name,
+                    "arguments": decision.tool_arguments,
+                    "error": "unknown_tool",
+                },
+            )
+        except AgentToolNotAllowedError:
+            return self._append_tool_observation(
+                session,
+                {
+                    "ok": False,
+                    "tool": decision.tool_name,
+                    "arguments": decision.tool_arguments,
+                    "error": "tool_not_allowed",
+                },
+            )
+        except (TypeError, ValueError) as exc:
+            return self._append_tool_observation(
+                session,
+                {
+                    "ok": False,
+                    "tool": decision.tool_name,
+                    "arguments": decision.tool_arguments,
+                    "error": "invalid_tool_arguments",
+                    "detail": str(exc),
+                },
             )
         except Exception:
             return self._append_tool_observation(
                 session,
-                {"ok": False, "error": "catalog_unavailable"},
+                {
+                    "ok": False,
+                    "tool": decision.tool_name,
+                    "arguments": decision.tool_arguments,
+                    "error": "tool_unavailable",
+                },
             )
 
         observed_ids = _merge_unique(
@@ -254,7 +289,12 @@ class BookRecommendationAgent:
         session = replace(session, observed_catalog_ids=observed_ids)
         return self._append_tool_observation(
             session,
-            {"ok": True, "result": result},
+            {
+                "ok": True,
+                "tool": decision.tool_name,
+                "arguments": decision.tool_arguments,
+                "result": result,
+            },
         )
 
     @staticmethod
@@ -304,6 +344,55 @@ class BookRecommendationAgent:
             message=message,
             error_code=error_code,
         )
+
+
+def _parse_decision(content: str) -> RecommendationAgentDecision:
+    try:
+        payload = _extract_json_object(content)
+        action = RecommendationAgentDecisionKind(payload.get("action"))
+        if action is RecommendationAgentDecisionKind.ASK_USER:
+            return RecommendationAgentDecision(
+                kind=action,
+                message=_required_string(payload, "message"),
+            )
+        if action is RecommendationAgentDecisionKind.CALL_TOOL:
+            arguments = payload.get("arguments", {})
+            if not isinstance(arguments, dict):
+                raise ValueError("arguments must be an object")
+            return RecommendationAgentDecision(
+                kind=action,
+                tool_name=_required_string(payload, "tool_name"),
+                tool_arguments=arguments,
+            )
+        catalog_ids = payload.get("recommended_catalog_ids")
+        if not isinstance(catalog_ids, list) or not all(
+            isinstance(value, str) for value in catalog_ids
+        ):
+            raise ValueError("recommended_catalog_ids must be a string array")
+        return RecommendationAgentDecision(
+            kind=action,
+            message=_required_string(payload, "message"),
+            recommended_catalog_ids=tuple(catalog_ids),
+        )
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise RecommendationDecisionParseError(str(exc)) from exc
+
+
+def _extract_json_object(content: str) -> Mapping[str, object]:
+    start = content.find("{")
+    if start < 0:
+        raise ValueError("model response does not contain a JSON object")
+    payload, _ = json.JSONDecoder().raw_decode(content[start:])
+    if not isinstance(payload, dict):
+        raise ValueError("model response JSON must be an object")
+    return payload
+
+
+def _required_string(payload: Mapping[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{key} must be a non-empty string")
+    return value
 
 
 def _catalog_ids_from_result(result: dict[str, object]) -> tuple[str, ...]:

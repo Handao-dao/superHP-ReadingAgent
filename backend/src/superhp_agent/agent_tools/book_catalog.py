@@ -26,6 +26,24 @@ class BookCatalogSearchTool:
         "Search locally available English books by Lexile range and style tags. "
         "Returns strict matches only and never widens the requested criteria."
     )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "lexile_min": {"type": ["integer", "null"]},
+            "lexile_max": {"type": ["integer", "null"]},
+            "genres": {"type": "array", "items": {"type": "string"}},
+            "entry_kinds": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["book", "series", "collection", "unknown"],
+                },
+            },
+            "excluded_ids": {"type": "array", "items": {"type": "string"}},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+        },
+        "additionalProperties": False,
+    }
 
     def __init__(self, service: RecommendationCandidateService):
         self.service = service
@@ -41,6 +59,8 @@ class BookCatalogSearchTool:
         limit: int = 5,
     ) -> dict[str, object]:
         """Search with model-friendly values and return a JSON-ready result."""
+        if limit > 10:
+            raise ValueError("limit must not exceed 10 candidates")
         normalized_genres = _normalize_values(genres)
         if lexile_min is None and lexile_max is None and not normalized_genres:
             raise ValueError("at least one Lexile bound or genre is required")

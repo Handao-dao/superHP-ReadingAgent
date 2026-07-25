@@ -60,7 +60,7 @@ class RecommendationAgentDecisionKind(StrEnum):
     """The only actions the recommendation model may ask the loop to take."""
 
     ASK_USER = "ask_user"
-    SEARCH_CATALOG = "search_catalog"
+    CALL_TOOL = "call_tool"
     FINALIZE = "finalize"
 
 
@@ -297,26 +297,31 @@ class RecommendationAgentDecision:
 
     kind: RecommendationAgentDecisionKind
     message: str = ""
-    search_query: BookSearchQuery | None = None
+    tool_name: str = ""
+    tool_arguments: dict[str, object] = field(default_factory=dict)
     recommended_catalog_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.kind is RecommendationAgentDecisionKind.ASK_USER:
             if not self.message.strip():
                 raise ValueError("ask_user decision requires a message")
-            if self.search_query is not None or self.recommended_catalog_ids:
+            if (
+                self.tool_name
+                or self.tool_arguments
+                or self.recommended_catalog_ids
+            ):
                 raise ValueError("ask_user decision contains unrelated action data")
             return
-        if self.kind is RecommendationAgentDecisionKind.SEARCH_CATALOG:
-            if self.search_query is None:
-                raise ValueError("search_catalog decision requires a search_query")
+        if self.kind is RecommendationAgentDecisionKind.CALL_TOOL:
+            if not self.tool_name.strip():
+                raise ValueError("call_tool decision requires a tool_name")
+            if self.message.strip():
+                raise ValueError("call_tool decision contains a message")
             if self.recommended_catalog_ids:
-                raise ValueError(
-                    "search_catalog decision contains recommendation ids"
-                )
+                raise ValueError("call_tool decision contains recommendation ids")
             return
-        if self.search_query is not None:
-            raise ValueError("finalize decision contains a search_query")
+        if self.tool_name or self.tool_arguments:
+            raise ValueError("finalize decision contains tool call data")
         if not self.message.strip():
             raise ValueError("finalize decision requires a message")
         if not 1 <= len(self.recommended_catalog_ids) <= 3:

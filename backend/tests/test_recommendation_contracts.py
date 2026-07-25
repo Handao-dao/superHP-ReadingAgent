@@ -233,7 +233,7 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
             lambda: RecommendationAgentDecision(
                 kind=RecommendationAgentDecisionKind.ASK_USER,
                 message="请选择题材",
-                search_query=BookSearchQuery(categories=("mystery",)),
+                tool_name="search_local_book_catalog",
             ),
             "unrelated action data",
         ),

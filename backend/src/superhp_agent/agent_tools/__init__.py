@@ -5,5 +5,17 @@ They do not replace Ports, contain SQL, or own recommendation policy.
 """
 
 from superhp_agent.agent_tools.book_catalog import BookCatalogSearchTool
+from superhp_agent.agent_tools.registry import (
+    AgentTool,
+    AgentToolNotAllowedError,
+    ToolRegistry,
+    UnknownAgentToolError,
+)
 
-__all__ = ["BookCatalogSearchTool"]
+__all__ = [
+    "AgentTool",
+    "AgentToolNotAllowedError",
+    "BookCatalogSearchTool",
+    "ToolRegistry",
+    "UnknownAgentToolError",
+]

@@ -117,3 +117,11 @@ async def test_tool_rejects_unknown_entry_kind_before_querying_catalog():
         await tool.run(genres=["mystery"], entry_kinds=["volume"])
 
     assert catalog.query is None
+
+
+@pytest.mark.asyncio
+async def test_tool_limits_one_agent_call_to_ten_candidates():
+    tool = BookCatalogSearchTool(RecommendationCandidateService(ToolCatalog()))
+
+    with pytest.raises(ValueError, match="must not exceed 10"):
+        await tool.run(genres=["mystery"], limit=11)

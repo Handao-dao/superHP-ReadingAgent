@@ -307,9 +307,9 @@ Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，�
 
 ## 7. Agent 工具
 
-当前只实现一个 `ToolRegistry` 和一个本地目录工具。Registry 负责显式注册、向模型描述、
+当前实现一个 `ToolRegistry`、一个本地目录搜索工具和一个无副作用的终止工具。Registry 负责显式注册、向模型描述、
 按 Agent allowlist 授权和执行，不做插件扫描或通用工作流编排。工具已注册不代表任意 Agent
-都能调用；`BookRecommendationAgent` 当前只获得本地图书检索权限。
+都能调用；`BookRecommendationAgent` 当前只获得本地图书检索和无副作用的推荐提交权限。
 
 ### `BookCatalogSearchTool`
 
@@ -392,6 +392,24 @@ Tool Call 与对应的 Tool Result 通过 `tool_call_id` 配对，因此下一�
 ContextBuilder 负责固定提示词和运行时事实；Loop 负责消息追加、工具执行和状态更新；Provider
 负责底层模型调用、原生 Tool Call 解析与 retry。
 
+Application 层使用 `RecommendationAgentRunner` 管理持久化边界：
+
+```text
+start(request)
+    → 创建 Session
+    → 保存初始状态
+    → 运行 Loop
+    → 保存暂停或终止状态
+
+resume(session_id, user_message)
+    → RecommendationSessionRepository.load
+    → 运行同一个 Loop
+    → RecommendationSessionRepository.save
+```
+
+SQLite 的 `recommendation_sessions` 表以 `session_id` 为主键，保存可查询的 `phase` 和带版本号的
+完整 Session JSON。它不把消息拆成事件日志，也不引入分支、压缩或长期自由记忆。
+
 当前守卫条件：
 
 - 每个 Session 最多执行 3 次工具调用；
@@ -403,8 +421,8 @@ ContextBuilder 负责固定提示词和运行时事实；Loop 负责消息追加
 - 达到轮次上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
 
 当前实现已经把 Loop 通过原生 Tool Call 连接到现有 OpenAI-compatible Provider，并用假的
-Provider 完成确定性测试。会话数据库、阅读监控、推荐反馈和前端自动衔接都不属于当前最小
-Agent；用户收到 1～3 本候选后，自行进入已有阅读区和标注工作流。
+Provider 完成确定性测试；会话可通过统一 SQLite Repository 跨请求恢复。阅读监控、推荐反馈
+和前端自动衔接仍不属于当前最小 Agent；用户收到 1～3 本候选后，自行进入已有阅读区和标注工作流。
 
 建议的停止条件：
 

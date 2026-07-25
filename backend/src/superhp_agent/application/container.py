@@ -14,7 +14,10 @@ from superhp_agent.agent_tools import (
     PresentBookRecommendationsTool,
     ToolRegistry,
 )
-from superhp_agent.agents import RecommendationContextBuilder
+from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
+from superhp_agent.application.recommendation_runner import (
+    RecommendationAgentRunner,
+)
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
 from superhp_agent.corpus import CorpusStore
@@ -39,6 +42,7 @@ from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
     SQLiteReadingProgressRepository,
+    SQLiteRecommendationSessionRepository,
     SQLiteVocabularyRepository,
 )
 
@@ -58,11 +62,13 @@ class AppContainer:
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
+    recommendation_session_repository: SQLiteRecommendationSessionRepository
     recommendation_candidate_service: RecommendationCandidateService
     book_catalog_search_tool: BookCatalogSearchTool
     present_book_recommendations_tool: PresentBookRecommendationsTool
     recommendation_tool_registry: ToolRegistry
     recommendation_context_builder: RecommendationContextBuilder
+    recommendation_agent_runner: RecommendationAgentRunner
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -98,6 +104,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
     book_difficulty_catalog = db.book_difficulty_catalog
+    recommendation_session_repository = db.recommendation_session_repository
     recommendation_candidate_service = RecommendationCandidateService(
         book_difficulty_catalog
     )
@@ -115,6 +122,14 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     def provider_factory():
         return make_provider(resolved_settings)
 
+    recommendation_agent_runner = RecommendationAgentRunner(
+        lambda: BookRecommendationAgent(
+            provider_factory(),
+            recommendation_context_builder,
+            recommendation_tool_registry,
+        ),
+        recommendation_session_repository,
+    )
     annotator_service = LazyAnnotatorService(
         provider_factory,
         profile=default_profile,
@@ -151,11 +166,13 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
         book_difficulty_catalog=book_difficulty_catalog,
+        recommendation_session_repository=recommendation_session_repository,
         recommendation_candidate_service=recommendation_candidate_service,
         book_catalog_search_tool=book_catalog_search_tool,
         present_book_recommendations_tool=present_book_recommendations_tool,
         recommendation_tool_registry=recommendation_tool_registry,
         recommendation_context_builder=recommendation_context_builder,
+        recommendation_agent_runner=recommendation_agent_runner,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

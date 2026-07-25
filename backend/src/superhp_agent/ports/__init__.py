@@ -7,7 +7,11 @@ from superhp_agent.ports.events import (
     emit_backend_event,
 )
 from superhp_agent.ports.llm import LLMProvider
-from superhp_agent.ports.repositories import BookmarkRepository, VocabularyRepository
+from superhp_agent.ports.repositories import (
+    BookmarkRepository,
+    RecommendationSessionRepository,
+    VocabularyRepository,
+)
 
 __all__ = [
     "BookDifficultyCatalog",
@@ -15,6 +19,7 @@ __all__ = [
     "EventLogger",
     "EventSink",
     "LLMProvider",
+    "RecommendationSessionRepository",
     "VocabularyRepository",
     "emit_backend_event",
 ]

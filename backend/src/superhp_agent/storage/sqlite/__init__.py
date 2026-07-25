@@ -7,6 +7,9 @@ from superhp_agent.storage.sqlite.reading_progress import (
 from superhp_agent.storage.sqlite.recommendation_catalog import (
     SQLiteBookDifficultyCatalog,
 )
+from superhp_agent.storage.sqlite.recommendation_sessions import (
+    SQLiteRecommendationSessionRepository,
+)
 from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import SQLiteVocabularyRepository
 
@@ -14,6 +17,7 @@ __all__ = [
     "SQLiteBookmarkRepository",
     "SQLiteReadingProgressRepository",
     "SQLiteBookDifficultyCatalog",
+    "SQLiteRecommendationSessionRepository",
     "SQLiteUnitRepository",
     "SQLiteVocabularyRepository",
 ]

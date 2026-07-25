@@ -31,6 +31,7 @@ JSONL      保存追加式诊断和审计事件
 | 书签 | SQLite `bookmarks` | `BookmarkRepository` | 否，属于用户数据 |
 | 当前章节和阅读进度 | 目标为 SQLite | `ReadingProgressRepository` | 否，属于用户状态 |
 | 选书候选与蓝思区间 | SQLite `recommendation_catalog` | `BookDifficultyCatalog` | 是，可从导入数据重建 |
+| 选书 Agent 对话 | SQLite `recommendation_sessions` | `RecommendationSessionRepository` | 否，属于进行中的用户对话 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -123,6 +124,27 @@ UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 稳定 id、重叠蓝思区间和题材查询，Agent 不直接访问 SQLite 或生成任意 SQL。目录数据可以由
 一次性导入器重建，因此不属于不可丢失的用户状态。
 
+## 选书对话：RecommendationSessionRepository
+
+推荐 Loop 可以在自然语言提问后暂停，因此 SQLite 需要保存下一次调用所需的完整 Session：
+
+```text
+session_id
+phase
+request
+真实 user / assistant / tool 消息
+tool_call_count
+observed_catalog_ids
+```
+
+`recommendation_sessions` 使用 `session_id` 作为主键，把 `phase` 保留为可查询列，并将完整
+Session 作为带版本号的 JSON 聚合保存。JSON 中保留 Assistant Tool Call、原始参数和配对的
+`tool_call_id`，恢复后可以直接重建 Provider 上下文，不使用容易丢失信息的对话摘要。
+
+Application 层的 `RecommendationAgentRunner` 负责“加载 → 运行 Loop → 保存”；Agent 不依赖
+Repository，SQLite Adapter 也不理解模型决策。当前不建设事件溯源、逐消息表、分支会话或
+compaction，等真实会话规模产生压力后再评估。
+
 ## 书签：BookmarkRepository
 
 书签属于不可重建的用户数据，以 SQLite 为唯一来源。`body_kind` 继续区分原文和译注。
@@ -189,6 +211,9 @@ ReadingProgressRepository
 
 BookDifficultyCatalog
     查询本地选书候选和蓝思区间
+
+RecommendationSessionRepository
+    保存和恢复完整选书 Agent 会话
 
 EventLogStore
     追加诊断事件

@@ -2,6 +2,14 @@
 
 from superhp_agent.ports.repositories.bookmarks import BookmarkRepository
 from superhp_agent.ports.repositories.reading_progress import ReadingProgressRepository
+from superhp_agent.ports.repositories.recommendation_sessions import (
+    RecommendationSessionRepository,
+)
 from superhp_agent.ports.repositories.vocabulary import VocabularyRepository
 
-__all__ = ["BookmarkRepository", "ReadingProgressRepository", "VocabularyRepository"]
+__all__ = [
+    "BookmarkRepository",
+    "ReadingProgressRepository",
+    "RecommendationSessionRepository",
+    "VocabularyRepository",
+]

@@ -113,6 +113,23 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             CHECK (lexile_min <= lexile_max)
         );
 
+        CREATE TABLE IF NOT EXISTS recommendation_sessions (
+            session_id TEXT PRIMARY KEY,
+            phase TEXT NOT NULL
+                CHECK (
+                    phase IN (
+                        'collecting_preferences',
+                        'searching',
+                        'awaiting_user',
+                        'completed',
+                        'failed'
+                    )
+                ),
+            session_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
@@ -129,6 +146,8 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON recommendation_catalog(lexile_min, lexile_max);
         CREATE INDEX IF NOT EXISTS idx_recommendation_catalog_kind
             ON recommendation_catalog(entry_kind);
+        CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_phase_updated
+            ON recommendation_sessions(phase, updated_at);
         """
     )
     connection.commit()

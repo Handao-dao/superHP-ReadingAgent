@@ -1,7 +1,7 @@
 """Composition facade for the application's SQLite repositories.
 
-AppDB composes the shared connection, migration, unit, vocabulary, and bookmark
-repository implementations. It contains no repository SQL.
+AppDB composes the shared connection, migrations, and concrete repository
+implementations. It contains no repository SQL.
 """
 
 from __future__ import annotations
@@ -20,6 +20,9 @@ from superhp_agent.storage.sqlite.reading_progress import (
 )
 from superhp_agent.storage.sqlite.recommendation_catalog import (
     SQLiteBookDifficultyCatalog,
+)
+from superhp_agent.storage.sqlite.recommendation_sessions import (
+    SQLiteRecommendationSessionRepository,
 )
 from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import (
@@ -48,6 +51,9 @@ class AppDB:
         )
         self.reading_progress_repository = SQLiteReadingProgressRepository(self.database)
         self.book_difficulty_catalog = SQLiteBookDifficultyCatalog(self.database)
+        self.recommendation_session_repository = (
+            SQLiteRecommendationSessionRepository(self.database)
+        )
 
     def close(self) -> None:
         self.database.close()

@@ -24,7 +24,6 @@ backend/data/
 
 # Source material / local-only imports
 *.epub
-corpus/book_difficulty_catalog.yaml
 
 # OS / editors
 .DS_Store

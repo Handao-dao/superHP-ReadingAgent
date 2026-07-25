@@ -30,6 +30,7 @@ JSONL      保存追加式诊断和审计事件
 | 单词在章节中的出现 | SQLite `unit_vocabulary` | `VocabularyRepository` | 可从有效标注副本重新索引 |
 | 书签 | SQLite `bookmarks` | `BookmarkRepository` | 否，属于用户数据 |
 | 当前章节和阅读进度 | 目标为 SQLite | `ReadingProgressRepository` | 否，属于用户状态 |
+| 选书候选与蓝思区间 | SQLite `recommendation_catalog` | `BookDifficultyCatalog` | 是，可从导入数据重建 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -104,6 +105,24 @@ UNIQUE(book_id, lexeme_id)            -- book_vocabulary
 当前数据均为测试数据，本次重构直接重置旧 SQLite 与译注产物，不保留旧 `vocabulary` schema
 的兼容迁移。
 
+## 选书目录：BookDifficultyCatalog
+
+推荐候选统一保存在 SQLite `recommendation_catalog`，不再额外维护 YAML 难度目录。第一版面向
+设计验证，默认数据库中的候选均可直接阅读，只保存：
+
+```text
+中英文书名
+作者（可空）
+单本 / 系列 / 合集类型
+蓝思最小值与最大值
+内容题材列表
+原始导入文本
+```
+
+精确蓝思值使用相同的最小值和最大值；系列范围分别保存上下限。`BookDifficultyCatalog` 负责按
+稳定 id、重叠蓝思区间和题材查询，Agent 不直接访问 SQLite 或生成任意 SQL。目录数据可以由
+一次性导入器重建，因此不属于不可丢失的用户状态。
+
 ## 书签：BookmarkRepository
 
 书签属于不可重建的用户数据，以 SQLite 为唯一来源。`body_kind` 继续区分原文和译注。
@@ -167,6 +186,9 @@ BookmarkRepository
 
 ReadingProgressRepository
     查询和更新关系型阅读状态
+
+BookDifficultyCatalog
+    查询本地选书候选和蓝思区间
 
 EventLogStore
     追加诊断事件

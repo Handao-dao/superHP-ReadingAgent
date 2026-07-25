@@ -29,6 +29,9 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.db.reading_progress_repository
         )
         assert (
+            container.book_difficulty_catalog is container.db.book_difficulty_catalog
+        )
+        assert (
             container.state_reader.progress_repository
             is container.reading_progress_repository
         )

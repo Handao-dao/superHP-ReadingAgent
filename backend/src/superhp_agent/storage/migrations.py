@@ -99,6 +99,20 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             created_at TEXT DEFAULT (datetime('now','localtime'))
         );
 
+        CREATE TABLE IF NOT EXISTS recommendation_catalog (
+            id TEXT PRIMARY KEY,
+            title_en TEXT NOT NULL,
+            title_zh TEXT NOT NULL DEFAULT '',
+            author TEXT NOT NULL DEFAULT '',
+            entry_kind TEXT NOT NULL DEFAULT 'unknown'
+                CHECK (entry_kind IN ('book', 'series', 'collection', 'unknown')),
+            lexile_min INTEGER NOT NULL,
+            lexile_max INTEGER NOT NULL,
+            genres_json TEXT NOT NULL DEFAULT '[]',
+            raw_text TEXT NOT NULL DEFAULT '',
+            CHECK (lexile_min <= lexile_max)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
@@ -111,6 +125,10 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_unit_vocab_unit ON unit_vocabulary(unit_id);
         CREATE INDEX IF NOT EXISTS idx_unit_vocab_chapter ON unit_vocabulary(chapter_id);
         CREATE INDEX IF NOT EXISTS idx_bookmarks_unit ON bookmarks(unit_id);
+        CREATE INDEX IF NOT EXISTS idx_recommendation_catalog_lexile
+            ON recommendation_catalog(lexile_min, lexile_max);
+        CREATE INDEX IF NOT EXISTS idx_recommendation_catalog_kind
+            ON recommendation_catalog(entry_kind);
         """
     )
     connection.commit()

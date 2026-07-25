@@ -9,15 +9,14 @@ from typing import Protocol, runtime_checkable
 
 from superhp_agent.contracts.recommendation import (
     BookCandidate,
-    BookDifficulty,
     BookSearchQuery,
 )
 
 
 @runtime_checkable
 class BookDifficultyCatalog(Protocol):
-    """Find edition difficulty and search candidate books."""
+    """Find one catalog entry and search candidate books."""
 
-    async def find_by_isbn(self, isbn: str) -> BookDifficulty | None: ...
+    async def find_by_id(self, catalog_id: str) -> BookCandidate | None: ...
 
     async def search_books(self, query: BookSearchQuery) -> list[BookCandidate]: ...

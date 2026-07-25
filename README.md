@@ -115,6 +115,7 @@ Profile 是迁移扩展点，不是要求所有文本场景对称实现的统一
 | 系列与图书顺序 | `corpus/catalog.yaml` | 可选地为特色系列绑定 selection policy |
 | 译注正文 | `backend/data/annotated_corpus/` | 每个阅读单元一份 Artifact，带原文 hash 与校验状态 |
 | 生词、掌握状态、书签、阅读进度 | `backend/data/superhp.sqlite3` | 书中词表按图书隔离；同语言掌握状态共享 |
+| 选书候选与蓝思区间 | `backend/data/superhp.sqlite3` | 原型目录，统一保存单本和系列范围 |
 | 行为与诊断事件 | `backend/data/memory/events.jsonl` | 只追加日志，不作为业务状态真相来源 |
 
 这种拆分让原始语料可以版本管理，让生成产物可以重建，让查询型状态适合 SQLite，也让诊断日志

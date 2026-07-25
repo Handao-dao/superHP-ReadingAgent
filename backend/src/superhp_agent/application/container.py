@@ -29,6 +29,7 @@ from superhp_agent.services.annotator import LazyAnnotatorService
 from superhp_agent.services.lazy_lookup import LazyLookupService
 from superhp_agent.storage import AppDB
 from superhp_agent.storage.sqlite import (
+    SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
     SQLiteReadingProgressRepository,
     SQLiteVocabularyRepository,
@@ -49,6 +50,7 @@ class AppContainer:
     vocabulary_repository: SQLiteVocabularyRepository
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
+    book_difficulty_catalog: SQLiteBookDifficultyCatalog
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -83,6 +85,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     vocabulary_repository = db.vocabulary_repository
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
+    book_difficulty_catalog = db.book_difficulty_catalog
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
 
     def provider_factory():
@@ -123,6 +126,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         vocabulary_repository=vocabulary_repository,
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
+        book_difficulty_catalog=book_difficulty_catalog,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

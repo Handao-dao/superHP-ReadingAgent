@@ -7,6 +7,7 @@ import pytest
 from superhp_agent.contracts import (
     BookCandidate,
     BookDifficulty,
+    BookEntryKind,
     BookRecommendationHandoff,
     BookSearchQuery,
     BookSnapshot,
@@ -24,8 +25,7 @@ def test_difficulty_alert_request_carries_structured_reading_evidence():
     current_book = BookSnapshot(
         book_id="book-1",
         title="A Mystery",
-        isbn="9780000000001",
-        lexile_measure=900,
+        difficulty=BookDifficulty(900, 900),
         genres=("mystery",),
         progress=0.25,
     )
@@ -63,26 +63,27 @@ def test_difficulty_alert_request_carries_structured_reading_evidence():
     assert request.preferred_genres == ("mystery",)
 
 
-def test_catalog_candidate_keeps_measure_source_and_edition_identity():
-    difficulty = BookDifficulty(
-        isbn="9780000000002",
-        lexile_measure=760,
-        source="manual_test_catalog",
-        is_certified=True,
-    )
+def test_catalog_candidate_supports_exact_values_and_series_ranges():
+    exact_difficulty = BookDifficulty(760, 760)
     candidate = BookCandidate(
         catalog_id="candidate-1",
-        title="An Easier Mystery",
+        title_en="An Easier Mystery",
+        title_zh="更简单的谜案",
         author="A. Writer",
-        isbn=difficulty.isbn,
-        difficulty=difficulty,
+        difficulty=exact_difficulty,
+        entry_kind=BookEntryKind.BOOK,
         genres=("mystery",),
-        available_locally=True,
+    )
+    series = BookCandidate(
+        catalog_id="series-1",
+        title_en="Mystery Series",
+        difficulty=BookDifficulty(500, 700),
+        entry_kind=BookEntryKind.SERIES,
     )
 
-    assert candidate.difficulty == difficulty
-    assert candidate.difficulty.is_certified is True
-    assert candidate.available_locally is True
+    assert candidate.difficulty.exact_measure == 760
+    assert candidate.title_zh == "更简单的谜案"
+    assert series.difficulty.exact_measure is None
 
 
 @pytest.mark.parametrize(
@@ -90,6 +91,10 @@ def test_catalog_candidate_keeps_measure_source_and_edition_identity():
     [
         (
             lambda: OperationalReadingBand(900, 700),
+            "minimum_lexile",
+        ),
+        (
+            lambda: BookDifficulty(900, 700),
             "minimum_lexile",
         ),
         (

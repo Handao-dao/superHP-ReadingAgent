@@ -3,7 +3,10 @@
 from superhp_agent.storage import AppDB
 from superhp_agent.storage.database import SQLiteDatabase
 from superhp_agent.storage.migrations import initialize_schema
-from superhp_agent.storage.sqlite import SQLiteUnitRepository
+from superhp_agent.storage.sqlite import (
+    SQLiteBookDifficultyCatalog,
+    SQLiteUnitRepository,
+)
 
 
 def test_sqlite_database_configures_connection(tmp_path):
@@ -20,6 +23,7 @@ def test_app_db_composes_unit_repository(tmp_path):
     db = AppDB(tmp_path / "app.db")
     try:
         assert isinstance(db.unit_repository, SQLiteUnitRepository)
+        assert isinstance(db.book_difficulty_catalog, SQLiteBookDifficultyCatalog)
     finally:
         db.close()
 
@@ -44,6 +48,7 @@ def test_initialize_schema_creates_current_repository_tables(tmp_path):
             "bookmarks",
             "reading_progress",
             "unit_progress",
+            "recommendation_catalog",
         } <= tables
         assert "vocabulary" not in tables
 

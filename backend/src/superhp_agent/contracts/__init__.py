@@ -18,6 +18,7 @@ from superhp_agent.contracts.reading import (
 from superhp_agent.contracts.recommendation import (
     BookCandidate,
     BookDifficulty,
+    BookEntryKind,
     BookRecommendationHandoff,
     BookSearchQuery,
     BookSnapshot,
@@ -39,6 +40,7 @@ __all__ = [
     "BackendEvent",
     "BookCandidate",
     "BookDifficulty",
+    "BookEntryKind",
     "BookRecommendationHandoff",
     "BookSearchQuery",
     "BookSnapshot",

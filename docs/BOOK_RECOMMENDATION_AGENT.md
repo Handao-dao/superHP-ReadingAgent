@@ -215,8 +215,8 @@ BookRecommendationHandoff(
         "book_id": "...",
         "title": "...",
         "author": "...",
-        "isbn": "...",
-        "lexile_measure": 900,
+        "lexile_min": 900,
+        "lexile_max": 900,
         "genres": ["mystery", "detective"],
         "progress": 0.23,
     },
@@ -257,9 +257,11 @@ Agent 首先用简短、非评判性的语言汇报依据，然后默认保留�
 
 内部模型建议命名为 `OperationalReadingBand`，并保存置信度和证据来源。
 
-### 6.2 版本必须通过 ISBN 区分
+### 6.2 第一版默认目录图书均可阅读
 
-同名图书的不同版本可能具有不同内容和 Lexile Measure。图书难度记录应优先绑定 ISBN，并保存来源与验证时间；只有 ISBN 缺失时，才使用书名、作者和出版信息做未确认匹配。
+当前目标是验证选书 Agent 的对话、检索和反馈闭环，不建设正式图书发行目录。因此第一版只保存
+中英文书名、蓝思上下限、单本/系列类型和内容题材，默认数据库中的候选都可直接进入阅读流程。
+ISBN、版本认证、来源状态和可用性检查暂不进入核心模型；真正接入外部书目或授权数据时再扩展。
 
 ### 6.3 不自动抓取 Find a Book 网页
 
@@ -292,31 +294,18 @@ Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，�
 
 ### `BookDifficultyCatalog`
 
-按 ISBN 查询认证难度，或按难度区间和题材搜索候选：
+按稳定 id 查询条目，或按难度区间、题材和单本/系列类型搜索候选：
 
 ```python
 class BookDifficultyCatalog(Protocol):
-    async def find_by_isbn(self, isbn: str) -> BookDifficulty | None:
+    async def find_by_id(self, catalog_id: str) -> BookCandidate | None:
         ...
 
-    async def search_books(
-        self,
-        *,
-        lexile_min: int,
-        lexile_max: int,
-        categories: list[str],
-        fiction: bool = True,
-        series_only: bool | None = None,
-        limit: int = 20,
-    ) -> list[BookCandidate]:
+    async def search_books(self, query: BookSearchQuery) -> list[BookCandidate]:
         ...
 ```
 
-早期实现可以读取用户维护的本地目录；正式实现再适配授权 API。
-
-### `LocalLibraryCatalog`
-
-检查候选书是否已经存在于本地语料、属于哪个系列、是不是系列第一卷，以及能否直接开始阅读。
+第一版由 SQLite Repository 实现；正式接入外部数据时仍可在不修改 Agent 的情况下替换 Adapter。
 
 ### `BookSampleAnalyzer`（后续可选）
 
@@ -330,7 +319,7 @@ Agent 的推荐循环为：
 读取推荐请求和阅读状态
     → 形成初始难度与题材条件
     → 查询目录
-    → 验证 ISBN、系列卷次、内容偏好和本地可用性
+    → 比较单本/系列类型、蓝思区间和内容偏好
     → 淘汰不合适候选
     → 候选不足时调整条件或向用户补问
     → 得到足够候选后排序并解释
@@ -338,10 +327,10 @@ Agent 的推荐循环为：
 
 建议的停止条件：
 
-- 找到 2～3 本具有可追溯数据来源的候选；
+- 找到 2～3 本来自本地数据库的候选；
 - 候选难度和题材满足当前目标，或已明确标记偏离项；
-- 候选不是用户已经拒绝的同一版本；
-- 系列作品标明卷次；
+- 候选不是用户已经拒绝的同一目录条目；
+- 系列范围不冒充具体单本的精确蓝思值；
 - Agent 可以解释每本书为什么被推荐；
 - 如果数据不足，明确返回缺失信息，而不是凭模型记忆编造书目或 Lexile 数值。
 
@@ -431,11 +420,12 @@ Flow Router
 
 ## 11. 渐进实现路线
 
-### 阶段 1：稳定 Contracts 与本地目录
+### 阶段 1：稳定 Contracts 与 SQLite 目录
 
 - 定义 Recommendation Request、Handoff、Candidate、Outcome；
-- 定义 `BookDifficultyCatalog` 和 `LocalLibraryCatalog` Ports；
-- 使用手工维护的少量本地图书元数据进行测试；
+- 定义 `BookDifficultyCatalog` Port；
+- 用 SQLite 统一保存中英文书名、蓝思区间、条目类型和内容题材；
+- 导入用户提供的本地图书数据进行测试；
 - 暂不接入外部 API，也不修改当前阅读流程。
 
 ### 阶段 2：初次选书 Agent

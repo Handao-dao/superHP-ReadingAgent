@@ -8,7 +8,6 @@ run an agent, persist a reader profile, or authorize a book switch.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import StrEnum
 
 
@@ -38,6 +37,15 @@ class RecommendationOutcomeKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+class BookEntryKind(StrEnum):
+    """Whether a catalog row represents one book or a broader work group."""
+
+    BOOK = "book"
+    SERIES = "series"
+    COLLECTION = "collection"
+    UNKNOWN = "unknown"
+
+
 @dataclass(frozen=True)
 class OperationalReadingBand:
     """Internal text-difficulty range used for recommendation.
@@ -61,14 +69,21 @@ class OperationalReadingBand:
 
 @dataclass(frozen=True)
 class BookDifficulty:
-    """One sourced text difficulty, edition-specific when an ISBN is known."""
+    """One exact Lexile value or an inclusive range."""
 
-    isbn: str | None
-    lexile_measure: int
-    source: str
-    lexile_code: str | None = None
-    is_certified: bool = False
-    verified_at: datetime | None = None
+    minimum_lexile: int
+    maximum_lexile: int
+
+    def __post_init__(self) -> None:
+        if self.minimum_lexile > self.maximum_lexile:
+            raise ValueError("minimum_lexile must not exceed maximum_lexile")
+
+    @property
+    def exact_measure(self) -> int | None:
+        """Return the measure only when the range represents one exact value."""
+        if self.minimum_lexile == self.maximum_lexile:
+            return self.minimum_lexile
+        return None
 
 
 @dataclass(frozen=True)
@@ -77,9 +92,9 @@ class BookSnapshot:
 
     book_id: str
     title: str
+    title_zh: str = ""
     author: str = ""
-    isbn: str | None = None
-    lexile_measure: int | None = None
+    difficulty: BookDifficulty | None = None
     genres: tuple[str, ...] = ()
     progress: float | None = None
 
@@ -148,9 +163,8 @@ class BookSearchQuery:
     lexile_min: int | None = None
     lexile_max: int | None = None
     categories: tuple[str, ...] = ()
-    fiction: bool | None = True
-    series_only: bool | None = None
-    excluded_isbns: tuple[str, ...] = ()
+    entry_kinds: tuple[BookEntryKind, ...] = ()
+    excluded_ids: tuple[str, ...] = ()
     limit: int = 20
 
     def __post_init__(self) -> None:
@@ -169,19 +183,13 @@ class BookCandidate:
     """One normalized candidate returned by any book catalog adapter."""
 
     catalog_id: str
-    title: str
+    title_en: str
+    difficulty: BookDifficulty
+    title_zh: str = ""
     author: str = ""
-    isbn: str | None = None
-    difficulty: BookDifficulty | None = None
+    entry_kind: BookEntryKind = BookEntryKind.UNKNOWN
     genres: tuple[str, ...] = ()
-    series_title: str | None = None
-    series_index: int | None = None
-    page_count: int | None = None
-    summary: str = ""
-    source_url: str | None = None
-    fiction: bool = True
-    local_book_id: str | None = None
-    available_locally: bool = False
+    raw_text: str = ""
 
 
 @dataclass(frozen=True)

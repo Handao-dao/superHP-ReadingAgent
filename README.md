@@ -245,6 +245,7 @@ npm run build
 
 - [后端整体实现](backend/BACKEND_OVERVIEW.md)
 - [后端解耦分层与依赖规则](backend/src/superhp_agent/README.md)
+- [选书 Agent 与阅读难度闭环（规划）](docs/BOOK_RECOMMENDATION_AGENT.md)
 - [Annotator Service、校验与降级](backend/src/superhp_agent/services/README.md)
 - [Ports、Storage 与数据真相来源](backend/src/superhp_agent/storage/README.md)
 - [前端集成协议](frontend/FRONTEND_INTEGRATION.md)

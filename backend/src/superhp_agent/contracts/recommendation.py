@@ -61,9 +61,9 @@ class OperationalReadingBand:
 
 @dataclass(frozen=True)
 class BookDifficulty:
-    """One edition-specific text difficulty obtained from a known source."""
+    """One sourced text difficulty, edition-specific when an ISBN is known."""
 
-    isbn: str
+    isbn: str | None
     lexile_measure: int
     source: str
     lexile_code: str | None = None
@@ -179,6 +179,8 @@ class BookCandidate:
     page_count: int | None = None
     summary: str = ""
     source_url: str | None = None
+    fiction: bool = True
+    local_book_id: str | None = None
     available_locally: bool = False
 
 

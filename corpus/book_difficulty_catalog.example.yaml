@@ -1,0 +1,28 @@
+# Copy this template to book_difficulty_catalog.yaml for local use.
+# The populated file is intentionally gitignored: do not automatically copy,
+# scrape, commit, or redistribute Lexile data without the required permission.
+version: 1
+books: []
+
+# Example:
+#   - id: example-book
+#     local_book_id: example-book       # Omit when the book is not in corpus/.
+#     title: Example Book
+#     author: Example Author
+#     isbn: "9780000000000"             # ISBN-10 and ISBN-13 are accepted.
+#     fiction: true
+#     genres:
+#       - mystery
+#       - detective
+#     series:
+#       title: Example Series
+#       index: 1
+#     page_count: 240
+#     summary: Short, spoiler-safe catalog summary.
+#     source_url: https://example.com/verified-record
+#     lexile:
+#       measure: 760
+#       code: null
+#       certified: true                 # Only for an official, edition-matched value.
+#       source: user_supplied
+#       verified_at: 2026-07-25

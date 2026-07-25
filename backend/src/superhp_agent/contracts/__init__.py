@@ -15,6 +15,20 @@ from superhp_agent.contracts.reading import (
     ReadingUnitDetail,
     ReadingUnitMeta,
 )
+from superhp_agent.contracts.recommendation import (
+    BookCandidate,
+    BookDifficulty,
+    BookRecommendationHandoff,
+    BookSearchQuery,
+    BookSnapshot,
+    OperationalReadingBand,
+    ReadingDifficultyEvidence,
+    ReadingPreference,
+    RecommendationOrigin,
+    RecommendationOutcome,
+    RecommendationOutcomeKind,
+    RecommendationRequest,
+)
 
 __all__ = [
     "AgentAction",
@@ -23,9 +37,21 @@ __all__ = [
     "AnnotationItem",
     "AnnotationResult",
     "BackendEvent",
+    "BookCandidate",
+    "BookDifficulty",
+    "BookRecommendationHandoff",
+    "BookSearchQuery",
+    "BookSnapshot",
     "LLMResponse",
+    "OperationalReadingBand",
+    "ReadingDifficultyEvidence",
+    "ReadingPreference",
     "ReadingUnitDetail",
     "ReadingUnitMeta",
     "ReadingProgressSnapshot",
+    "RecommendationOrigin",
+    "RecommendationOutcome",
+    "RecommendationOutcomeKind",
+    "RecommendationRequest",
     "ServiceIssue",
 ]

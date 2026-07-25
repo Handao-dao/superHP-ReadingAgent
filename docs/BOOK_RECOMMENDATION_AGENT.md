@@ -263,6 +263,31 @@ Agent 首先用简短、非评判性的语言汇报依据，然后默认保留�
 中英文书名、蓝思上下限、单本/系列类型和内容题材，默认数据库中的候选都可直接进入阅读流程。
 ISBN、版本认证、来源状态和可用性检查暂不进入核心模型；真正接入外部书目或授权数据时再扩展。
 
+目录集中保存在 `backend/data/superhp.sqlite3` 的 `recommendation_catalog` 表中，不再维护一份
+并行的 YAML 或 JSON 运行时目录。`genres_json` 使用稳定、可检索的英文标签，例如
+`mystery`、`fantasy`、`adventure`、`school_life`、`historical_fiction`、`nonfiction`
+和 `science`；每个条目最多保留三个主要标签，避免外部书目中细碎、重复的 Subject 直接扩大
+Agent 的搜索空间。
+
+`backend/scripts/import_recommendation_catalog.py` 是显式的数据维护工具，不进入应用运行主链路：
+
+1. 读取 UTF-8 的“蓝思值 + 英文书名 + 中文书名”文本；
+2. 保留原始行，修正常见拼写和作者/奖项混入标题的问题；
+3. 可用公开书目搜索补充作者与主题，联网结果不覆盖用户提供的蓝思值；
+4. 将外部 Subject 映射为项目自己的有限风格标签；
+5. 低置信度或未匹配条目使用人工覆盖或保守标签，并写入本地审计报告；
+6. 最后在单个事务中替换可重置的本地推荐目录。
+
+批量补全优先使用 Open Library Search API，并携带标识 User-Agent、限制并发；Google Books
+保留为可选来源。两者只作为题材和作者的辅助元数据来源，不作为 Lexile 数据来源，也不在
+用户阅读或 Agent 对话期间实时调用。
+
+公开元数据接口说明：
+
+- [Open Library Search API](https://openlibrary.org/dev/docs/api/search)
+- [Open Library API 使用说明](https://openlibrary.org/developers/api)
+- [Google Books Volumes API](https://developers.google.com/books/docs/v1/reference/volumes/list)
+
 ### 6.3 不自动抓取 Find a Book 网页
 
 Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，但 MetaMetrics 当前使用条款禁止机器人或其他自动化方式访问站点，因此不能把自动点击或抓取网页直接包装成 Agent 工具。

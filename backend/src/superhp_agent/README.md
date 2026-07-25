@@ -157,19 +157,23 @@ Agent
 RecommendationAgentSession
     → RecommendationAgentObservation
     → RecommendationContextBuilder
-    → LLMProvider
-    → ask_user / call_tool / finalize
-    → ToolRegistry（仅在 call_tool 时执行）
-    → 确定性校验和状态更新
+    → LLMProvider（system prompt + messages + tools）
+    ├── 普通 Assistant 文本 → 暂停并等待用户
+    └── 原生 Tool Call
+            → ToolRegistry
+            → Tool Result 写回消息历史
+            → 下一轮 Provider
 ```
 
 循环可以暂停为 `awaiting_user`，把完整 Session 交还调用方；收到下一条用户消息后从相同状态
-继续。模型只能推荐目录工具已经返回过的稳定 id。工具调用、单次候选数和每轮内部决策均有硬性
-预算，越界、无效条件和未知候选会作为 Tool Observation 返回给模型修正。
+继续。`search_local_book_catalog` 负责检索，`present_book_recommendations` 负责提交 1～3 本
+最终候选并终止 Loop。模型只能提交目录工具已经返回过的稳定 id。工具调用、单次候选数和每次
+运行的模型轮数均有硬性预算，越界、无效参数和未知候选会作为 Tool Result 返回模型修正。
 
-Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Model Port。专用
-`RecommendationContextBuilder` 组织固定规则、可用工具和当前 Observation；模型返回的 JSON
-在 Loop 边界被解析为规范化 Decision。Provider 仍统一负责 SDK、模型配置和 retry。
+Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Model Port，也不再要求模型把普通
+对话包装成自定义 Decision JSON。专用 `RecommendationContextBuilder` 组织固定规则、运行时事实
+和真实 user / assistant / tool 消息；Provider 统一负责 SDK、模型配置、原生 Tool Call 解析和
+retry。
 
 ### Context Builder
 

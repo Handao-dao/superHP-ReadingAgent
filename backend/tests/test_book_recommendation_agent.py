@@ -1,10 +1,13 @@
-"""Tests for the bounded book-recommendation Agent loop."""
+"""Tests for the native-message book-recommendation Agent loop."""
 
 import json
 
 import pytest
 
-from superhp_agent.agent_tools import ToolRegistry
+from superhp_agent.agent_tools import (
+    PresentBookRecommendationsTool,
+    ToolRegistry,
+)
 from superhp_agent.agents import (
     BookRecommendationAgent,
     RecommendationContextBuilder,
@@ -14,6 +17,7 @@ from superhp_agent.agents.book_recommendation import (
 )
 from superhp_agent.contracts import (
     LLMResponse,
+    LLMToolCall,
     RecommendationAgentMessageRole,
     RecommendationAgentPhase,
     RecommendationOrigin,
@@ -21,67 +25,84 @@ from superhp_agent.contracts import (
 )
 
 
-def ask(message: str) -> str:
-    return json.dumps(
-        {"action": "ask_user", "message": message},
-        ensure_ascii=False,
+def call(
+    name: str,
+    arguments: dict[str, object],
+    *,
+    call_id: str,
+    arguments_error: str = "",
+) -> LLMResponse:
+    return LLMResponse(
+        content=None,
+        finish_reason="tool_calls",
+        tool_calls=(
+            LLMToolCall(
+                id=call_id,
+                name=name,
+                arguments=arguments,
+                arguments_error=arguments_error,
+            ),
+        ),
     )
 
 
 def search(
     *,
-    lexile_min: int = 400,
-    lexile_max: int = 700,
+    call_id: str = "search-1",
     genres: tuple[str, ...] = ("mystery",),
-    limit: int = 5,
-    tool_name: str = "search_local_book_catalog",
-) -> str:
-    return json.dumps(
+) -> LLMResponse:
+    return call(
+        "search_local_book_catalog",
         {
-            "action": "call_tool",
-            "tool_name": tool_name,
-            "arguments": {
-                "lexile_min": lexile_min,
-                "lexile_max": lexile_max,
-                "genres": list(genres),
-                "limit": limit,
-            },
-        }
+            "lexile_min": 400,
+            "lexile_max": 700,
+            "genres": list(genres),
+            "limit": 5,
+        },
+        call_id=call_id,
     )
 
 
-def finalize(*catalog_ids: str, message: str = "推荐完成。") -> str:
-    return json.dumps(
+def present(
+    *catalog_ids: str,
+    call_id: str = "present-1",
+    message: str = "推荐完成。",
+) -> LLMResponse:
+    return call(
+        "present_book_recommendations",
         {
-            "action": "finalize",
+            "catalog_ids": list(catalog_ids),
             "message": message,
-            "recommended_catalog_ids": list(catalog_ids),
         },
-        ensure_ascii=False,
+        call_id=call_id,
     )
 
 
 class ScriptedProvider:
-    """Return pre-written model text while recording constructed messages."""
+    """Return pre-written responses and record messages plus tool schemas."""
 
     def __init__(self, *responses):
         self.responses = list(responses)
         self.calls = []
 
-    async def chat_with_retry(self, messages, *, on_retry_wait=None):
-        self.calls.append(messages)
+    async def chat_with_retry(
+        self,
+        messages,
+        *,
+        tools=None,
+        on_retry_wait=None,
+    ):
+        self.calls.append({"messages": messages, "tools": tools})
         if not self.responses:
             raise AssertionError("scripted provider ran out of responses")
         response = self.responses.pop(0)
         if isinstance(response, Exception):
             raise response
-        if isinstance(response, LLMResponse):
-            return response
-        return LLMResponse(content=response)
+        return response
 
 
 class RecordingCatalogTool:
-    """Return JSON-ready candidates and record the exact Registry call."""
+    """Return JSON-ready candidates and record exact Registry calls."""
 
     name = "search_local_book_catalog"
     description = "Search the local book catalog."
@@ -95,9 +116,7 @@ class RecordingCatalogTool:
         self.calls.append(arguments)
         return {
             "tool": self.name,
-            "match_mode": "strict",
             "found": bool(self.candidate_ids),
-            "result_count": len(self.candidate_ids),
             "candidates": [
                 {
                     "catalog_id": catalog_id,
@@ -112,15 +131,14 @@ def onboarding_request() -> RecommendationRequest:
     return RecommendationRequest(origin=RecommendationOrigin.ONBOARDING)
 
 
-def make_agent(
-    provider,
-    tool=None,
-    *,
-    extra_tools=(),
-    **kwargs,
-):
-    tool = tool or RecordingCatalogTool()
-    registry = ToolRegistry((tool, *extra_tools))
+def make_agent(provider, catalog_tool=None, **kwargs):
+    catalog_tool = catalog_tool or RecordingCatalogTool()
+    registry = ToolRegistry(
+        (
+            catalog_tool,
+            PresentBookRecommendationsTool(),
+        )
+    )
     return (
         BookRecommendationAgent(
             provider,
@@ -128,30 +146,49 @@ def make_agent(
             registry,
             **kwargs,
         ),
-        tool,
+        catalog_tool,
     )
 
 
 @pytest.mark.asyncio
-async def test_agent_pauses_for_user_then_searches_and_finalizes():
+async def test_plain_assistant_text_pauses_for_user():
+    provider = ScriptedProvider(LLMResponse(content="你喜欢哪类故事？"))
+    agent, _ = make_agent(provider)
+
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
+
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert reply.message == "你喜欢哪类故事？"
+    assert reply.session.conversation[0].role is (
+        RecommendationAgentMessageRole.ASSISTANT
+    )
+    tool_names = [
+        tool["function"]["name"]
+        for tool in provider.calls[0]["tools"]
+    ]
+    assert tool_names == [
+        "search_local_book_catalog",
+        "present_book_recommendations",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_agent_searches_then_finishes_with_verified_candidates():
     provider = ScriptedProvider(
-        ask("你喜欢哪类故事？"),
+        LLMResponse(content="你喜欢哪类故事？"),
         search(),
-        finalize(
+        present(
             "cam-jansen",
             "nate-the-great",
             message="这两套侦探故事适合作为起点。",
         ),
     )
     agent, tool = make_agent(provider)
-    session = agent.start(onboarding_request(), session_id="session-1")
-
-    question = await agent.run(session)
-
-    assert question.session.phase is RecommendationAgentPhase.AWAITING_USER
-    assert question.message == "你喜欢哪类故事？"
-    assert question.session.tool_call_count == 0
-    assert '"remaining_tool_calls": 3' in provider.calls[0][-1]["content"]
+    question = await agent.run(
+        agent.start(onboarding_request(), session_id="session-1")
+    )
 
     answer = await agent.run(
         question.session,
@@ -159,6 +196,7 @@ async def test_agent_pauses_for_user_then_searches_and_finalizes():
     )
 
     assert answer.session.phase is RecommendationAgentPhase.COMPLETED
+    assert answer.message == "这两套侦探故事适合作为起点。"
     assert answer.recommended_catalog_ids == (
         "cam-jansen",
         "nate-the-great",
@@ -167,67 +205,135 @@ async def test_agent_pauses_for_user_then_searches_and_finalizes():
         "cam-jansen",
         "nate-the-great",
     )
-    assert answer.session.tool_call_count == 1
+    assert answer.session.tool_call_count == 2
     assert [message.role for message in answer.session.conversation] == [
         RecommendationAgentMessageRole.ASSISTANT,
         RecommendationAgentMessageRole.USER,
+        RecommendationAgentMessageRole.ASSISTANT,
         RecommendationAgentMessageRole.TOOL,
         RecommendationAgentMessageRole.ASSISTANT,
+        RecommendationAgentMessageRole.TOOL,
     ]
-    assert tool.calls == [
-        {
-            "lexile_min": 400,
-            "lexile_max": 700,
-            "genres": ["mystery"],
-            "limit": 5,
-        }
-    ]
+    assert answer.session.conversation[2].tool_calls[0].id == "search-1"
+    assert answer.session.conversation[3].tool_call_id == "search-1"
+    assert tool.calls[0]["genres"] == ["mystery"]
+
+    final_provider_messages = provider.calls[-1]["messages"]
+    assert final_provider_messages[-2]["role"] == "assistant"
+    assert final_provider_messages[-2]["tool_calls"][0]["id"] == "search-1"
+    assert final_provider_messages[-1] == {
+        "role": "tool",
+        "tool_call_id": "search-1",
+        "content": answer.session.conversation[3].content,
+    }
 
 
 @pytest.mark.asyncio
-async def test_agent_accepts_json_inside_a_markdown_fence():
+async def test_unobserved_terminal_ids_return_tool_error_and_model_recovers():
     provider = ScriptedProvider(
-        "```json\n" + ask("你想读什么类型？") + "\n```"
-    )
-    agent, _ = make_agent(provider)
-
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
-
-    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
-    assert reply.message == "你想读什么类型？"
-
-
-@pytest.mark.asyncio
-async def test_agent_rejects_unobserved_final_ids_and_recovers():
-    provider = ScriptedProvider(
-        finalize("invented-book"),
-        search(),
-        finalize("cam-jansen"),
+        present("invented-book", call_id="present-bad"),
+        search(call_id="search-2"),
+        present("cam-jansen", call_id="present-good"),
     )
     agent, _ = make_agent(
         provider,
         RecordingCatalogTool(("cam-jansen",)),
     )
 
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
 
     assert reply.session.phase is RecommendationAgentPhase.COMPLETED
     assert reply.recommended_catalog_ids == ("cam-jansen",)
-    first_tool_message = reply.session.conversation[0]
-    assert first_tool_message.role is RecommendationAgentMessageRole.TOOL
-    assert json.loads(first_tool_message.content) == {
-        "catalog_ids": ["invented-book"],
-        "error": "unobserved_recommendation_ids",
-        "ok": False,
-    }
+    first_tool_result = reply.session.conversation[1]
+    assert first_tool_result.is_error is True
+    assert json.loads(first_tool_result.content)["error"] == (
+        "unobserved_recommendation_ids"
+    )
 
 
 @pytest.mark.asyncio
-async def test_agent_enforces_tool_budget_without_executing_extra_call():
+async def test_search_and_present_in_same_assistant_turn_cannot_use_new_ids():
+    response = LLMResponse(
+        content=None,
+        finish_reason="tool_calls",
+        tool_calls=(
+            search().tool_calls[0],
+            present("cam-jansen").tool_calls[0],
+        ),
+    )
+    provider = ScriptedProvider(
+        response,
+        present("cam-jansen", call_id="present-after-observation"),
+    )
+    agent, _ = make_agent(
+        provider,
+        RecordingCatalogTool(("cam-jansen",)),
+    )
+
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
+
+    assert reply.session.phase is RecommendationAgentPhase.COMPLETED
+    terminal_error = reply.session.conversation[2]
+    assert terminal_error.is_error is True
+    assert json.loads(terminal_error.content)["error"] == (
+        "unobserved_recommendation_ids"
+    )
+
+
+@pytest.mark.asyncio
+async def test_tool_argument_parse_error_is_returned_to_model():
+    invalid_call = call(
+        "search_local_book_catalog",
+        {},
+        call_id="invalid-args",
+        arguments_error="invalid tool arguments JSON",
+    )
+    provider = ScriptedProvider(
+        invalid_call,
+        LLMResponse(content="请告诉我你喜欢的题材。"),
+    )
+    agent, tool = make_agent(provider)
+
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
+
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert tool.calls == []
+    payload = json.loads(reply.session.conversation[1].content)
+    assert payload["error"] == "invalid_tool_arguments"
+
+
+@pytest.mark.asyncio
+async def test_truncated_tool_call_is_not_executed():
+    truncated = search()
+    truncated.finish_reason = "length"
+    provider = ScriptedProvider(
+        truncated,
+        LLMResponse(content="请再告诉我一个偏好。"),
+    )
+    agent, tool = make_agent(provider)
+
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
+
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert tool.calls == []
+    payload = json.loads(reply.session.conversation[1].content)
+    assert payload["error"] == "truncated_tool_call"
+
+
+@pytest.mark.asyncio
+async def test_agent_enforces_tool_budget_and_returns_error_to_model():
     provider = ScriptedProvider(
         search(),
-        search(genres=("adventure",)),
-        ask("当前严格条件没有合适结果，要放宽难度吗？"),
+        search(call_id="search-over-budget", genres=("adventure",)),
+        LLMResponse(content="当前结果不足，要放宽难度吗？"),
     )
     agent, tool = make_agent(
         provider,
@@ -235,85 +341,61 @@ async def test_agent_enforces_tool_budget_without_executing_extra_call():
         max_tool_calls=1,
     )
 
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
-
-    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
-    assert reply.session.tool_call_count == 1
-    assert len(tool.calls) == 1
-    assert '"remaining_tool_calls": 0' in provider.calls[-1][-1]["content"]
-    last_tool_payload = json.loads(reply.session.conversation[-2].content)
-    assert last_tool_payload["error"] == "tool_call_limit_reached"
-
-
-@pytest.mark.asyncio
-async def test_agent_returns_invalid_tool_arguments_to_model():
-    provider = ScriptedProvider(
-        search(limit=20),
-        ask("我会缩小候选范围，你更偏好单本还是系列？"),
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
     )
-    tool = RecordingCatalogTool()
-
-    async def reject_large_limit(**arguments):
-        raise ValueError("limit must not exceed 10 candidates")
-
-    tool.run = reject_large_limit
-    agent, _ = make_agent(provider, tool)
-
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
 
     assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
-    payload = json.loads(reply.session.conversation[0].content)
-    assert payload["error"] == "invalid_tool_arguments"
-    assert payload["tool"] == "search_local_book_catalog"
+    assert len(tool.calls) == 1
+    assert reply.session.tool_call_count == 1
+    budget_error = json.loads(reply.session.conversation[-2].content)
+    assert budget_error["error"] == "tool_call_limit_reached"
 
 
 @pytest.mark.asyncio
-async def test_agent_stops_after_decision_limit():
-    provider = ScriptedProvider(search(), search(genres=("adventure",)))
+async def test_agent_stops_after_model_turn_limit():
+    provider = ScriptedProvider(search(), search(call_id="search-2"))
     agent, _ = make_agent(
         provider,
         RecordingCatalogTool(()),
-        max_decisions_per_run=2,
+        max_model_turns_per_run=2,
     )
 
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
 
     assert reply.session.phase is RecommendationAgentPhase.FAILED
-    assert reply.error_code == "decision_limit_reached"
-    assert reply.session.tool_call_count == 2
+    assert reply.error_code == "turn_limit_reached"
 
 
 @pytest.mark.asyncio
-async def test_agent_normalizes_provider_failure_into_failed_reply():
+async def test_agent_normalizes_provider_and_empty_response_failures():
     provider = ScriptedProvider(
         LLMResponse(content="provider unavailable", finish_reason="error")
     )
     agent, _ = make_agent(provider)
 
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
+    failed = await agent.run(
+        agent.start(onboarding_request(), session_id="provider-error")
+    )
 
-    assert reply.session.phase is RecommendationAgentPhase.FAILED
-    assert reply.error_code == "model_error"
-    assert "稍后重试" in reply.message
+    assert failed.error_code == "model_error"
 
-
-@pytest.mark.asyncio
-async def test_agent_rejects_invalid_model_decision():
-    provider = ScriptedProvider('{"action":"search_catalog"}')
-    agent, _ = make_agent(provider)
-
-    reply = await agent.run(agent.start(onboarding_request(), session_id="session"))
-
-    assert reply.session.phase is RecommendationAgentPhase.FAILED
-    assert reply.error_code == "invalid_model_decision"
+    empty_provider = ScriptedProvider(LLMResponse(content=None))
+    empty_agent, _ = make_agent(empty_provider)
+    empty = await empty_agent.run(
+        empty_agent.start(onboarding_request(), session_id="empty")
+    )
+    assert empty.error_code == "invalid_model_response"
 
 
 @pytest.mark.asyncio
-async def test_awaiting_user_session_requires_message_and_completed_cannot_resume():
+async def test_awaiting_user_requires_message_and_completed_cannot_resume():
     provider = ScriptedProvider(
-        ask("请补充偏好。"),
+        LLMResponse(content="请补充偏好。"),
         search(),
-        finalize("cam-jansen"),
+        present("cam-jansen"),
     )
     agent, _ = make_agent(
         provider,

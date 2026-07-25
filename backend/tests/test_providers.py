@@ -43,6 +43,53 @@ def test_openai_compat_parse_dict_response():
     assert result.usage["total_tokens"] == 3
 
 
+def test_openai_compat_parses_native_tool_calls():
+    result = OpenAICompatProvider._parse({
+        "choices": [{
+            "message": {
+                "content": None,
+                "tool_calls": [{
+                    "id": "call-1",
+                    "type": "function",
+                    "function": {
+                        "name": "search_local_book_catalog",
+                        "arguments": '{"genres":["mystery"]}',
+                    },
+                }],
+            },
+            "finish_reason": "tool_calls",
+        }],
+    })
+
+    assert result.finish_reason == "tool_calls"
+    assert result.tool_calls[0].id == "call-1"
+    assert result.tool_calls[0].name == "search_local_book_catalog"
+    assert result.tool_calls[0].arguments == {"genres": ["mystery"]}
+    assert result.tool_calls[0].raw_arguments == '{"genres":["mystery"]}'
+
+
+def test_openai_compat_preserves_invalid_tool_argument_error():
+    result = OpenAICompatProvider._parse({
+        "choices": [{
+            "message": {
+                "tool_calls": [{
+                    "id": "call-bad",
+                    "function": {
+                        "name": "search_local_book_catalog",
+                        "arguments": "{bad-json",
+                    },
+                }],
+            },
+            "finish_reason": "tool_calls",
+        }],
+    })
+
+    assert result.tool_calls[0].arguments == {}
+    assert "invalid tool arguments JSON" in (
+        result.tool_calls[0].arguments_error
+    )
+
+
 def test_openai_compat_parse_object_response():
     response = SimpleNamespace(
         choices=[SimpleNamespace(
@@ -68,6 +115,14 @@ def test_openai_compat_build_kwargs_adds_deepseek_thinking_disabled():
 
     kwargs = provider._build_kwargs(
         messages=[{"role": "user", "content": "hi", "internal": "drop"}],
+        tools=[{
+            "type": "function",
+            "function": {
+                "name": "search",
+                "description": "Search.",
+                "parameters": {"type": "object"},
+            },
+        }],
         model=None,
         max_tokens=128,
         temperature=0.2,
@@ -77,6 +132,7 @@ def test_openai_compat_build_kwargs_adds_deepseek_thinking_disabled():
 
     assert kwargs["model"] == "deepseek-v4-pro"
     assert kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
+    assert kwargs["tools"][0]["function"]["name"] == "search"
     assert "internal" not in kwargs["messages"][0]
 
 
@@ -89,6 +145,27 @@ def test_chat_with_retry_uses_generation_defaults():
 
         assert provider.last_kwargs["temperature"] == 0.1
         assert provider.last_kwargs["max_tokens"] == 123
+
+    asyncio.run(run_case())
+
+
+def test_chat_with_retry_forwards_tool_definitions():
+    async def run_case():
+        provider = ScriptedProvider([LLMResponse(content="ok")])
+        tools = [{
+            "type": "function",
+            "function": {
+                "name": "search",
+                "parameters": {"type": "object"},
+            },
+        }]
+
+        await provider.chat_with_retry(
+            messages=[{"role": "user", "content": "hi"}],
+            tools=tools,
+        )
+
+        assert provider.last_kwargs["tools"] == tools
 
     asyncio.run(run_case())
 

@@ -29,7 +29,8 @@ Provider 负责模型 SDK、请求参数和瞬时错误重试；Service 负责�
 - 无结果时返回空的 `BookCandidateMatchResult`，不自行扩大蓝思区间或删除题材条件。
 
 Agent 使用的 `BookCatalogSearchTool` 位于 `agent_tools/`。它只做参数规范化和结果序列化；
-“下一次是否放宽条件”属于未来 Agent 的显式决策，不能隐藏在 Service 或 SQLite Adapter 中。
+“下一次是否放宽条件”由 Agent 在看到 Tool Result 后决定，不能隐藏在 Service 或 SQLite
+Adapter 中。
 
 ## 英文译注 Context 组织
 

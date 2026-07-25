@@ -13,11 +13,10 @@ from superhp_agent.contracts import (
     BookRecommendationHandoff,
     BookSearchQuery,
     BookSnapshot,
+    LLMToolCall,
     OperationalReadingBand,
     ReadingDifficultyEvidence,
     ReadingPreference,
-    RecommendationAgentDecision,
-    RecommendationAgentDecisionKind,
     RecommendationAgentMessage,
     RecommendationAgentMessageRole,
     RecommendationAgentObservation,
@@ -140,15 +139,10 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
         observed_catalog_ids=session.observed_catalog_ids,
         remaining_tool_calls=2,
     )
-    decision = RecommendationAgentDecision(
-        kind=RecommendationAgentDecisionKind.FINALIZE,
-        message="推荐 Cam Jansen。",
-        recommended_catalog_ids=("cam-jansen",),
-    )
     reply = RecommendationAgentReply(
         session=session,
-        message=decision.message,
-        recommended_catalog_ids=decision.recommended_catalog_ids,
+        message="推荐 Cam Jansen。",
+        recommended_catalog_ids=("cam-jansen",),
     )
 
     assert observation.remaining_tool_calls == 2
@@ -223,19 +217,17 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
             "remaining_tool_calls",
         ),
         (
-            lambda: RecommendationAgentDecision(
-                kind=RecommendationAgentDecisionKind.FINALIZE,
-                message="完成",
+            lambda: RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.ASSISTANT,
             ),
-            "between 1 and 3",
+            "content or tool calls",
         ),
         (
-            lambda: RecommendationAgentDecision(
-                kind=RecommendationAgentDecisionKind.ASK_USER,
-                message="请选择题材",
-                tool_name="search_local_book_catalog",
+            lambda: RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.TOOL,
+                content="{}",
             ),
-            "unrelated action data",
+            "call id and tool name",
         ),
     ],
 )
@@ -249,6 +241,21 @@ def test_recommendation_contracts_are_immutable():
 
     with pytest.raises(FrozenInstanceError):
         request.user_notes = "changed"
+
+
+def test_assistant_message_can_preserve_native_tool_calls():
+    message = RecommendationAgentMessage(
+        role=RecommendationAgentMessageRole.ASSISTANT,
+        tool_calls=(
+            LLMToolCall(
+                id="call-1",
+                name="search_local_book_catalog",
+                arguments={"genres": ["mystery"]},
+            ),
+        ),
+    )
+
+    assert message.tool_calls[0].name == "search_local_book_catalog"
 
 
 def test_recommendation_outcome_defaults_to_unknown_until_enough_evidence():

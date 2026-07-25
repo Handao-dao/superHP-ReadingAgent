@@ -342,6 +342,12 @@ BookCatalogSearchTool
 `BookDifficultyCatalog` 仍是应用内部 Port，不直接作为 ToolList 暴露给 Agent。正式接入其他合法
 书目来源时可以替换 Adapter，而不修改 Agent 工具参数和候选匹配 Service。
 
+### `PresentBookRecommendationsTool`
+
+这是一个无外部副作用的终止工具。模型只有在已经看到目录搜索结果后，才能提交 1～3 个
+`catalog_id` 和面向用户的推荐理由。Loop 再次校验这些 id 是否来自此前已完成的搜索；通过后
+返回结构化候选并结束当前推荐任务。
+
 ### 后续可选工具
 
 - `search_book_lexile`：通过合法授权的数据源查询蓝思值，并返回来源与可信度；
@@ -350,19 +356,27 @@ BookCatalogSearchTool
 
 ## 8. Agent Loop 与停止条件
 
-第一版由 `BookRecommendationAgent` 实现 Provider 无关的有限循环：
+`BookRecommendationAgent` 使用与 pi agent 相同的核心消息循环思想：普通文本结束当前运行，
+原生 Tool Call 触发工具并自动进入下一轮。它不复制 pi 的事件流、消息队列、分支和 compaction。
 
 ```text
 RecommendationAgentSession
     ↓
-Observe：请求、对话、已观察候选、剩余工具次数
+Observe：请求、真实消息历史、已观察候选、剩余工具次数
     ↓
 RecommendationContextBuilder
     ↓
-LLMProvider
-    ├── ask_user  → 暂停为 awaiting_user
-    ├── call_tool → ToolRegistry 执行已授权工具并继续 Observe
-    └── finalize  → 校验候选来源并完成
+LLMProvider(system prompt, messages, tools)
+    ├── 普通 Assistant 文本
+    │       └── 暂停为 awaiting_user
+    │
+    └── Assistant Tool Call
+            ↓
+        ToolRegistry
+            ↓
+        Tool Result 写回 Session
+            ├── 普通结果 → 继续下一轮
+            └── terminal result → 校验候选并完成
 ```
 
 Session 保存：
@@ -373,22 +387,24 @@ Session 保存：
 - 已使用的工具次数；
 - 工具曾返回的目录 id。
 
-当前使用受校验的 JSON 决策，不修改 Provider 协议，也不额外建立功能重复的 Model Port。
-ContextBuilder 负责固定提示词、工具说明和动态 Observation；Loop 负责解析 Decision、执行工具
-和更新状态；Provider 继续负责底层模型调用与 retry。
+Session 保存的不是拼接后的摘要文本，而是真实的 user、assistant 和 tool 消息。Assistant
+Tool Call 与对应的 Tool Result 通过 `tool_call_id` 配对，因此下一次请求可以直接重建模型上下文。
+ContextBuilder 负责固定提示词和运行时事实；Loop 负责消息追加、工具执行和状态更新；Provider
+负责底层模型调用、原生 Tool Call 解析与 retry。
 
 当前守卫条件：
 
-- 每个 Session 最多执行 3 次目录工具；
+- 每个 Session 最多执行 3 次工具调用；
 - 每次搜索最多请求 10 个候选；
-- 每次 `run()` 最多进行 5 次内部模型决策；
-- `finalize` 只能包含 1～3 个已经由目录工具返回的稳定 id；
-- 无效搜索、超额参数和未知候选作为 Tool Observation 返回，允许模型在剩余预算内修正；
-- 达到决策上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
+- 每次 `run()` 最多进行 5 次模型轮次；
+- 终止工具只能包含 1～3 个已经由目录工具返回的稳定 id；
+- 模型因输出长度限制而截断的 Tool Call 不会执行，而是返回错误结果要求模型重试；
+- 无效搜索、超额参数和未知候选作为 Tool Result 返回，允许模型在剩余预算内修正；
+- 达到轮次上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
 
-当前实现已经把 Loop 直接连接到现有 Provider，并用假的 Provider 完成确定性测试。会话数据库、
-阅读监控、推荐反馈和前端自动衔接都不属于当前最小 Agent；用户收到 1～3 本候选后，自行进入
-已有阅读区和标注工作流。
+当前实现已经把 Loop 通过原生 Tool Call 连接到现有 OpenAI-compatible Provider，并用假的
+Provider 完成确定性测试。会话数据库、阅读监控、推荐反馈和前端自动衔接都不属于当前最小
+Agent；用户收到 1～3 本候选后，自行进入已有阅读区和标注工作流。
 
 建议的停止条件：
 

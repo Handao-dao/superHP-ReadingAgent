@@ -5,7 +5,13 @@ from superhp_agent.ports import LLMProvider
 
 
 class MinimalProvider:
-    async def chat_with_retry(self, messages, *, on_retry_wait=None):
+    async def chat_with_retry(
+        self,
+        messages,
+        *,
+        tools=None,
+        on_retry_wait=None,
+    ):
         return LLMResponse(content="ok")
 
 

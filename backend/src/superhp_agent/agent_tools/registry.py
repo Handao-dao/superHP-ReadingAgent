@@ -61,6 +61,23 @@ class ToolRegistry:
             )
         return descriptions
 
+    def provider_tools(
+        self,
+        allowed_tools: Iterable[str],
+    ) -> list[dict[str, object]]:
+        """Return OpenAI-compatible function definitions for the Provider."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": description["name"],
+                    "description": description["description"],
+                    "parameters": description["input_schema"],
+                },
+            }
+            for description in self.describe(allowed_tools)
+        ]
+
     async def execute(
         self,
         tool_name: str,

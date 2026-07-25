@@ -19,5 +19,6 @@ class LLMProvider(Protocol):
         self,
         messages: list[dict[str, Any]],
         *,
+        tools: list[dict[str, Any]] | None = None,
         on_retry_wait: Callable[[str], Awaitable[None]] | None = None,
     ) -> LLMResponse: ...

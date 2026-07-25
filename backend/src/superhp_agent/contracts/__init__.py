@@ -8,7 +8,7 @@ from superhp_agent.contracts.annotation import (
     ServiceIssue,
 )
 from superhp_agent.contracts.events import BackendEvent
-from superhp_agent.contracts.llm import LLMResponse
+from superhp_agent.contracts.llm import LLMResponse, LLMToolCall
 from superhp_agent.contracts.reading import (
     AgentCard,
     ReadingProgressSnapshot,
@@ -27,8 +27,6 @@ from superhp_agent.contracts.recommendation import (
     OperationalReadingBand,
     ReadingDifficultyEvidence,
     ReadingPreference,
-    RecommendationAgentDecision,
-    RecommendationAgentDecisionKind,
     RecommendationAgentMessage,
     RecommendationAgentMessageRole,
     RecommendationAgentObservation,
@@ -57,14 +55,13 @@ __all__ = [
     "BookSearchQuery",
     "BookSnapshot",
     "LLMResponse",
+    "LLMToolCall",
     "OperationalReadingBand",
     "ReadingDifficultyEvidence",
     "ReadingPreference",
     "ReadingUnitDetail",
     "ReadingUnitMeta",
     "ReadingProgressSnapshot",
-    "RecommendationAgentDecision",
-    "RecommendationAgentDecisionKind",
     "RecommendationAgentMessage",
     "RecommendationAgentMessageRole",
     "RecommendationAgentObservation",

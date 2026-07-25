@@ -31,6 +31,7 @@ async def test_registry_describes_and_executes_an_allowed_tool():
     registry = ToolRegistry((tool,))
 
     descriptions = registry.describe(("echo",))
+    provider_tools = registry.provider_tools(("echo",))
     result = await registry.execute(
         "echo",
         {"text": "hello"},
@@ -46,6 +47,16 @@ async def test_registry_describes_and_executes_an_allowed_tool():
     ]
     assert result == {"text": "hello"}
     assert tool.calls == [{"text": "hello"}]
+    assert provider_tools == [
+        {
+            "type": "function",
+            "function": {
+                "name": "echo",
+                "description": "Return the supplied text.",
+                "parameters": EchoTool.input_schema,
+            },
+        }
+    ]
 
 
 def test_registry_rejects_duplicate_and_unknown_tools():

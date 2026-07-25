@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from superhp_agent.contracts.llm import LLMToolCall
+
 
 class RecommendationOrigin(StrEnum):
     """Why a recommendation conversation was started."""
@@ -54,14 +56,6 @@ class RecommendationAgentPhase(StrEnum):
     AWAITING_USER = "awaiting_user"
     COMPLETED = "completed"
     FAILED = "failed"
-
-
-class RecommendationAgentDecisionKind(StrEnum):
-    """The only actions the recommendation model may ask the loop to take."""
-
-    ASK_USER = "ask_user"
-    CALL_TOOL = "call_tool"
-    FINALIZE = "finalize"
 
 
 class RecommendationAgentMessageRole(StrEnum):
@@ -246,14 +240,34 @@ class BookCandidateMatchResult:
 
 @dataclass(frozen=True)
 class RecommendationAgentMessage:
-    """One user, assistant, or tool observation retained by the loop."""
+    """One native user, assistant, or tool message retained by the loop."""
 
     role: RecommendationAgentMessageRole
-    content: str
+    content: str = ""
+    tool_calls: tuple[LLMToolCall, ...] = ()
+    tool_call_id: str = ""
+    tool_name: str = ""
+    is_error: bool = False
 
     def __post_init__(self) -> None:
+        if self.role is RecommendationAgentMessageRole.USER:
+            if not self.content.strip():
+                raise ValueError("user recommendation message must not be empty")
+            if self.tool_calls or self.tool_call_id or self.tool_name:
+                raise ValueError("user recommendation message contains tool data")
+            return
+        if self.role is RecommendationAgentMessageRole.ASSISTANT:
+            if not self.content.strip() and not self.tool_calls:
+                raise ValueError("assistant message requires content or tool calls")
+            if self.tool_call_id or self.tool_name:
+                raise ValueError("assistant message contains tool-result data")
+            return
         if not self.content.strip():
-            raise ValueError("recommendation agent message must not be empty")
+            raise ValueError("tool result message must not be empty")
+        if not self.tool_call_id.strip() or not self.tool_name.strip():
+            raise ValueError("tool result requires call id and tool name")
+        if self.tool_calls:
+            raise ValueError("tool result message contains assistant tool calls")
 
 
 @dataclass(frozen=True)
@@ -289,47 +303,6 @@ class RecommendationAgentObservation:
     def __post_init__(self) -> None:
         if self.remaining_tool_calls < 0:
             raise ValueError("remaining_tool_calls must not be negative")
-
-
-@dataclass(frozen=True)
-class RecommendationAgentDecision:
-    """One normalized model decision consumed by the deterministic loop."""
-
-    kind: RecommendationAgentDecisionKind
-    message: str = ""
-    tool_name: str = ""
-    tool_arguments: dict[str, object] = field(default_factory=dict)
-    recommended_catalog_ids: tuple[str, ...] = ()
-
-    def __post_init__(self) -> None:
-        if self.kind is RecommendationAgentDecisionKind.ASK_USER:
-            if not self.message.strip():
-                raise ValueError("ask_user decision requires a message")
-            if (
-                self.tool_name
-                or self.tool_arguments
-                or self.recommended_catalog_ids
-            ):
-                raise ValueError("ask_user decision contains unrelated action data")
-            return
-        if self.kind is RecommendationAgentDecisionKind.CALL_TOOL:
-            if not self.tool_name.strip():
-                raise ValueError("call_tool decision requires a tool_name")
-            if self.message.strip():
-                raise ValueError("call_tool decision contains a message")
-            if self.recommended_catalog_ids:
-                raise ValueError("call_tool decision contains recommendation ids")
-            return
-        if self.tool_name or self.tool_arguments:
-            raise ValueError("finalize decision contains tool call data")
-        if not self.message.strip():
-            raise ValueError("finalize decision requires a message")
-        if not 1 <= len(self.recommended_catalog_ids) <= 3:
-            raise ValueError("finalize decision requires between 1 and 3 catalog ids")
-        if len(set(self.recommended_catalog_ids)) != len(
-            self.recommended_catalog_ids
-        ):
-            raise ValueError("finalize decision catalog ids must be unique")
 
 
 @dataclass(frozen=True)

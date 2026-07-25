@@ -1,15 +1,14 @@
-"""Bounded Agent loop for conversational English-book recommendation.
+"""Message-driven Agent loop for conversational book recommendation.
 
-The loop directly composes the existing ContextBuilder pattern, LLM Provider,
-and an explicitly authorized ToolRegistry. It owns only the repeated
-observe-decide-act control flow and its small safety budget.
+Like pi's low-level loop, this module owns only observe-model-tool repetition.
+Completed user, assistant, and tool messages remain in the Session; storage,
+transport, streaming UI, and long-term recovery stay outside the loop.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from uuid import uuid4
 
 from superhp_agent.agent_tools import (
@@ -21,8 +20,7 @@ from superhp_agent.agents.recommendation_context import (
     RecommendationContextBuilder,
 )
 from superhp_agent.contracts import (
-    RecommendationAgentDecision,
-    RecommendationAgentDecisionKind,
+    LLMToolCall,
     RecommendationAgentMessage,
     RecommendationAgentMessageRole,
     RecommendationAgentObservation,
@@ -38,16 +36,14 @@ class RecommendationAgentStateError(RuntimeError):
     """Raised when a caller attempts an invalid session transition."""
 
 
-class RecommendationDecisionParseError(ValueError):
-    """Raised when model text cannot be normalized into one valid decision."""
-
-
-class RecommendationModelCallError(RuntimeError):
-    """Raised when the Provider cannot return usable model text."""
+@dataclass(frozen=True)
+class _TerminalRecommendation:
+    message: str
+    catalog_ids: tuple[str, ...]
 
 
 class BookRecommendationAgent:
-    """Run a bounded observe-decide-act loop over explicitly allowed tools."""
+    """Run model turns until normal text pauses or a terminal tool completes."""
 
     def __init__(
         self,
@@ -55,25 +51,26 @@ class BookRecommendationAgent:
         context_builder: RecommendationContextBuilder,
         tool_registry: ToolRegistry,
         *,
-        allowed_tools: tuple[str, ...] = ("search_local_book_catalog",),
+        allowed_tools: tuple[str, ...] = (
+            "search_local_book_catalog",
+            "present_book_recommendations",
+        ),
         max_tool_calls: int = 3,
-        max_decisions_per_run: int = 5,
+        max_model_turns_per_run: int = 5,
     ):
         if not allowed_tools:
             raise ValueError("allowed_tools must not be empty")
         if max_tool_calls < 1:
             raise ValueError("max_tool_calls must be at least 1")
-        if max_decisions_per_run < 1:
-            raise ValueError("max_decisions_per_run must be at least 1")
-        # Resolve descriptions now so missing tool registrations fail during
-        # composition rather than halfway through a user conversation.
-        self.tool_descriptions = tool_registry.describe(allowed_tools)
+        if max_model_turns_per_run < 1:
+            raise ValueError("max_model_turns_per_run must be at least 1")
         self.provider = provider
         self.context_builder = context_builder
         self.tool_registry = tool_registry
         self.allowed_tools = allowed_tools
+        self.provider_tools = tool_registry.provider_tools(allowed_tools)
         self.max_tool_calls = max_tool_calls
-        self.max_decisions_per_run = max_decisions_per_run
+        self.max_model_turns_per_run = max_model_turns_per_run
 
     def start(
         self,
@@ -81,7 +78,7 @@ class BookRecommendationAgent:
         *,
         session_id: str | None = None,
     ) -> RecommendationAgentSession:
-        """Create a fresh, inactive session without calling the model."""
+        """Create a fresh session without calling the model."""
         return RecommendationAgentSession(
             session_id=session_id or uuid4().hex,
             request=request,
@@ -93,10 +90,10 @@ class BookRecommendationAgent:
         *,
         user_message: str | None = None,
     ) -> RecommendationAgentReply:
-        """Advance until the loop pauses, completes, or reaches a guard."""
+        """Advance until normal text, a terminal tool, or a safety guard."""
         session = self._accept_user_message(session, user_message)
 
-        for _ in range(self.max_decisions_per_run):
+        for _ in range(self.max_model_turns_per_run):
             observation = RecommendationAgentObservation(
                 request=session.request,
                 phase=session.phase,
@@ -108,82 +105,79 @@ class BookRecommendationAgent:
                 ),
             )
             try:
-                decision = await self._decide(observation)
-            except RecommendationDecisionParseError:
-                return self._failed_reply(
-                    session,
-                    message="选书助手返回了无法识别的决策，请稍后重试。",
-                    error_code="invalid_model_decision",
+                response = await self.provider.chat_with_retry(
+                    self.context_builder.build(observation),
+                    tools=self.provider_tools,
                 )
             except Exception:
+                return self._failed_reply(session, error_code="model_error")
+
+            if response.is_error:
+                return self._failed_reply(session, error_code="model_error")
+            if not response.content and not response.tool_calls:
                 return self._failed_reply(
                     session,
-                    message="选书助手暂时无法继续思考，请稍后重试。",
-                    error_code="model_error",
+                    error_code="invalid_model_response",
+                    message="选书助手没有返回可用内容，请稍后重试。",
                 )
 
-            if decision.kind is RecommendationAgentDecisionKind.ASK_USER:
+            assistant_message = RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.ASSISTANT,
+                content=response.content or "",
+                tool_calls=response.tool_calls,
+            )
+            if not response.tool_calls:
                 session = self._append_message(
                     session,
-                    RecommendationAgentMessageRole.ASSISTANT,
-                    decision.message,
+                    assistant_message,
                     phase=RecommendationAgentPhase.AWAITING_USER,
                 )
                 return RecommendationAgentReply(
                     session=session,
-                    message=decision.message,
+                    message=response.content or "",
                 )
-
-            if decision.kind is RecommendationAgentDecisionKind.CALL_TOOL:
-                session = await self._call_tool(session, decision)
-                continue
-
-            unknown_ids = tuple(
-                catalog_id
-                for catalog_id in decision.recommended_catalog_ids
-                if catalog_id not in session.observed_catalog_ids
-            )
-            if unknown_ids:
-                session = self._append_tool_observation(
-                    session,
-                    {
-                        "ok": False,
-                        "error": "unobserved_recommendation_ids",
-                        "catalog_ids": list(unknown_ids),
-                    },
-                )
-                continue
 
             session = self._append_message(
                 session,
-                RecommendationAgentMessageRole.ASSISTANT,
-                decision.message,
-                phase=RecommendationAgentPhase.COMPLETED,
+                assistant_message,
+                phase=RecommendationAgentPhase.SEARCHING,
             )
-            return RecommendationAgentReply(
-                session=session,
-                message=decision.message,
-                recommended_catalog_ids=decision.recommended_catalog_ids,
+            if response.finish_reason == "length":
+                for tool_call in response.tool_calls:
+                    session = self._append_tool_result(
+                        session,
+                        tool_call,
+                        {
+                            "ok": False,
+                            "error": "truncated_tool_call",
+                            "detail": (
+                                "Tool call was not executed because the model "
+                                "response reached its output limit."
+                            ),
+                        },
+                        is_error=True,
+                    )
+                continue
+            session, terminal = await self._execute_tool_calls(
+                session,
+                response.tool_calls,
             )
+            if terminal is not None:
+                session = replace(
+                    session,
+                    phase=RecommendationAgentPhase.COMPLETED,
+                )
+                return RecommendationAgentReply(
+                    session=session,
+                    message=terminal.message,
+                    recommended_catalog_ids=terminal.catalog_ids,
+                )
 
         return self._failed_reply(
             session,
+            error_code="turn_limit_reached",
             message="选书助手未能在限定步骤内完成推荐，请补充偏好后重试。",
-            error_code="decision_limit_reached",
         )
-
-    async def _decide(
-        self,
-        observation: RecommendationAgentObservation,
-    ) -> RecommendationAgentDecision:
-        messages = self.context_builder.build(
-            observation,
-            self.tool_descriptions,
-        )
-        response = await self.provider.chat_with_retry(messages)
-        if response.is_error or not response.content:
-            raise RecommendationModelCallError("provider returned no usable content")
-        return _parse_decision(response.content)
 
     def _accept_user_message(
         self,
@@ -208,121 +202,149 @@ class BookRecommendationAgent:
             raise ValueError("user_message must not be empty")
         return self._append_message(
             session,
-            RecommendationAgentMessageRole.USER,
-            user_message,
+            RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.USER,
+                content=user_message,
+            ),
             phase=RecommendationAgentPhase.COLLECTING_PREFERENCES,
         )
 
-    async def _call_tool(
+    async def _execute_tool_calls(
         self,
         session: RecommendationAgentSession,
-        decision: RecommendationAgentDecision,
-    ) -> RecommendationAgentSession:
-        if session.tool_call_count >= self.max_tool_calls:
-            return self._append_tool_observation(
+        tool_calls: tuple[LLMToolCall, ...],
+    ) -> tuple[RecommendationAgentSession, _TerminalRecommendation | None]:
+        observed_before_turn = set(session.observed_catalog_ids)
+        terminal: _TerminalRecommendation | None = None
+
+        for tool_call in tool_calls:
+            if session.tool_call_count >= self.max_tool_calls:
+                session = self._append_tool_result(
+                    session,
+                    tool_call,
+                    {
+                        "ok": False,
+                        "error": "tool_call_limit_reached",
+                    },
+                    is_error=True,
+                )
+                continue
+
+            session = replace(
                 session,
-                {
-                    "ok": False,
-                    "tool": decision.tool_name,
-                    "arguments": decision.tool_arguments,
-                    "error": "tool_call_limit_reached",
-                },
+                tool_call_count=session.tool_call_count + 1,
+            )
+            result, error = await self._execute_one_tool(tool_call)
+            if error is not None:
+                session = self._append_tool_result(
+                    session,
+                    tool_call,
+                    error,
+                    is_error=True,
+                )
+                continue
+
+            assert result is not None
+            candidate_ids = _catalog_ids_from_result(result)
+            session = replace(
+                session,
+                observed_catalog_ids=_merge_unique(
+                    session.observed_catalog_ids,
+                    candidate_ids,
+                ),
             )
 
-        session = replace(
-            session,
-            phase=RecommendationAgentPhase.SEARCHING,
-            tool_call_count=session.tool_call_count + 1,
-        )
+            terminal_result, terminal_error = _terminal_from_result(
+                result,
+                observed_before_turn,
+            )
+            if terminal_error is not None:
+                session = self._append_tool_result(
+                    session,
+                    tool_call,
+                    terminal_error,
+                    is_error=True,
+                )
+                continue
+
+            session = self._append_tool_result(
+                session,
+                tool_call,
+                {"ok": True, "result": result},
+            )
+            if terminal_result is not None and terminal is None:
+                terminal = terminal_result
+
+        return session, terminal
+
+    async def _execute_one_tool(
+        self,
+        tool_call: LLMToolCall,
+    ) -> tuple[dict[str, object] | None, dict[str, object] | None]:
+        if tool_call.arguments_error:
+            return None, {
+                "ok": False,
+                "error": "invalid_tool_arguments",
+                "detail": tool_call.arguments_error,
+            }
         try:
             result = await self.tool_registry.execute(
-                decision.tool_name,
-                decision.tool_arguments,
+                tool_call.name,
+                tool_call.arguments,
                 allowed_tools=self.allowed_tools,
             )
+            return result, None
         except UnknownAgentToolError:
-            return self._append_tool_observation(
-                session,
-                {
-                    "ok": False,
-                    "tool": decision.tool_name,
-                    "arguments": decision.tool_arguments,
-                    "error": "unknown_tool",
-                },
-            )
+            return None, {"ok": False, "error": "unknown_tool"}
         except AgentToolNotAllowedError:
-            return self._append_tool_observation(
-                session,
-                {
-                    "ok": False,
-                    "tool": decision.tool_name,
-                    "arguments": decision.tool_arguments,
-                    "error": "tool_not_allowed",
-                },
-            )
+            return None, {"ok": False, "error": "tool_not_allowed"}
         except (TypeError, ValueError) as exc:
-            return self._append_tool_observation(
-                session,
-                {
-                    "ok": False,
-                    "tool": decision.tool_name,
-                    "arguments": decision.tool_arguments,
-                    "error": "invalid_tool_arguments",
-                    "detail": str(exc),
-                },
-            )
+            return None, {
+                "ok": False,
+                "error": "invalid_tool_arguments",
+                "detail": str(exc),
+            }
         except Exception:
-            return self._append_tool_observation(
-                session,
-                {
-                    "ok": False,
-                    "tool": decision.tool_name,
-                    "arguments": decision.tool_arguments,
-                    "error": "tool_unavailable",
-                },
-            )
-
-        observed_ids = _merge_unique(
-            session.observed_catalog_ids,
-            _catalog_ids_from_result(result),
-        )
-        session = replace(session, observed_catalog_ids=observed_ids)
-        return self._append_tool_observation(
-            session,
-            {
-                "ok": True,
-                "tool": decision.tool_name,
-                "arguments": decision.tool_arguments,
-                "result": result,
-            },
-        )
+            return None, {"ok": False, "error": "tool_unavailable"}
 
     @staticmethod
     def _append_message(
         session: RecommendationAgentSession,
-        role: RecommendationAgentMessageRole,
-        content: str,
+        message: RecommendationAgentMessage,
         *,
         phase: RecommendationAgentPhase | None = None,
     ) -> RecommendationAgentSession:
         return replace(
             session,
             phase=phase or session.phase,
-            conversation=(
-                *session.conversation,
-                RecommendationAgentMessage(role=role, content=content),
-            ),
+            conversation=(*session.conversation, message),
         )
 
-    def _append_tool_observation(
+    def _append_tool_result(
         self,
         session: RecommendationAgentSession,
+        tool_call: LLMToolCall,
         payload: dict[str, object],
+        *,
+        is_error: bool = False,
     ) -> RecommendationAgentSession:
         return self._append_message(
             session,
-            RecommendationAgentMessageRole.TOOL,
-            json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.TOOL,
+                content=json.dumps(
+                    {
+                        "tool": tool_call.name,
+                        "arguments": tool_call.arguments,
+                        **payload,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                tool_call_id=tool_call.id,
+                tool_name=tool_call.name,
+                is_error=is_error,
+            ),
             phase=RecommendationAgentPhase.SEARCHING,
         )
 
@@ -330,13 +352,15 @@ class BookRecommendationAgent:
         self,
         session: RecommendationAgentSession,
         *,
-        message: str,
         error_code: str,
+        message: str = "选书助手暂时无法继续思考，请稍后重试。",
     ) -> RecommendationAgentReply:
         session = self._append_message(
             session,
-            RecommendationAgentMessageRole.ASSISTANT,
-            message,
+            RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.ASSISTANT,
+                content=message,
+            ),
             phase=RecommendationAgentPhase.FAILED,
         )
         return RecommendationAgentReply(
@@ -346,53 +370,38 @@ class BookRecommendationAgent:
         )
 
 
-def _parse_decision(content: str) -> RecommendationAgentDecision:
-    try:
-        payload = _extract_json_object(content)
-        action = RecommendationAgentDecisionKind(payload.get("action"))
-        if action is RecommendationAgentDecisionKind.ASK_USER:
-            return RecommendationAgentDecision(
-                kind=action,
-                message=_required_string(payload, "message"),
-            )
-        if action is RecommendationAgentDecisionKind.CALL_TOOL:
-            arguments = payload.get("arguments", {})
-            if not isinstance(arguments, dict):
-                raise ValueError("arguments must be an object")
-            return RecommendationAgentDecision(
-                kind=action,
-                tool_name=_required_string(payload, "tool_name"),
-                tool_arguments=arguments,
-            )
-        catalog_ids = payload.get("recommended_catalog_ids")
-        if not isinstance(catalog_ids, list) or not all(
-            isinstance(value, str) for value in catalog_ids
-        ):
-            raise ValueError("recommended_catalog_ids must be a string array")
-        return RecommendationAgentDecision(
-            kind=action,
-            message=_required_string(payload, "message"),
-            recommended_catalog_ids=tuple(catalog_ids),
-        )
-    except (TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise RecommendationDecisionParseError(str(exc)) from exc
-
-
-def _extract_json_object(content: str) -> Mapping[str, object]:
-    start = content.find("{")
-    if start < 0:
-        raise ValueError("model response does not contain a JSON object")
-    payload, _ = json.JSONDecoder().raw_decode(content[start:])
-    if not isinstance(payload, dict):
-        raise ValueError("model response JSON must be an object")
-    return payload
-
-
-def _required_string(payload: Mapping[str, object], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{key} must be a non-empty string")
-    return value
+def _terminal_from_result(
+    result: dict[str, object],
+    observed_catalog_ids: set[str],
+) -> tuple[_TerminalRecommendation | None, dict[str, object] | None]:
+    if result.get("terminate") is not True:
+        return None, None
+    catalog_ids = result.get("catalog_ids")
+    message = result.get("message")
+    if not isinstance(catalog_ids, list) or not all(
+        isinstance(catalog_id, str) for catalog_id in catalog_ids
+    ):
+        return None, {"ok": False, "error": "invalid_terminal_result"}
+    unknown_ids = [
+        catalog_id
+        for catalog_id in catalog_ids
+        if catalog_id not in observed_catalog_ids
+    ]
+    if unknown_ids:
+        return None, {
+            "ok": False,
+            "error": "unobserved_recommendation_ids",
+            "catalog_ids": unknown_ids,
+        }
+    if not isinstance(message, str) or not message.strip():
+        return None, {"ok": False, "error": "invalid_terminal_result"}
+    return (
+        _TerminalRecommendation(
+            message=message,
+            catalog_ids=tuple(catalog_ids),
+        ),
+        None,
+    )
 
 
 def _catalog_ids_from_result(result: dict[str, object]) -> tuple[str, ...]:

@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from superhp_agent.agent_tools import BookCatalogSearchTool, ToolRegistry
+from superhp_agent.agent_tools import (
+    BookCatalogSearchTool,
+    PresentBookRecommendationsTool,
+    ToolRegistry,
+)
 from superhp_agent.agents import RecommendationContextBuilder
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
@@ -56,6 +60,7 @@ class AppContainer:
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_candidate_service: RecommendationCandidateService
     book_catalog_search_tool: BookCatalogSearchTool
+    present_book_recommendations_tool: PresentBookRecommendationsTool
     recommendation_tool_registry: ToolRegistry
     recommendation_context_builder: RecommendationContextBuilder
     annotated_copies: AnnotatedCopyStore
@@ -97,7 +102,13 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         book_difficulty_catalog
     )
     book_catalog_search_tool = BookCatalogSearchTool(recommendation_candidate_service)
-    recommendation_tool_registry = ToolRegistry((book_catalog_search_tool,))
+    present_book_recommendations_tool = PresentBookRecommendationsTool()
+    recommendation_tool_registry = ToolRegistry(
+        (
+            book_catalog_search_tool,
+            present_book_recommendations_tool,
+        )
+    )
     recommendation_context_builder = RecommendationContextBuilder()
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
 
@@ -142,6 +153,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_candidate_service=recommendation_candidate_service,
         book_catalog_search_tool=book_catalog_search_tool,
+        present_book_recommendations_tool=present_book_recommendations_tool,
         recommendation_tool_registry=recommendation_tool_registry,
         recommendation_context_builder=recommendation_context_builder,
         annotated_copies=annotated_copies,

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
-from superhp_agent.contracts.llm import LLMResponse
+from superhp_agent.contracts.llm import LLMResponse, LLMToolCall
 from superhp_agent.providers.base import BaseLLMProvider
 from superhp_agent.providers.registry import ProviderSpec
 
@@ -62,6 +63,7 @@ class OpenAICompatProvider(BaseLLMProvider):
         self,
         messages: list[dict[str, Any]],
         *,
+        tools: list[dict[str, Any]] | None = None,
         model: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.2,
@@ -72,6 +74,7 @@ class OpenAICompatProvider(BaseLLMProvider):
         try:
             kwargs = self._build_kwargs(
                 messages=messages,
+                tools=tools,
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
@@ -98,6 +101,7 @@ class OpenAICompatProvider(BaseLLMProvider):
         try:
             kwargs = self._build_kwargs(
                 messages=messages,
+                tools=None,
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
@@ -122,6 +126,7 @@ class OpenAICompatProvider(BaseLLMProvider):
         self,
         *,
         messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
         model: str | None,
         max_tokens: int,
         temperature: float,
@@ -143,6 +148,8 @@ class OpenAICompatProvider(BaseLLMProvider):
         }
         if body:
             kwargs["extra_body"] = body
+        if tools:
+            kwargs["tools"] = tools
         return kwargs
 
     def _thinking_extra_body(self, reasoning_effort: str | None) -> dict[str, Any] | None:
@@ -193,6 +200,7 @@ class OpenAICompatProvider(BaseLLMProvider):
                 finish_reason=choice.get("finish_reason") or "stop",
                 usage=cls._extract_usage(response),
                 reasoning_content=reasoning,
+                tool_calls=cls._extract_tool_calls(message),
             )
 
         choices = getattr(response, "choices", None) or []
@@ -209,7 +217,62 @@ class OpenAICompatProvider(BaseLLMProvider):
             finish_reason=getattr(choice, "finish_reason", None) or "stop",
             usage=cls._extract_usage(response),
             reasoning_content=reasoning,
+            tool_calls=cls._extract_tool_calls(message),
         )
+
+    @classmethod
+    def _extract_tool_calls(cls, message: Any) -> tuple[LLMToolCall, ...]:
+        raw_calls = (
+            message.get("tool_calls", [])
+            if isinstance(message, dict)
+            else getattr(message, "tool_calls", None) or []
+        )
+        calls: list[LLMToolCall] = []
+        for index, raw_call in enumerate(raw_calls):
+            call_id = cls._value(raw_call, "id") or f"tool-call-{index}"
+            function = cls._value(raw_call, "function") or {}
+            name = cls._value(function, "name")
+            raw_arguments = cls._value(function, "arguments")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            arguments, arguments_error = cls._parse_tool_arguments(raw_arguments)
+            raw_arguments_text = (
+                raw_arguments
+                if isinstance(raw_arguments, str)
+                else json.dumps(raw_arguments or {}, ensure_ascii=False)
+            )
+            calls.append(
+                LLMToolCall(
+                    id=str(call_id),
+                    name=name,
+                    arguments=arguments,
+                    raw_arguments=raw_arguments_text,
+                    arguments_error=arguments_error,
+                )
+            )
+        return tuple(calls)
+
+    @staticmethod
+    def _value(payload: Any, key: str) -> Any:
+        if isinstance(payload, dict):
+            return payload.get(key)
+        return getattr(payload, key, None)
+
+    @staticmethod
+    def _parse_tool_arguments(
+        raw_arguments: Any,
+    ) -> tuple[dict[str, object], str]:
+        if isinstance(raw_arguments, dict):
+            return raw_arguments, ""
+        if not isinstance(raw_arguments, str):
+            return {}, "tool arguments must be a JSON object"
+        try:
+            parsed = json.loads(raw_arguments)
+        except json.JSONDecodeError as exc:
+            return {}, f"invalid tool arguments JSON: {exc.msg}"
+        if not isinstance(parsed, dict):
+            return {}, "tool arguments must be a JSON object"
+        return parsed, ""
 
     @classmethod
     def _parse_chunks(cls, chunks: list[Any]) -> LLMResponse:

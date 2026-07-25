@@ -17,7 +17,9 @@
     → 重新生成 Cards
 ```
 
-LLM 负责译注和查词，不负责自主规划下一步，也不直接取得无限工具执行权限。未来可以增加 Planner 或 Agent Loop，但不应破坏当前确定性、安全和可测试的 Action 边界。
+LLM 负责译注和查词，不负责自主规划阅读主流程，也不直接取得无限工具执行权限。选书扩展已经在
+`agents/book_recommendation.py` 建立一个独立、有限工具和有限轮次的 Agent Loop；它不改变现有
+guided reading runtime 的确定性 Action 边界。
 
 ## 核心设计原则
 
@@ -28,6 +30,7 @@ LLM 负责译注和查词，不负责自主规划下一步，也不直接取得�
 - Handler 决定“这项动作怎样完成”。
 - Service 定义模型业务任务。
 - Agent Tool 把模型可用的窄参数转换为应用调用，不承载业务规则。
+- Agent Loop 在明确预算内协调模型决策和允许的工具。
 - Context Builder 只构造当前模型任务所需上下文。
 - Profile 定义文本场景策略。
 - Provider 封装模型 SDK、协议和重试。
@@ -143,6 +146,27 @@ Agent
 `agent_tools/` 不绑定某个 Agent SDK；后续接入 function tool 或 Agents SDK 时，只在注册层适配
 `run()`，不把业务规则重新复制到模型工具函数中。
 
+### Book Recommendation Agent
+
+`agents/book_recommendation.py` 实现选书场景专用的 Observe → Decide → Act 循环。它不是控制
+阅读主流程的通用 Planner，也不维护任意工具注册表。
+
+```text
+RecommendationAgentSession
+    → RecommendationAgentObservation
+    → RecommendationAgentModel.decide()
+    → ask_user / search_catalog / finalize
+    → 确定性校验和状态更新
+```
+
+循环可以暂停为 `awaiting_user`，把完整 Session 交还调用方；收到下一条用户消息后从相同状态
+继续。模型只能推荐目录工具已经返回过的稳定 id。工具调用、单次候选数和每轮内部决策均有硬性
+预算，越界、无效条件和未知候选会作为 Tool Observation 返回给模型修正。
+
+`ports/recommendation_agent.py` 中的 `RecommendationAgentModel` 只负责返回一个规范化 Decision。
+当前 Agent Loop 不依赖原生 function calling，也不解析供应商响应；真实 Provider Adapter 将作为
+后续独立步骤实现。
+
 ### Context Builder
 
 当前由 `context.py`、Profile 的 context 构造方法和 `AnnotatorService` 共同实现。
@@ -246,6 +270,8 @@ contracts/
 ports/                         # 上层业务需要哪些底层能力
 ├── llm.py                     # 模型调用能力接口
 ├── events.py                  # 事件发布与行为记录能力接口
+├── book_catalog.py            # 选书目录查询能力接口
+├── recommendation_agent.py    # 选书 Agent 的单步模型决策接口
 └── repositories/              # 可查询、可更新的数据能力接口
     ├── vocabulary.py
     ├── bookmarks.py

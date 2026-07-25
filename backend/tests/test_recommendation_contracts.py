@@ -16,6 +16,14 @@ from superhp_agent.contracts import (
     OperationalReadingBand,
     ReadingDifficultyEvidence,
     ReadingPreference,
+    RecommendationAgentDecision,
+    RecommendationAgentDecisionKind,
+    RecommendationAgentMessage,
+    RecommendationAgentMessageRole,
+    RecommendationAgentObservation,
+    RecommendationAgentPhase,
+    RecommendationAgentReply,
+    RecommendationAgentSession,
     RecommendationOrigin,
     RecommendationOutcome,
     RecommendationOutcomeKind,
@@ -111,6 +119,42 @@ def test_candidate_match_result_exposes_strict_match_evidence():
     assert result.matches[0].difficulty_distance == 25
 
 
+def test_recommendation_agent_contracts_preserve_resumable_state():
+    request = RecommendationRequest(origin=RecommendationOrigin.ONBOARDING)
+    message = RecommendationAgentMessage(
+        role=RecommendationAgentMessageRole.USER,
+        content="我喜欢侦探故事。",
+    )
+    session = RecommendationAgentSession(
+        session_id="session-1",
+        request=request,
+        phase=RecommendationAgentPhase.SEARCHING,
+        conversation=(message,),
+        tool_call_count=1,
+        observed_catalog_ids=("cam-jansen",),
+    )
+    observation = RecommendationAgentObservation(
+        request=request,
+        phase=session.phase,
+        conversation=session.conversation,
+        observed_catalog_ids=session.observed_catalog_ids,
+        remaining_tool_calls=2,
+    )
+    decision = RecommendationAgentDecision(
+        kind=RecommendationAgentDecisionKind.FINALIZE,
+        message="推荐 Cam Jansen。",
+        recommended_catalog_ids=("cam-jansen",),
+    )
+    reply = RecommendationAgentReply(
+        session=session,
+        message=decision.message,
+        recommended_catalog_ids=decision.recommended_catalog_ids,
+    )
+
+    assert observation.remaining_tool_calls == 2
+    assert reply.recommended_catalog_ids == ("cam-jansen",)
+
+
 @pytest.mark.parametrize(
     ("factory", "message"),
     [
@@ -156,6 +200,42 @@ def test_candidate_match_result_exposes_strict_match_evidence():
                 difficulty_distance=-1,
             ),
             "difficulty_distance",
+        ),
+        (
+            lambda: RecommendationAgentSession(
+                session_id="",
+                request=RecommendationRequest(
+                    origin=RecommendationOrigin.ONBOARDING
+                ),
+            ),
+            "session_id",
+        ),
+        (
+            lambda: RecommendationAgentObservation(
+                request=RecommendationRequest(
+                    origin=RecommendationOrigin.ONBOARDING
+                ),
+                phase=RecommendationAgentPhase.SEARCHING,
+                conversation=(),
+                observed_catalog_ids=(),
+                remaining_tool_calls=-1,
+            ),
+            "remaining_tool_calls",
+        ),
+        (
+            lambda: RecommendationAgentDecision(
+                kind=RecommendationAgentDecisionKind.FINALIZE,
+                message="完成",
+            ),
+            "between 1 and 3",
+        ),
+        (
+            lambda: RecommendationAgentDecision(
+                kind=RecommendationAgentDecisionKind.ASK_USER,
+                message="请选择题材",
+                search_query=BookSearchQuery(categories=("mystery",)),
+            ),
+            "unrelated action data",
         ),
     ],
 )

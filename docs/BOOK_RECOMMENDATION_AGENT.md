@@ -354,17 +354,42 @@ BookCatalogSearchTool
 
 ## 8. Agent Loop 与停止条件
 
-Agent 的推荐循环为：
+第一版由 `BookRecommendationAgent` 实现 Provider 无关的有限循环：
 
 ```text
-读取推荐请求和阅读状态
-    → 形成初始难度与题材条件
-    → 查询目录
-    → 比较单本/系列类型、蓝思区间和内容偏好
-    → 淘汰不合适候选
-    → 候选不足时显式调整下一次工具参数或向用户补问
-    → 得到足够候选后排序并解释
+RecommendationAgentSession
+    ↓
+Observe：请求、对话、已观察候选、剩余工具次数
+    ↓
+RecommendationAgentModel.decide()
+    ├── ask_user       → 暂停为 awaiting_user
+    ├── search_catalog → 执行唯一允许的目录工具并继续 Observe
+    └── finalize       → 校验候选来源并完成
 ```
+
+Session 保存：
+
+- 推荐来源和已知偏好；
+- 用户、助手和工具观察消息；
+- 当前 phase；
+- 已使用的工具次数；
+- 工具曾返回的目录 id。
+
+循环本身不关心模型使用原生 tool calling 还是受校验 JSON。模型 Adapter 只需实现
+`RecommendationAgentModel` Port，每次返回一个规范化 Decision。这样 Provider 协议解析不会
+进入 Agent 状态机。
+
+当前守卫条件：
+
+- 每个 Session 最多执行 3 次目录工具；
+- 每次搜索最多请求 10 个候选；
+- 每次 `run()` 最多进行 5 次内部模型决策；
+- `finalize` 只能包含 1～3 个已经由目录工具返回的稳定 id；
+- 无效搜索、超额参数和未知候选作为 Tool Observation 返回，允许模型在剩余预算内修正；
+- 达到决策上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
+
+当前第一步只实现 Agent Loop、Contracts 和 Model Port，并使用脚本模型完成测试。真实模型
+Adapter、会话 Repository 和前端 Transport 尚未接入。
 
 建议的停止条件：
 

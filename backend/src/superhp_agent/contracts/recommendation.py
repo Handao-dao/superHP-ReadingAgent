@@ -46,6 +46,32 @@ class BookEntryKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+class RecommendationAgentPhase(StrEnum):
+    """Current pause or completion point of one recommendation session."""
+
+    COLLECTING_PREFERENCES = "collecting_preferences"
+    SEARCHING = "searching"
+    AWAITING_USER = "awaiting_user"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RecommendationAgentDecisionKind(StrEnum):
+    """The only actions the recommendation model may ask the loop to take."""
+
+    ASK_USER = "ask_user"
+    SEARCH_CATALOG = "search_catalog"
+    FINALIZE = "finalize"
+
+
+class RecommendationAgentMessageRole(StrEnum):
+    """Conversation roles preserved between paused Agent runs."""
+
+    USER = "user"
+    ASSISTANT = "assistant"
+    TOOL = "tool"
+
+
 @dataclass(frozen=True)
 class OperationalReadingBand:
     """Internal text-difficulty range used for recommendation.
@@ -216,6 +242,103 @@ class BookCandidateMatchResult:
     def found(self) -> bool:
         """Whether the strict query produced at least one candidate."""
         return bool(self.matches)
+
+
+@dataclass(frozen=True)
+class RecommendationAgentMessage:
+    """One user, assistant, or tool observation retained by the loop."""
+
+    role: RecommendationAgentMessageRole
+    content: str
+
+    def __post_init__(self) -> None:
+        if not self.content.strip():
+            raise ValueError("recommendation agent message must not be empty")
+
+
+@dataclass(frozen=True)
+class RecommendationAgentSession:
+    """Serializable state retained while the Agent pauses for user input."""
+
+    session_id: str
+    request: RecommendationRequest
+    phase: RecommendationAgentPhase = (
+        RecommendationAgentPhase.COLLECTING_PREFERENCES
+    )
+    conversation: tuple[RecommendationAgentMessage, ...] = ()
+    tool_call_count: int = 0
+    observed_catalog_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.session_id.strip():
+            raise ValueError("session_id must not be empty")
+        if self.tool_call_count < 0:
+            raise ValueError("tool_call_count must not be negative")
+
+
+@dataclass(frozen=True)
+class RecommendationAgentObservation:
+    """Provider-neutral facts supplied to the model for one decision."""
+
+    request: RecommendationRequest
+    phase: RecommendationAgentPhase
+    conversation: tuple[RecommendationAgentMessage, ...]
+    observed_catalog_ids: tuple[str, ...]
+    remaining_tool_calls: int
+
+    def __post_init__(self) -> None:
+        if self.remaining_tool_calls < 0:
+            raise ValueError("remaining_tool_calls must not be negative")
+
+
+@dataclass(frozen=True)
+class RecommendationAgentDecision:
+    """One normalized model decision consumed by the deterministic loop."""
+
+    kind: RecommendationAgentDecisionKind
+    message: str = ""
+    search_query: BookSearchQuery | None = None
+    recommended_catalog_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.kind is RecommendationAgentDecisionKind.ASK_USER:
+            if not self.message.strip():
+                raise ValueError("ask_user decision requires a message")
+            if self.search_query is not None or self.recommended_catalog_ids:
+                raise ValueError("ask_user decision contains unrelated action data")
+            return
+        if self.kind is RecommendationAgentDecisionKind.SEARCH_CATALOG:
+            if self.search_query is None:
+                raise ValueError("search_catalog decision requires a search_query")
+            if self.recommended_catalog_ids:
+                raise ValueError(
+                    "search_catalog decision contains recommendation ids"
+                )
+            return
+        if self.search_query is not None:
+            raise ValueError("finalize decision contains a search_query")
+        if not self.message.strip():
+            raise ValueError("finalize decision requires a message")
+        if not 1 <= len(self.recommended_catalog_ids) <= 3:
+            raise ValueError("finalize decision requires between 1 and 3 catalog ids")
+        if len(set(self.recommended_catalog_ids)) != len(
+            self.recommended_catalog_ids
+        ):
+            raise ValueError("finalize decision catalog ids must be unique")
+
+
+@dataclass(frozen=True)
+class RecommendationAgentReply:
+    """User-facing result plus the updated resumable Agent session."""
+
+    session: RecommendationAgentSession
+    message: str
+    recommended_catalog_ids: tuple[str, ...] = ()
+    error_code: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.message.strip():
+            raise ValueError("recommendation agent reply must not be empty")
 
 
 @dataclass(frozen=True)

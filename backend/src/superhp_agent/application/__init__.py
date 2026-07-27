@@ -8,6 +8,11 @@ from superhp_agent.application.reading_adaptation import (
     ReadingAdaptationPolicy,
     ReadingAdaptationState,
 )
+from superhp_agent.application.reading_adaptation_evaluator import (
+    ReadingAdaptationEvaluation,
+    ReadingAdaptationEvaluator,
+    ReadingAdaptationWindow,
+)
 from superhp_agent.application.reading_monitor import (
     ReadingDifficultyMonitor,
     ReadingDifficultyPolicy,
@@ -22,8 +27,11 @@ __all__ = [
     "ChapterCheckpointRecorder",
     "ReadingAdaptationAction",
     "ReadingAdaptationDecision",
+    "ReadingAdaptationEvaluation",
+    "ReadingAdaptationEvaluator",
     "ReadingAdaptationPolicy",
     "ReadingAdaptationState",
+    "ReadingAdaptationWindow",
     "ReadingDifficultyMonitor",
     "ReadingDifficultyPolicy",
     "RecommendationAgentRunner",

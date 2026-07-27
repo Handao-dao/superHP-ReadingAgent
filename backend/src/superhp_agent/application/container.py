@@ -16,6 +16,9 @@ from superhp_agent.agent_tools import (
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
 from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
+from superhp_agent.application.reading_adaptation_evaluator import (
+    ReadingAdaptationEvaluator,
+)
 from superhp_agent.application.reading_monitor import ReadingDifficultyMonitor
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
@@ -70,6 +73,7 @@ class AppContainer:
     reading_support_repository: SQLiteReadingSupportRepository
     chapter_checkpoint_repository: SQLiteChapterReadingCheckpointRepository
     chapter_checkpoint_recorder: ChapterCheckpointRecorder
+    reading_adaptation_evaluator: ReadingAdaptationEvaluator
     reading_difficulty_monitor: ReadingDifficultyMonitor
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
@@ -143,6 +147,10 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         chapter_checkpoint_repository,
         annotated_copies,
     )
+    reading_adaptation_evaluator = ReadingAdaptationEvaluator(
+        chapter_checkpoint_repository,
+        reading_support_repository,
+    )
 
     def provider_factory():
         return make_provider(resolved_settings)
@@ -194,6 +202,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         reading_support_repository=reading_support_repository,
         chapter_checkpoint_repository=chapter_checkpoint_repository,
         chapter_checkpoint_recorder=chapter_checkpoint_recorder,
+        reading_adaptation_evaluator=reading_adaptation_evaluator,
         reading_difficulty_monitor=reading_difficulty_monitor,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,

@@ -56,6 +56,7 @@ reading_progress_repository = container.reading_progress_repository
 reading_lookup_repository = container.reading_lookup_repository
 reading_support_repository = container.reading_support_repository
 chapter_checkpoint_recorder = container.chapter_checkpoint_recorder
+reading_adaptation_evaluator = container.reading_adaptation_evaluator
 reading_difficulty_monitor = container.reading_difficulty_monitor
 db = container.db
 vocabulary_repository = container.vocabulary_repository
@@ -425,6 +426,7 @@ async def reading_socket(websocket: WebSocket):
         db=vocabulary_repository,
         reading_support_repository=reading_support_repository,
         chapter_checkpoint_recorder=chapter_checkpoint_recorder,
+        reading_adaptation_evaluator=reading_adaptation_evaluator,
         selection_policy_resolver=library_catalog,
         profile_registry=profile_registry,
     )

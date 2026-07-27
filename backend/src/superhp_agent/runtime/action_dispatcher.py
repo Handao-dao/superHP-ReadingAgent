@@ -74,6 +74,16 @@ class ChapterCheckpointCapability(Protocol):
     ) -> ChapterReadingCheckpoint | None: ...
 
 
+class ReadingAdaptationEvaluationCapability(Protocol):
+    """Evaluate and audit one book after a new chapter checkpoint."""
+
+    def evaluate_and_log(
+        self,
+        book_id: str,
+        event_logger: EventLogger | None,
+    ) -> None: ...
+
+
 class UnsupportedActionError(ValueError):
     def __init__(self, action_id: str):
         super().__init__(f"Unsupported action: {action_id}")
@@ -110,6 +120,9 @@ class ActionContext:
     db: VocabularyRepository | None = None
     reading_support_repository: ReadingSupportRepository | None = None
     chapter_checkpoint_recorder: ChapterCheckpointCapability | None = None
+    reading_adaptation_evaluator: (
+        ReadingAdaptationEvaluationCapability | None
+    ) = None
     selection_policy_resolver: SelectionPolicyResolver | None = None
     current_unit_id: str | None = None
 
@@ -494,6 +507,19 @@ def _record_chapter_checkpoint(
             annotated_lookup_count=checkpoint.annotated_lookup_count,
             annotation_target=checkpoint.annotation_target,
         )
+        if context.reading_adaptation_evaluator is not None:
+            try:
+                context.reading_adaptation_evaluator.evaluate_and_log(
+                    checkpoint.book_id,
+                    context.event_log_store,
+                )
+            except Exception as exc:
+                context.log_event(
+                    "reading_adaptation_evaluation_failed",
+                    book_id=checkpoint.book_id,
+                    chapter_id=checkpoint.chapter_id,
+                    error=str(exc),
+                )
 
 
 def _require_unit_id(payload: dict[str, Any]) -> str:

@@ -77,6 +77,56 @@ def test_initialize_schema_creates_current_repository_tables(tmp_path):
         }
         assert {"profile_id", "language_id"} <= unit_columns
         assert not {"status", "annotated_path", "annotated_at", "read_at"} & unit_columns
+        support_columns = {
+            row["name"]
+            for row in database.connection.execute(
+                "PRAGMA table_info(book_reading_support)"
+            ).fetchall()
+        }
+        assert {
+            "low_density_streak",
+            "max_target_high_density_streak",
+            "last_evaluated_chapter_id",
+            "cooldown_chapters_remaining",
+            "last_decision",
+            "last_uncovered_lookup_density",
+        } <= support_columns
         assert database.connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        database.close()
+
+
+def test_initialize_schema_adds_adaptation_columns_to_existing_support_table(
+    tmp_path,
+):
+    database = SQLiteDatabase(tmp_path / "app.db")
+    try:
+        database.connection.execute(
+            """
+            CREATE TABLE book_reading_support (
+                book_id TEXT PRIMARY KEY,
+                annotation_target INTEGER NOT NULL DEFAULT 8,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+            )
+            """
+        )
+        database.connection.commit()
+
+        initialize_schema(database.connection)
+
+        columns = {
+            row["name"]
+            for row in database.connection.execute(
+                "PRAGMA table_info(book_reading_support)"
+            ).fetchall()
+        }
+        assert {
+            "low_density_streak",
+            "max_target_high_density_streak",
+            "last_evaluated_chapter_id",
+            "cooldown_chapters_remaining",
+            "last_decision",
+            "last_uncovered_lookup_density",
+        } <= columns
     finally:
         database.close()

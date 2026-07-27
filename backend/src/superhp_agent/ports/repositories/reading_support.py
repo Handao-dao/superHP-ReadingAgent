@@ -6,6 +6,8 @@ behavior, decide when to adjust the target, or regenerate annotated copies.
 
 from typing import Protocol, runtime_checkable
 
+from superhp_agent.domain.reading_support import ReadingSupportState
+
 
 @runtime_checkable
 class ReadingSupportRepository(Protocol):
@@ -14,3 +16,11 @@ class ReadingSupportRepository(Protocol):
     def get_annotation_target(self, book_id: str) -> int: ...
 
     def set_annotation_target(self, book_id: str, annotation_target: int) -> None: ...
+
+    def get_state(self, book_id: str) -> ReadingSupportState: ...
+
+    def save_evaluation_state(
+        self,
+        book_id: str,
+        state: ReadingSupportState,
+    ) -> None: ...

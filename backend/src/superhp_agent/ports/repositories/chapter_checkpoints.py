@@ -15,3 +15,10 @@ class ChapterReadingCheckpointRepository(Protocol):
     ) -> ChapterReadingCheckpoint | None: ...
 
     def list_for_book(self, book_id: str) -> tuple[ChapterReadingCheckpoint, ...]: ...
+
+    def latest_for_book(
+        self,
+        book_id: str,
+        *,
+        limit: int = 3,
+    ) -> tuple[ChapterReadingCheckpoint, ...]: ...

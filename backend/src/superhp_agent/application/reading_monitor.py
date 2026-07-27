@@ -16,7 +16,10 @@ from superhp_agent.contracts import (
     ReadingDifficultyState,
 )
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
-from superhp_agent.domain.reading_metrics import count_english_words
+from superhp_agent.domain.reading_metrics import (
+    count_english_words,
+    density_per_300,
+)
 from superhp_agent.ports.repositories import (
     ReadingLookupRepository,
     ReadingProgressRepository,
@@ -84,19 +87,19 @@ class ReadingDifficultyMonitor:
         evidence = ReadingDifficultyEvidence(
             observed_word_count=observed_word_count,
             observed_chapter_count=observed_chapter_count,
-            lookup_density=_density(
+            lookup_density=density_per_300(
                 lookup_summary.lookup_count,
                 observed_word_count,
             ),
-            unique_lookup_density=_density(
+            unique_lookup_density=density_per_300(
                 lookup_summary.unique_lookup_count,
                 observed_word_count,
             ),
-            repeated_lookup_density=_density(
+            repeated_lookup_density=density_per_300(
                 lookup_summary.repeated_lookup_count,
                 observed_word_count,
             ),
-            annotated_lookup_density=_density(
+            annotated_lookup_density=density_per_300(
                 lookup_summary.annotated_lookup_count,
                 observed_word_count,
             ),
@@ -124,9 +127,3 @@ class ReadingDifficultyMonitor:
 def _english_word_count(document: ReadingUnitDocument) -> int:
     """Count English words only; punctuation does not affect monitor density."""
     return count_english_words(document.body)
-
-
-def _density(count: int, observed_word_count: int) -> float:
-    if observed_word_count <= 0:
-        return 0.0
-    return round(count / observed_word_count * 300, 2)

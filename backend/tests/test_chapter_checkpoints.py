@@ -64,6 +64,9 @@ class FakeCheckpointRepository:
             if stored_book_id == book_id
         )
 
+    def latest_for_book(self, book_id, *, limit=3):
+        return self.list_for_book(book_id)[-limit:]
+
 
 def _document(
     tmp_path: Path,
@@ -234,6 +237,7 @@ def test_sqlite_checkpoint_repository_is_idempotent_and_book_scoped(tmp_path):
         assert stored.completed_at
         assert repository.record(checkpoint) is None
         assert repository.list_for_book("book-1") == (stored,)
+        assert repository.latest_for_book("book-1") == (stored,)
         assert repository.list_for_book("book-2") == ()
     finally:
         db.close()

@@ -146,6 +146,16 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             book_id TEXT PRIMARY KEY,
             annotation_target INTEGER NOT NULL DEFAULT 8
                 CHECK (annotation_target BETWEEN 1 AND 20),
+            low_density_streak INTEGER NOT NULL DEFAULT 0
+                CHECK (low_density_streak >= 0),
+            max_target_high_density_streak INTEGER NOT NULL DEFAULT 0
+                CHECK (max_target_high_density_streak >= 0),
+            last_evaluated_chapter_id TEXT NOT NULL DEFAULT '',
+            cooldown_chapters_remaining INTEGER NOT NULL DEFAULT 0
+                CHECK (cooldown_chapters_remaining >= 0),
+            last_decision TEXT NOT NULL DEFAULT '',
+            last_uncovered_lookup_density REAL NOT NULL DEFAULT 0
+                CHECK (last_uncovered_lookup_density >= 0),
             updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         );
 
@@ -198,4 +208,66 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON reading_lookup_events(unit_id);
         """
     )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "low_density_streak",
+        "INTEGER NOT NULL DEFAULT 0 CHECK (low_density_streak >= 0)",
+    )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "max_target_high_density_streak",
+        (
+            "INTEGER NOT NULL DEFAULT 0 "
+            "CHECK (max_target_high_density_streak >= 0)"
+        ),
+    )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "last_evaluated_chapter_id",
+        "TEXT NOT NULL DEFAULT ''",
+    )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "cooldown_chapters_remaining",
+        (
+            "INTEGER NOT NULL DEFAULT 0 "
+            "CHECK (cooldown_chapters_remaining >= 0)"
+        ),
+    )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "last_decision",
+        "TEXT NOT NULL DEFAULT ''",
+    )
+    _ensure_column(
+        connection,
+        "book_reading_support",
+        "last_uncovered_lookup_density",
+        (
+            "REAL NOT NULL DEFAULT 0 "
+            "CHECK (last_uncovered_lookup_density >= 0)"
+        ),
+    )
     connection.commit()
+
+
+def _ensure_column(
+    connection: sqlite3.Connection,
+    table: str,
+    column: str,
+    definition: str,
+) -> None:
+    """Add one backward-compatible column to an already-created local table."""
+    existing = {
+        str(row["name"])
+        for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+    }
+    if column not in existing:
+        connection.execute(
+            f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+        )

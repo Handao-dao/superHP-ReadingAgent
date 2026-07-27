@@ -30,6 +30,7 @@ from superhp_agent.runtime.action_dispatcher import (
     AnnotationService,
     ChapterCheckpointCapability,
     MissingActionPayloadError,
+    ReadingAdaptationEvaluationCapability,
     SelectionPolicyResolver,
     UnsupportedActionError,
 )
@@ -81,6 +82,9 @@ class ReadingSocketSession:
         db: VocabularyRepository | None = None,
         reading_support_repository: ReadingSupportRepository | None = None,
         chapter_checkpoint_recorder: ChapterCheckpointCapability | None = None,
+        reading_adaptation_evaluator: (
+            ReadingAdaptationEvaluationCapability | None
+        ) = None,
         selection_policy_resolver: SelectionPolicyResolver | None = None,
         profile_registry: ProfileRegistry | None = None,
     ):
@@ -98,6 +102,7 @@ class ReadingSocketSession:
         self.db = db
         self.reading_support_repository = reading_support_repository
         self.chapter_checkpoint_recorder = chapter_checkpoint_recorder
+        self.reading_adaptation_evaluator = reading_adaptation_evaluator
         self.selection_policy_resolver = selection_policy_resolver
         self.profile_registry = profile_registry
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
@@ -219,6 +224,7 @@ class ReadingSocketSession:
             db=self.db,
             reading_support_repository=self.reading_support_repository,
             chapter_checkpoint_recorder=self.chapter_checkpoint_recorder,
+            reading_adaptation_evaluator=self.reading_adaptation_evaluator,
             selection_policy_resolver=self.selection_policy_resolver,
             current_unit_id=self.current_unit_id,
         )

@@ -62,9 +62,7 @@ class SQLiteChapterReadingCheckpointRepository:
         self,
         book_id: str,
     ) -> tuple[ChapterReadingCheckpoint, ...]:
-        book_id = str(book_id or "").strip()
-        if not book_id:
-            raise ValueError("book_id is required")
+        book_id = self._require_book_id(book_id)
         with self.database.lock:
             rows = self.database.connection.execute(
                 """
@@ -76,6 +74,36 @@ class SQLiteChapterReadingCheckpointRepository:
                 (book_id,),
             ).fetchall()
         return tuple(_checkpoint_from_row(row) for row in rows)
+
+    def latest_for_book(
+        self,
+        book_id: str,
+        *,
+        limit: int = 3,
+    ) -> tuple[ChapterReadingCheckpoint, ...]:
+        """Return the latest completed chapters in chronological order."""
+        book_id = self._require_book_id(book_id)
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            raise ValueError("limit must be a positive integer")
+        with self.database.lock:
+            rows = self.database.connection.execute(
+                """
+                SELECT *
+                FROM chapter_reading_checkpoints
+                WHERE book_id = ?
+                ORDER BY completed_at DESC, chapter_no DESC, chapter_id DESC
+                LIMIT ?
+                """,
+                (book_id, limit),
+            ).fetchall()
+        return tuple(_checkpoint_from_row(row) for row in reversed(rows))
+
+    @staticmethod
+    def _require_book_id(book_id: str) -> str:
+        value = str(book_id or "").strip()
+        if not value:
+            raise ValueError("book_id is required")
+        return value
 
 
 def _checkpoint_from_row(row: Any) -> ChapterReadingCheckpoint:

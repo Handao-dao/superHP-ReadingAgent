@@ -92,6 +92,19 @@ class FakeChapterCheckpointRecorder:
         )
 
 
+class FakeReadingAdaptationEvaluator:
+    def __init__(self):
+        self.book_ids = []
+
+    def evaluate_and_log(self, book_id, event_logger):
+        self.book_ids.append(book_id)
+        event_logger.log_event(
+            "reading_adaptation_evaluated",
+            book_id=book_id,
+            shadow_mode=True,
+        )
+
+
 def write_unit(root: Path):
     path = root / "hp01" / "hp01-ch01.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -198,12 +211,14 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
 
         memory = memory_store()
         checkpoint_recorder = FakeChapterCheckpointRecorder()
+        adaptation_evaluator = FakeReadingAdaptationEvaluator()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
             chapter_checkpoint_recorder=checkpoint_recorder,
+            reading_adaptation_evaluator=adaptation_evaluator,
             current_unit_id="hp01-ch01",
         )
         dispatcher = ActionDispatcher()
@@ -218,6 +233,8 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
         assert memory.load().read_unit_ids == ["hp01-ch01"]
         assert checkpoint_recorder.unit_ids == ["hp01-ch01"]
         assert memory.logged_events[0]["type"] == "chapter_checkpoint_recorded"
+        assert adaptation_evaluator.book_ids == ["hp01"]
+        assert memory.logged_events[1]["type"] == "reading_adaptation_evaluated"
 
     asyncio.run(run_case())
 

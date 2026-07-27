@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnit
+from superhp_agent.domain.reading_support import ReadingSupportState
 from superhp_agent.storage.database import SQLiteDatabase
 from superhp_agent.storage.migrations import initialize_schema
 from superhp_agent.storage.sqlite.bookmarks import (
@@ -154,6 +155,16 @@ class AppDB:
             book_id,
             annotation_target,
         )
+
+    def get_state(self, book_id: str) -> ReadingSupportState:
+        return self.reading_support_repository.get_state(book_id)
+
+    def save_evaluation_state(
+        self,
+        book_id: str,
+        state: ReadingSupportState,
+    ) -> None:
+        self.reading_support_repository.save_evaluation_state(book_id, state)
 
     def list_vocabulary(
         self,

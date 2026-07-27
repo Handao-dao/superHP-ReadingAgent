@@ -248,7 +248,9 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 `chapter_reading_checkpoints` 以 `book_id + chapter_id` 保证幂等。只有同一章节下全部
 `unit_id` 已读时才记录，内容包括章节词数、查词总数、已有译注词查词数以及各 section 共同使用的
 实际 `annotation_target`。缺少译注副本或 section 目标不一致时，目标诚实记录为 `NULL`。
-当前 checkpoint 只冻结事实，尚不触发 Policy 或修改支持目标。
+历史 checkpoint 不删除；`ReadingAdaptationEvaluator` 按 `book_id` 只读取最近三个组成滑动
+窗口。`book_reading_support` 同时保存每本书的最后评估章节、连续窗口计数和三章调整冷却。
+Evaluator 当前以 shadow mode 记录 Policy 的当前目标与建议目标，尚不写回实际支持目标。
 
 ## 渐进迁移顺序
 

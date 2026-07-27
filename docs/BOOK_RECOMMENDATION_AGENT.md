@@ -59,8 +59,10 @@
 
 `ReadingAdaptationPolicy` 是无存储、无 Corpus、无模型调用的确定性规则。章节 checkpoint
 也已接入：同一 `chapter_id` 下全部阅读单元首次读完时，系统会冻结章节词数、查词统计和实际
-`annotation_target`；`book_id + chapter_id` 保证重复标记不会重复记录。当前尚未把多章
-checkpoint 聚合成成熟窗口，也不会自动执行 Policy 或修改目标。
+`annotation_target`；`book_id + chapter_id` 保证重复标记不会重复记录。
+`ReadingAdaptationEvaluator` 现在按 `book_id` 读取最近三个 checkpoint：第 3 章使用
+`[1,2,3]`，之后依次滑动为 `[2,3,4]`、`[3,4,5]`。它会持久化每本书独立的评估位置、streak
+和三章目标变更冷却，并以 shadow mode 记录 Policy 决策；当前仍不会修改实际目标。
 
 英文 Profile 已先把密度规则从固定 `system_policy` 拆成独立的
 `<annotation_support target_per_300="...">` System Context Block。默认目标为 8，当前调用链
@@ -146,6 +148,15 @@ Agent 可以根据中间搜索结果调整条件、淘汰候选、补充查询�
 只读状态可通过 `GET /api/reading-difficulty/{book_id}` 检查。响应只公开当前真实可测的阅读量、
 查词密度、不同词项密度、重复查词密度和已有译注词查词密度；尚未接入的实际译注密度与动态
 译注目标不会伪装成 `0` 暴露给前端。
+
+这里的 `ReadingDifficultyMonitor` 是面向“是否需要换书”的长期累计观察，因此仍保留
+3 章且 5000 词的宽松门槛。译注强度适配使用另一条更短的反馈环：
+
+- 最小单位固定为完整 `chapter_id`，不再设置 5000 词门槛；
+- 每本书第 3 个 checkpoint 开始评估，此后只计算最近三个章节；
+- 历史 checkpoint 继续保留，滑动窗口只限制计算范围；
+- 新 `book_id` 使用默认目标 8 和空状态；返回旧书时恢复该书自己的状态；
+- 目标发生变化后，等待三个实际使用新目标的章节，再允许下一次目标变化。
 
 ### 3.3 辅助强度也是证据
 

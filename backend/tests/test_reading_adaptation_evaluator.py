@@ -1,10 +1,11 @@
-"""Sliding three-chapter evaluation tests for shadow-mode adaptation."""
+"""Sliding-window tests for applied and shadow reading adaptation."""
 
 from superhp_agent.application import (
     ReadingAdaptationAction,
     ReadingAdaptationEvaluator,
 )
 from superhp_agent.contracts import ChapterReadingCheckpoint
+from superhp_agent.domain.reading_support import ReadingSupportState
 from superhp_agent.storage import AppDB
 
 
@@ -42,6 +43,7 @@ def test_evaluator_starts_at_three_chapters_then_slides_one_chapter(tmp_path):
     evaluator = ReadingAdaptationEvaluator(
         db.chapter_checkpoint_repository,
         db.reading_support_repository,
+        apply_target_changes=False,
     )
 
     try:
@@ -68,6 +70,9 @@ def test_evaluator_starts_at_three_chapters_then_slides_one_chapter(tmp_path):
         assert first.decision is not None
         assert first.decision.action is ReadingAdaptationAction.INCREASE
         assert first.decision.next_target == 10
+        assert first.active_target == 8
+        assert first.target_changed is False
+        assert first.shadow_mode is True
         assert db.get_annotation_target("book-1") == 8
         assert (
             db.get_state("book-1").last_evaluated_chapter_id
@@ -159,6 +164,7 @@ def test_evaluator_logs_shadow_decision_without_applying_it(tmp_path):
     evaluator = ReadingAdaptationEvaluator(
         db.chapter_checkpoint_repository,
         db.reading_support_repository,
+        apply_target_changes=False,
     )
     logger = RecordingEventLogger()
 
@@ -179,7 +185,81 @@ def test_evaluator_logs_shadow_decision_without_applying_it(tmp_path):
         assert logger.events[0]["action"] == "increase"
         assert logger.events[0]["current_target"] == 8
         assert logger.events[0]["proposed_target"] == 10
+        assert logger.events[0]["active_target"] == 8
+        assert logger.events[0]["target_changed"] is False
         assert logger.events[0]["shadow_mode"] is True
         assert db.get_annotation_target("book-1") == 8
+    finally:
+        db.close()
+
+
+def test_evaluator_applies_target_change_and_starts_three_chapter_cooldown(
+    tmp_path,
+):
+    db = AppDB(tmp_path / "app.db")
+    evaluator = ReadingAdaptationEvaluator(
+        db.chapter_checkpoint_repository,
+        db.reading_support_repository,
+    )
+    logger = RecordingEventLogger()
+
+    try:
+        for chapter_no in (1, 2, 3):
+            db.chapter_checkpoint_repository.record(
+                _checkpoint(chapter_no, lookup_count=4)
+            )
+
+        evaluator.evaluate_and_log("book-1", logger)
+
+        state = db.get_state("book-1")
+        assert state.annotation_target == 10
+        assert state.cooldown_chapters_remaining == 3
+        assert state.last_evaluated_chapter_id == "book-1-ch03"
+        assert state.last_decision == "applied:increase"
+        assert logger.events[0]["current_target"] == 8
+        assert logger.events[0]["proposed_target"] == 10
+        assert logger.events[0]["active_target"] == 10
+        assert logger.events[0]["target_changed"] is True
+        assert logger.events[0]["shadow_mode"] is False
+    finally:
+        db.close()
+
+
+def test_evaluator_applies_decrease_after_two_low_density_windows(tmp_path):
+    db = AppDB(tmp_path / "app.db")
+    evaluator = ReadingAdaptationEvaluator(
+        db.chapter_checkpoint_repository,
+        db.reading_support_repository,
+    )
+
+    try:
+        db.save_evaluation_state(
+            "book-1",
+            ReadingSupportState(annotation_target=10),
+        )
+        for chapter_no in (1, 2, 3):
+            db.chapter_checkpoint_repository.record(
+                _checkpoint(chapter_no, annotation_target=10)
+            )
+
+        first = evaluator.evaluate_book("book-1")
+
+        assert first is not None
+        assert first.decision is not None
+        assert first.decision.action is ReadingAdaptationAction.HOLD
+        assert db.get_state("book-1").low_density_streak == 1
+
+        db.chapter_checkpoint_repository.record(
+            _checkpoint(4, annotation_target=10)
+        )
+        second = evaluator.evaluate_book("book-1")
+
+        assert second is not None
+        assert second.decision is not None
+        assert second.decision.action is ReadingAdaptationAction.DECREASE
+        assert second.active_target == 9
+        assert second.target_changed is True
+        assert db.get_annotation_target("book-1") == 9
+        assert db.get_state("book-1").cooldown_chapters_remaining == 3
     finally:
         db.close()

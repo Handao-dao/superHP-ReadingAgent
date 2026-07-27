@@ -1,8 +1,7 @@
-"""Evaluate the latest three completed chapters without applying target changes.
+"""Evaluate the latest three completed chapters and apply safe target changes.
 
-This shadow-mode coordinator keeps observation and decision logic operational
-while deliberately leaving ``annotation_target`` unchanged. A later step may
-apply selected decisions through the existing ReadingSupportRepository.
+Only ``increase`` and ``decrease`` decisions change ``annotation_target``.
+Callers may disable writes explicitly for shadow-mode tests and diagnostics.
 """
 
 from __future__ import annotations
@@ -10,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from superhp_agent.application.reading_adaptation import (
+    ReadingAdaptationAction,
     ReadingAdaptationDecision,
     ReadingAdaptationPolicy,
     ReadingAdaptationState,
@@ -19,7 +19,10 @@ from superhp_agent.contracts import (
     ReadingDifficultyEvidence,
 )
 from superhp_agent.domain.reading_metrics import density_per_300
-from superhp_agent.domain.reading_support import ReadingSupportState
+from superhp_agent.domain.reading_support import (
+    TARGET_CHANGE_COOLDOWN_CHAPTERS,
+    ReadingSupportState,
+)
 from superhp_agent.ports.events import EventLogger
 from superhp_agent.ports.repositories import (
     ChapterReadingCheckpointRepository,
@@ -46,12 +49,15 @@ class ReadingAdaptationWindow:
 
 @dataclass(frozen=True)
 class ReadingAdaptationEvaluation:
-    """One persisted shadow evaluation or cooldown observation."""
+    """One persisted policy evaluation or cooldown observation."""
 
     window: ReadingAdaptationWindow
     decision: ReadingAdaptationDecision | None
     reason: str
     cooldown_chapters_remaining: int
+    active_target: int
+    target_changed: bool
+    shadow_mode: bool
 
 
 class ReadingAdaptationEvaluator:
@@ -63,10 +69,12 @@ class ReadingAdaptationEvaluator:
         support_repository: ReadingSupportRepository,
         *,
         policy: ReadingAdaptationPolicy | None = None,
+        apply_target_changes: bool = True,
     ):
         self.checkpoint_repository = checkpoint_repository
         self.support_repository = support_repository
         self.policy = policy or ReadingAdaptationPolicy()
+        self.apply_target_changes = bool(apply_target_changes)
 
     def evaluate_book(
         self,
@@ -125,6 +133,9 @@ class ReadingAdaptationEvaluator:
                     decision=None,
                     reason=reason,
                     cooldown_chapters_remaining=cooldown_remaining,
+                    active_target=support_state.annotation_target,
+                    target_changed=False,
+                    shadow_mode=not self.apply_target_changes,
                 )
 
         if len(checkpoints) < ADAPTATION_WINDOW_CHAPTERS:
@@ -145,17 +156,39 @@ class ReadingAdaptationEvaluator:
             window.evidence,
             window_ready=True,
         )
-        # Shadow mode persists counters and the evaluation cursor, but keeps the
-        # active target unchanged until automatic writes are explicitly enabled.
+        target_changed = (
+            self.apply_target_changes
+            and decision.action
+            in {
+                ReadingAdaptationAction.INCREASE,
+                ReadingAdaptationAction.DECREASE,
+            }
+            and decision.next_target != support_state.annotation_target
+        )
+        active_target = (
+            decision.next_target
+            if target_changed
+            else support_state.annotation_target
+        )
+        cooldown_remaining = (
+            TARGET_CHANGE_COOLDOWN_CHAPTERS if target_changed else 0
+        )
+        decision_prefix = (
+            "applied"
+            if target_changed
+            else "shadow"
+            if not self.apply_target_changes
+            else "observed"
+        )
         next_state = ReadingSupportState(
-            annotation_target=support_state.annotation_target,
+            annotation_target=active_target,
             low_density_streak=decision.next_state.low_density_streak,
             max_target_high_density_streak=(
                 decision.next_state.max_target_high_density_streak
             ),
             last_evaluated_chapter_id=newest.chapter_id,
-            cooldown_chapters_remaining=0,
-            last_decision=f"shadow:{decision.action.value}",
+            cooldown_chapters_remaining=cooldown_remaining,
+            last_decision=f"{decision_prefix}:{decision.action.value}",
             last_uncovered_lookup_density=(
                 decision.uncovered_lookup_density
             ),
@@ -164,8 +197,17 @@ class ReadingAdaptationEvaluator:
         return ReadingAdaptationEvaluation(
             window=window,
             decision=decision,
-            reason="shadow_decision",
-            cooldown_chapters_remaining=0,
+            reason=(
+                "target_updated"
+                if target_changed
+                else "shadow_decision"
+                if not self.apply_target_changes
+                else "decision_recorded"
+            ),
+            cooldown_chapters_remaining=cooldown_remaining,
+            active_target=active_target,
+            target_changed=target_changed,
+            shadow_mode=not self.apply_target_changes,
         )
 
     def evaluate_and_log(
@@ -173,7 +215,7 @@ class ReadingAdaptationEvaluator:
         book_id: str,
         event_logger: EventLogger | None,
     ) -> None:
-        """Evaluate once and emit an audit event without applying the target."""
+        """Evaluate once and emit an audit event describing any target write."""
         evaluation = self.evaluate_book(book_id)
         if evaluation is None or event_logger is None:
             return
@@ -206,6 +248,8 @@ class ReadingAdaptationEvaluator:
                 if decision is not None
                 else current_target
             ),
+            active_target=evaluation.active_target,
+            target_changed=evaluation.target_changed,
             action=(
                 decision.action.value if decision is not None else "hold"
             ),
@@ -213,7 +257,7 @@ class ReadingAdaptationEvaluator:
             cooldown_chapters_remaining=(
                 evaluation.cooldown_chapters_remaining
             ),
-            shadow_mode=True,
+            shadow_mode=evaluation.shadow_mode,
         )
 
 

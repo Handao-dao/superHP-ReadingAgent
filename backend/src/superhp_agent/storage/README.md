@@ -250,7 +250,8 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 实际 `annotation_target`。缺少译注副本或 section 目标不一致时，目标诚实记录为 `NULL`。
 历史 checkpoint 不删除；`ReadingAdaptationEvaluator` 按 `book_id` 只读取最近三个组成滑动
 窗口。`book_reading_support` 同时保存每本书的最后评估章节、连续窗口计数和三章调整冷却。
-Evaluator 当前以 shadow mode 记录 Policy 的当前目标与建议目标，尚不写回实际支持目标。
+`INCREASE/DECREASE` 会把新目标、评估位置、streak 与冷却作为同一份状态写回；
+`HOLD/DIFFICULTY_ALERT` 不改变目标。已有译注副本不会被自动重写。
 
 ## 渐进迁移顺序
 

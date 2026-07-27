@@ -277,7 +277,7 @@ contracts/
 - `ReadingProgressRepository` 中的已读和当前状态。
 - `ReadingDifficultyMonitor` 只读聚合已完成英文单元与主动查词事实，输出长期观察状态。
 - `ReadingAdaptationPolicy` 根据成熟窗口的未覆盖查词密度输出保持、升高、降低或难度告警决策；
-  `ReadingAdaptationEvaluator` 按书聚合最近三个章节并以 shadow mode 记录决策，尚不写回目标。
+  `ReadingAdaptationEvaluator` 按书聚合最近三个章节，并自动写回升高或降低后的目标。
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 

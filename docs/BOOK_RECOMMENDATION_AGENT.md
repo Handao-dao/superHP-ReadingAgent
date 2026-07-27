@@ -62,7 +62,9 @@
 `annotation_target`；`book_id + chapter_id` 保证重复标记不会重复记录。
 `ReadingAdaptationEvaluator` 现在按 `book_id` 读取最近三个 checkpoint：第 3 章使用
 `[1,2,3]`，之后依次滑动为 `[2,3,4]`、`[3,4,5]`。它会持久化每本书独立的评估位置、streak
-和三章目标变更冷却，并以 shadow mode 记录 Policy 决策；当前仍不会修改实际目标。
+和三章目标变更冷却。`INCREASE/DECREASE` 会在同一次状态写入中更新该书目标；`HOLD` 和
+`DIFFICULTY_ALERT` 只保存状态与审计事件。目标变化不重新生成已有译注，只影响之后生成的章节。
+Evaluator 仍保留显式 shadow 开关供测试和诊断使用，生产组合默认启用写回。
 
 英文 Profile 已先把密度规则从固定 `system_policy` 拆成独立的
 `<annotation_support target_per_300="...">` System Context Block。默认目标为 8，当前调用链

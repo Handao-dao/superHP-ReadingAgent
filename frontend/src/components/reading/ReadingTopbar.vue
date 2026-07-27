@@ -1,6 +1,6 @@
 <!--
   Presents reader identity, view switching, connectivity, and page status.
-  The parent coordinates reader and vocabulary views.
+  The parent coordinates reader, vocabulary, and recommendation views.
 -->
 <script setup>
 defineProps({
@@ -30,6 +30,7 @@ defineEmits(['paper-theme-change', 'toggle-paper-theme', 'toggle-sidebar', 'view
       <div class="view-switch" aria-label="页面切换">
         <button type="button" :class="{ 'is-active': activeView === 'reader' }" @click="$emit('view-change', 'reader')">阅读</button>
         <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="$emit('view-change', 'vocabulary')">生词表</button>
+        <button type="button" :class="{ 'is-active': activeView === 'recommendation' }" @click="$emit('view-change', 'recommendation')">选书</button>
       </div>
       <div class="paper-theme-control" @click.stop>
         <button

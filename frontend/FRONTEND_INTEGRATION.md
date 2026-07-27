@@ -79,6 +79,7 @@ type ReadingLoadStatus =
 | `superhp_profile_id` | 当前阅读 Profile |
 | `superhp_current_unit_id` | 当前阅读单元，用于刷新后恢复章节/cards 上下文 |
 | `superhp_reader_theme` | `parchment` 或 `white-paper` |
+| `superhp_recommendation_session_id` | 当前选书 Agent 会话，用于刷新后恢复对话 |
 
 页面位置不自动持久化。精确阅读定位由用户显式保存书签完成。
 
@@ -196,6 +197,13 @@ type RecommendationSessionResponse = {
 ```
 
 内部 Tool Call 和 Tool Result 不属于页面协议。前端只渲染 `messages` 和验证后的图书卡片。
+
+顶栏“选书”入口打开独立的推荐对话视图。页面第一次只展示“开始选书”，避免仅因切换页面就产生
+模型调用；点击后才创建 Session。刷新页面时，如果本地存在 session id，Composable 使用 GET
+恢复对话。临时网络错误会保留本地 id，只有后端明确返回 404 才清除失效指针。
+
+当前完成态只提示用户从左侧本地书库进入既有阅读流程，不伪造“选择图书”写操作。阅读困难后的
+被动重激活、近期阅读 Handoff 和用户授权提示属于后续步骤。
 
 ### 查词与词表
 

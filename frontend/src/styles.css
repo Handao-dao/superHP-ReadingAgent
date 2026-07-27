@@ -1,6 +1,7 @@
 ﻿@import './styles/layout.css';
 @import './styles/reader.css';
 @import './styles/vocabulary.css';
+@import './styles/recommendation.css';
 @import './renderers/englishNovel/styles.css';
 @import './renderers/classicalChinese/styles.css';
 

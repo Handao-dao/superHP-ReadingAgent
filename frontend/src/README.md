@@ -25,10 +25,12 @@ src/
 │   ├── useBookmarks.js             # 书签 CRUD、分组和跳页解析
 │   ├── useReaderPagination.js      # CSS columns 分页和 DOM 测量
 │   ├── useReadingCatalog.js        # Profile、章节目录和选择持久化
+│   ├── useRecommendationSession.js # 选书对话、恢复和请求状态
 │   ├── useReadingSocket.js         # WebSocket 会话和后端事件状态
 │   └── useWordLookup.js            # 查词、上下文提取和手动标注
 ├── components/
 │   ├── VocabularyPanel.vue         # 生词列表功能区
+│   ├── recommendation/             # 选书对话和候选卡片
 │   └── reading/                    # 阅读器展示组件
 │       ├── GuidancePanel.vue       # Guided cards 与 action 选择
 │       ├── LookupPopover.vue       # 查词结果浮层
@@ -99,7 +101,8 @@ Renderer 不负责：
 - 处理跨领域动作，例如打开书签时协调 WebSocket action 与分页跳转。
 - 切换 Profile 时同时清空章节、cards、分页和查词状态。
 - 打开书签时协调 WebSocket action 与分页跳转。
-- 组合侧栏、顶栏、纸面状态、正文、生词页等组件。
+- 在阅读、生词表和选书对话三个顶层视图之间切换。
+- 组合侧栏、顶栏、纸面状态、正文、生词页和选书页等组件。
 
 如果一段逻辑只依赖一个领域，就应优先下沉到对应 composable；如果只是渲染 props，就应优先进入展示组件。
 
@@ -113,6 +116,8 @@ flowchart LR
     C -->|响应式状态| APP
     APP -->|props| UI
     APP -->|阅读 action| WS["useReadingSocket"]
+    APP -->|选书意图| REC["useRecommendationSession"]
+    REC -->|HTTP| API
     WS -->|后端事件与正文| APP
     APP --> R["Renderer"]
     R -->|HTML blocks| TEXT["ReadingTextPage"]
@@ -126,6 +131,14 @@ flowchart LR
 4. `App.vue` 刷新目录统计。
 5. Renderer 根据新标注重新生成 blocks。
 6. `useReaderPagination` 重新计算页数。
+
+选书对话遵循相同方向：
+
+1. `RecommendationChatPage` 发出 `start` 或 `send`。
+2. `App.vue` 把意图交给 `useRecommendationSession`。
+3. Composable 通过 `api/recommendations.js` 创建、继续或恢复 Session。
+4. 后端只返回 user / assistant 可见消息和验证后的图书卡片。
+5. Composable 以 `session_id` 为唯一恢复指针，展示组件不访问 `localStorage`。
 
 ## 分页 DOM 边界
 

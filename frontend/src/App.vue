@@ -8,9 +8,11 @@ import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
+import RecommendationChatPage from './components/recommendation/RecommendationChatPage.vue'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
+import { useRecommendationSession } from './composables/useRecommendationSession'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { useWordLookup } from './composables/useWordLookup'
 import { getReadingRenderer } from './renderers'
@@ -68,6 +70,20 @@ const currentMeta = computed(() => {
 })
 const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.profile_id || selectedProfileId.value))
 const profileShellClass = computed(() => `profile-${selectedProfileId.value}`)
+
+const {
+  canSend: recommendationCanSend,
+  errorMessage: recommendationError,
+  hasSession: hasRecommendationSession,
+  hasStoredSession: hasStoredRecommendationSession,
+  loading: recommendationLoading,
+  messages: recommendationMessages,
+  phase: recommendationPhase,
+  recommendedBooks,
+  restoreSession: restoreRecommendationSession,
+  sendMessage: sendRecommendationMessage,
+  startSession: startRecommendationSession,
+} = useRecommendationSession()
 
 const {
   addLookupAnnotation,
@@ -199,6 +215,23 @@ const chapterDetailText = computed(() => {
   return `Chapter ${meta.chapter_no} · ${meta.chapter_title}`
 })
 
+const topbarTitle = computed(() => {
+  if (activeView.value === 'recommendation') return '英文小说选书助手'
+  return currentMeta.value?.book_title || currentProfile.value.label
+})
+
+const topbarSubtitle = computed(() => {
+  if (activeView.value === 'recommendation') return '通过对话寻找适合持续阅读的下一本书'
+  if (activeView.value === 'vocabulary') return currentTitle.value || '个人生词记录'
+  return currentMeta.value ? chapterLabel.value : ''
+})
+
+const topbarPageLabel = computed(() => {
+  if (activeView.value === 'recommendation') return '选书对话'
+  if (activeView.value === 'vocabulary') return '生词表'
+  return pageLabel.value
+})
+
 const guideActionTitle = computed(() => (hasActiveReading.value ? 'Next Step' : 'Reading Mode'))
 
 const surfaceTone = computed(() => ({
@@ -288,6 +321,13 @@ function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
 
+function handleViewChange(view) {
+  activeView.value = view
+  closeLookupBubble()
+  paperThemeOpen.value = false
+  if (view !== 'reader') sidebarOpen.value = false
+}
+
 function selectPaperTheme(theme) {
   if (!PAPER_THEMES.has(theme)) return
   paperTheme.value = theme
@@ -358,6 +398,7 @@ onMounted(() => {
   loadLibraryCatalog()
   loadChapterList()
   loadBookmarks()
+  restoreRecommendationSession()
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
@@ -400,16 +441,16 @@ onBeforeUnmount(() => {
     <section class="reader-shell">
       <ReadingTopbar
         :active-view="activeView"
-        :book-title="currentMeta?.book_title || currentProfile.label"
-        :chapter-label="currentMeta ? chapterLabel : ''"
+        :book-title="topbarTitle"
+        :chapter-label="topbarSubtitle"
         :connected="connected"
-        :page-label="pageLabel"
+        :page-label="topbarPageLabel"
         :paper-theme="paperTheme"
         :paper-theme-open="paperThemeOpen"
         @paper-theme-change="selectPaperTheme"
         @toggle-paper-theme="paperThemeOpen = !paperThemeOpen"
         @toggle-sidebar="toggleSidebar"
-        @view-change="activeView = $event"
+        @view-change="handleViewChange"
       />
 
       <section v-if="activeView === 'reader'" class="book-stage">
@@ -504,7 +545,7 @@ onBeforeUnmount(() => {
       >›</button>
       </section>
 
-      <section v-else class="book-stage vocabulary-stage">
+      <section v-else-if="activeView === 'vocabulary'" class="book-stage vocabulary-stage">
         <article class="paper-surface vocabulary-surface">
           <VocabularyPanel
             :collections="libraryCollections"
@@ -514,6 +555,24 @@ onBeforeUnmount(() => {
             :refresh-key="vocabularyRefreshKey"
             v-model:selected-unit-id="selectedVocabularyUnitId"
             @changed="handleVocabularyChanged"
+          />
+        </article>
+      </section>
+
+      <section v-else class="recommendation-stage">
+        <article class="paper-surface recommendation-surface">
+          <RecommendationChatPage
+            :can-send="recommendationCanSend"
+            :error-message="recommendationError"
+            :has-session="hasRecommendationSession"
+            :has-stored-session="hasStoredRecommendationSession"
+            :loading="recommendationLoading"
+            :messages="recommendationMessages"
+            :phase="recommendationPhase"
+            :recommended-books="recommendedBooks"
+            @restore="restoreRecommendationSession"
+            @send="sendRecommendationMessage"
+            @start="startRecommendationSession"
           />
         </article>
       </section>

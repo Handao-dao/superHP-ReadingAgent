@@ -5,6 +5,9 @@ from superhp_agent.storage.sqlite.reading_lookups import SQLiteReadingLookupRepo
 from superhp_agent.storage.sqlite.reading_progress import (
     SQLiteReadingProgressRepository,
 )
+from superhp_agent.storage.sqlite.reading_support import (
+    SQLiteReadingSupportRepository,
+)
 from superhp_agent.storage.sqlite.recommendation_catalog import (
     SQLiteBookDifficultyCatalog,
 )
@@ -18,6 +21,7 @@ __all__ = [
     "SQLiteBookmarkRepository",
     "SQLiteReadingProgressRepository",
     "SQLiteReadingLookupRepository",
+    "SQLiteReadingSupportRepository",
     "SQLiteBookDifficultyCatalog",
     "SQLiteRecommendationSessionRepository",
     "SQLiteUnitRepository",

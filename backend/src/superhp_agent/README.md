@@ -295,7 +295,8 @@ ports/                         # 上层业务需要哪些底层能力
 └── repositories/              # 可查询、可更新的数据能力接口
     ├── vocabulary.py
     ├── bookmarks.py
-    └── reading_progress.py
+    ├── reading_progress.py
+    └── reading_support.py      # 每本书的英文译注支持目标
 
 storage/                       # 存储类 Port 如何具体实现
 ├── database.py                # SQLite 连接、锁和生命周期
@@ -305,7 +306,8 @@ storage/                       # 存储类 Port 如何具体实现
     ├── units.py
     ├── vocabulary.py
     ├── bookmarks.py
-    └── reading_progress.py
+    ├── reading_progress.py
+    └── reading_support.py
 ```
 
 Port 只声明方法、参数和返回值，不执行 SQL，也不知道数据文件的位置。Runtime、Service 和
@@ -346,12 +348,14 @@ storage/
     ├── units.py           # 内部 unit metadata 同步
     ├── vocabulary.py      # 已完成：词汇 SQL 实现
     ├── bookmarks.py       # 已完成：书签 SQL 实现
-    └── reading_progress.py # 已完成：阅读进度 SQL 实现
+    ├── reading_progress.py # 已完成：阅读进度 SQL 实现
+    └── reading_support.py  # 已完成：每本书译注目标 SQL 实现
 ```
 
 - `CorpusStore`：扫描、解析并安全读取原始语料。
 - `AnnotatedCopyStore`：命名、读取和保存每个阅读单元的唯一译注副本。
 - `ReadingProgressRepository`：通过 SQLite 保存当前、已打开和已读状态。
+- `ReadingSupportRepository`：按书保存当前英文译注支持目标；未设置时返回默认值 8。
 - `EventLogStore`：只向 JSONL 追加诊断事件，不读取或重建业务状态。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。
 

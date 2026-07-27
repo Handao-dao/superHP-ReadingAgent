@@ -54,6 +54,7 @@ library_catalog = container.library_catalog
 event_log_store = container.event_log_store
 reading_progress_repository = container.reading_progress_repository
 reading_lookup_repository = container.reading_lookup_repository
+reading_support_repository = container.reading_support_repository
 reading_difficulty_monitor = container.reading_difficulty_monitor
 db = container.db
 vocabulary_repository = container.vocabulary_repository
@@ -421,6 +422,7 @@ async def reading_socket(websocket: WebSocket):
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         db=vocabulary_repository,
+        reading_support_repository=reading_support_repository,
         selection_policy_resolver=library_catalog,
         profile_registry=profile_registry,
     )

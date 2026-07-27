@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from superhp_agent.corpus import ReadingUnitDocument
+from superhp_agent.domain.reading_support import validate_annotation_target
 
 ANNOTATION_FORMAT_VERSION = 1
 VALID_ANNOTATION_STATUSES = {"completed", "degraded"}
@@ -64,6 +65,7 @@ class AnnotatedCopyStore:
         status: str = "completed",
         validated_chunk_count: int = 1,
         total_chunk_count: int = 1,
+        annotation_target: int | None = None,
     ) -> Path:
         """Atomically persist one canonical annotated copy."""
         if status not in VALID_ANNOTATION_STATUSES:
@@ -72,6 +74,8 @@ class AnnotatedCopyStore:
         total_chunk_count = int(total_chunk_count)
         if not 0 <= validated_chunk_count <= total_chunk_count:
             raise ValueError("validated_chunk_count must be between 0 and total_chunk_count")
+        if annotation_target is not None:
+            annotation_target = validate_annotation_target(annotation_target)
         path = self.path_for(document.meta.id)
         path.parent.mkdir(parents=True, exist_ok=True)
         rendered = self._render_markdown(
@@ -81,6 +85,7 @@ class AnnotatedCopyStore:
             status=status,
             validated_chunk_count=validated_chunk_count,
             total_chunk_count=total_chunk_count,
+            annotation_target=annotation_target,
         )
         self._atomic_write(path, rendered)
         return path
@@ -94,6 +99,7 @@ class AnnotatedCopyStore:
         status: str,
         validated_chunk_count: int,
         total_chunk_count: int,
+        annotation_target: int | None,
     ) -> str:
         vocab_lines = "\n".join(
             f"# - {item.word}: {item.translation} ({getattr(item, 'pos', 'other')})"
@@ -102,6 +108,11 @@ class AnnotatedCopyStore:
         )
         annotated_at = datetime.now(UTC).isoformat()
         source_hash = hashlib.sha256(document.body.encode("utf-8")).hexdigest()
+        annotation_target_line = (
+            f"annotation_target: {annotation_target}\n"
+            if annotation_target is not None
+            else ""
+        )
         return (
             "---\n"
             f"source_unit_id: {document.meta.id}\n"
@@ -115,6 +126,7 @@ class AnnotatedCopyStore:
             f"status: {status}\n"
             f"validated_chunk_count: {validated_chunk_count}\n"
             f"total_chunk_count: {total_chunk_count}\n"
+            f"{annotation_target_line}"
             f"annotated_at: {annotated_at}\n"
             "---\n\n"
             f"<!-- extracted_vocabulary\n{vocab_lines}\n-->\n\n"

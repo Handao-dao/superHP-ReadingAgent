@@ -10,6 +10,7 @@ from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.ports.repositories import (
     BookmarkRepository,
     ReadingLookupRepository,
+    ReadingSupportRepository,
     RecommendationSessionRepository,
     VocabularyRepository,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "EventSink",
     "LLMProvider",
     "ReadingLookupRepository",
+    "ReadingSupportRepository",
     "RecommendationSessionRepository",
     "VocabularyRepository",
     "emit_backend_event",

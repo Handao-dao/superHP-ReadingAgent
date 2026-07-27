@@ -29,6 +29,10 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.db.reading_progress_repository
         )
         assert (
+            container.reading_support_repository
+            is container.db.reading_support_repository
+        )
+        assert (
             container.recommendation_session_repository
             is container.db.recommendation_session_repository
         )

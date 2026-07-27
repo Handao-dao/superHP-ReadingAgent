@@ -41,6 +41,7 @@ def test_store_writes_and_reads_canonical_copy(tmp_path):
         status="degraded",
         validated_chunk_count=1,
         total_chunk_count=2,
+        annotation_target=12,
     )
     copy = store.read("hp01-ch01")
 
@@ -56,8 +57,24 @@ def test_store_writes_and_reads_canonical_copy(tmp_path):
     assert "status: degraded" in copy.metadata
     assert "validated_chunk_count: 1" in copy.metadata
     assert "total_chunk_count: 2" in copy.metadata
+    assert "annotation_target: 12" in copy.metadata
     assert "# - text: 文本 (other)" in path.read_text(encoding="utf-8")
     assert store.exists_any("hp01-ch01") is True
+
+
+def test_store_rejects_invalid_annotation_target(tmp_path):
+    corpus_root = tmp_path / "corpus"
+    write_unit(corpus_root)
+    document = CorpusStore(corpus_root).get_unit("hp01-ch01")
+    store = AnnotatedCopyStore(tmp_path / "annotated")
+
+    with pytest.raises(ValueError, match="between 1 and 20"):
+        store.write(
+            document,
+            annotated_text="Body text.",
+            vocabulary=[],
+            annotation_target=21,
+        )
 
 
 def test_store_keeps_existing_copy_when_atomic_replace_fails(tmp_path, monkeypatch):

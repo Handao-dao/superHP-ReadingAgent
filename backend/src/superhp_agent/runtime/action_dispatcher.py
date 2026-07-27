@@ -16,10 +16,12 @@ from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
+from superhp_agent.domain.reading_support import DEFAULT_ANNOTATION_TARGET
 from superhp_agent.domain.vocabulary import extract_vocabulary_candidates
 from superhp_agent.ports.events import EventLogger, EventSink, emit_backend_event
 from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
+    ReadingSupportRepository,
     VocabularyRepository,
 )
 from superhp_agent.runtime.actions import (
@@ -92,6 +94,7 @@ class ActionContext:
     annotated_copies: AnnotatedCopyStore | None = None
     annotator_service: AnnotationService | None = None
     db: VocabularyRepository | None = None
+    reading_support_repository: ReadingSupportRepository | None = None
     selection_policy_resolver: SelectionPolicyResolver | None = None
     current_unit_id: str | None = None
 
@@ -287,6 +290,30 @@ class GenerateAnnotationHandler:
         await context.emit_event("annotation.started", request_id=request_id, unit_id=unit_id)
         doc = context.corpus.get_unit(unit_id)
         context.current_unit_id = doc.meta.id
+        annotation_target = (
+            DEFAULT_ANNOTATION_TARGET
+            if doc.meta.language_id == "en"
+            else None
+        )
+        if (
+            annotation_target is not None
+            and context.reading_support_repository is not None
+        ):
+            try:
+                annotation_target = (
+                    context.reading_support_repository.get_annotation_target(
+                        doc.meta.book_id
+                    )
+                )
+            except Exception as exc:
+                # A support-state read failure must not make the chapter
+                # unavailable; default English support remains a safe fallback.
+                context.log_event(
+                    "annotation_support_load_failed",
+                    unit_id=unit_id,
+                    book_id=doc.meta.book_id,
+                    error=str(exc),
+                )
 
         # Emit progress before the model call so the frontend can show useful
         # feedback during longer annotation runs.
@@ -318,6 +345,7 @@ class GenerateAnnotationHandler:
                 event_sink=context.event_sink,
                 request_id=request_id,
                 profile_id=doc.meta.profile_id,
+                annotation_target=annotation_target,
                 selection_policy_id=(
                     context.selection_policy_resolver.selection_policy_id_for_book(
                         doc.meta.book_id,
@@ -351,6 +379,7 @@ class GenerateAnnotationHandler:
                 status=status,
                 validated_chunk_count=result.validated_chunk_count,
                 total_chunk_count=result.total_chunk_count,
+                annotation_target=annotation_target,
             )
             if context.db:
                 stored_vocabulary_count = context.db.add_vocabulary_items(
@@ -371,6 +400,7 @@ class GenerateAnnotationHandler:
             vocabulary_count=len(result.vocabulary),
             stored_vocabulary_count=stored_vocabulary_count,
             degraded_chunk_count=len(result.issues),
+            annotation_target=annotation_target,
         )
 
         await context.emit_event(
@@ -386,6 +416,7 @@ class GenerateAnnotationHandler:
             degraded_chunk_count=len(result.issues),
             provider_error_count=provider_error_count,
             validation_error_count=validation_error_count,
+            annotation_target=annotation_target,
         )
         await _emit_opened_unit(
             context,

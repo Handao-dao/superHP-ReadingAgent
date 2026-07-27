@@ -3,6 +3,7 @@
 from superhp_agent.ports.repositories.bookmarks import BookmarkRepository
 from superhp_agent.ports.repositories.reading_lookups import ReadingLookupRepository
 from superhp_agent.ports.repositories.reading_progress import ReadingProgressRepository
+from superhp_agent.ports.repositories.reading_support import ReadingSupportRepository
 from superhp_agent.ports.repositories.recommendation_sessions import (
     RecommendationSessionRepository,
 )
@@ -12,6 +13,7 @@ __all__ = [
     "BookmarkRepository",
     "ReadingLookupRepository",
     "ReadingProgressRepository",
+    "ReadingSupportRepository",
     "RecommendationSessionRepository",
     "VocabularyRepository",
 ]

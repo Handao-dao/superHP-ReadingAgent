@@ -53,7 +53,9 @@
 英文 Profile 已先把密度规则从固定 `system_policy` 拆成独立的
 `<annotation_support target_per_300="...">` System Context Block。默认目标为 8，当前调用链
 允许显式传入 1～20；该 Block 把数字定义为可以少用的支持上限，而不是要求模型填满的配额。
-目标持久化和 `ReadingAdaptationPolicy` 自动调整仍属于后续步骤。
+`ReadingSupportRepository` 已按 `book_id` 持久化当前目标，Dispatcher 会在生成英文译注时读取
+并注入，译注副本也会记录本次实际使用值。`ReadingAdaptationPolicy` 的自动调整仍属于后续步骤；
+当前目标变化不会自动重写已有译注。
 
 ### 2.3 Agent
 

@@ -31,6 +31,7 @@ class FakeAnnotator:
         self.mastered_words = []
         self.profile_ids = []
         self.selection_policy_ids = []
+        self.annotation_targets = []
 
     async def annotate_text(
         self,
@@ -41,10 +42,12 @@ class FakeAnnotator:
         request_id=None,
         profile_id=None,
         selection_policy_id=None,
+        annotation_target=None,
     ):
         self.mastered_words.append(mastered_words or [])
         self.profile_ids.append(profile_id)
         self.selection_policy_ids.append(selection_policy_id)
+        self.annotation_targets.append(annotation_target)
         return AnnotationResult(
             annotated_text="Body [[text|文本]].",
             vocabulary=[AnnotationItem(word="text", translation="文本", context="Body text.")],
@@ -263,6 +266,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
             context="Known word.",
         )
         db.set_mastered(irrelevant_id, True)
+        db.set_annotation_target("hp01", 14)
         annotator = FakeAnnotator()
         context = ActionContext(
             corpus=corpus,
@@ -272,6 +276,7 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
             annotated_dir=annotated_dir,
             annotator_service=annotator,
             db=db,
+            reading_support_repository=db,
         )
         dispatcher = ActionDispatcher()
 
@@ -288,14 +293,17 @@ def test_dispatch_generate_annotation_saves_copy_and_vocabulary(tmp_path):
             "chapter.opened",
         ]
         assert events[2]["stored_vocabulary_count"] == 1
+        assert events[2]["annotation_target"] == 14
         assert events[-1]["unit"]["body"] == "Body [[text|文本]]."
         assert events[-1]["unit"]["body_kind"] == "annotated"
         assert annotator.mastered_words == [["Body"]]
         assert annotator.profile_ids == ["english_novel"]
+        assert annotator.annotation_targets == [14]
         annotated_file = annotated_dir / "hp01-ch01.annotated.md"
         assert annotated_file.exists()
         annotated_text = annotated_file.read_text(encoding="utf-8")
         assert "level:" not in annotated_text
+        assert "annotation_target: 14" in annotated_text
         assert "Body [[text|文本]]." in annotated_text
         assert db.count_vocabulary_for_unit("hp01-ch01") == 1
         assert "text" in [row["word"] for row in db.list_vocabulary(unit_id="hp01-ch01")]
@@ -321,8 +329,11 @@ def test_dispatch_generate_annotation_passes_unit_profile_id(tmp_path):
         )
 
         assert annotator.profile_ids == ["classical_chinese"]
+        assert annotator.annotation_targets == [None]
         annotated_file = tmp_path / "data" / "annotated" / "cc-lunyu-xueer-01.annotated.md"
-        assert "profile_id: classical_chinese" in annotated_file.read_text(encoding="utf-8")
+        annotated_text = annotated_file.read_text(encoding="utf-8")
+        assert "profile_id: classical_chinese" in annotated_text
+        assert "annotation_target:" not in annotated_text
 
     asyncio.run(run_case())
 
@@ -355,6 +366,7 @@ def test_dispatch_generate_annotation_passes_optional_series_policy(tmp_path):
         )
 
         assert annotator.selection_policy_ids == ["harry_potter"]
+        assert annotator.annotation_targets == [8]
 
     asyncio.run(run_case())
 

@@ -7,6 +7,10 @@ import re
 
 from superhp_agent.context import ContextBlock, ContextBundle
 from superhp_agent.contracts.annotation import AnnotationItem, ServiceIssue
+from superhp_agent.domain.reading_support import (
+    DEFAULT_ANNOTATION_TARGET,
+    validate_annotation_target,
+)
 from superhp_agent.profiles.base import CardCopy
 from superhp_agent.profiles.english_selection_policies import (
     get_english_selection_policy,
@@ -79,8 +83,6 @@ Treat mastered_words as vocabulary the reader already understands.
 - If mastered_words is an empty JSON array, apply no mastery exclusions.
 """.strip()
 
-DEFAULT_ANNOTATION_TARGET = 8
-MAX_ANNOTATION_TARGET = 20
 ANNOTATION_SUPPORT_TEMPLATE = """
 For approximately every 300 English words, use no more than about {target} annotations.
 This is the current support ceiling, not a quota that must be filled.
@@ -92,18 +94,8 @@ Do not add weak or unnecessary annotations merely to reach the target.
 def _annotation_support_block(annotation_target: int | None) -> ContextBlock:
     if annotation_target is None:
         target = DEFAULT_ANNOTATION_TARGET
-    elif isinstance(annotation_target, bool) or not isinstance(
-        annotation_target,
-        int,
-    ):
-        raise ValueError("annotation_target must be an integer")
     else:
-        target = annotation_target
-    if not 1 <= target <= MAX_ANNOTATION_TARGET:
-        raise ValueError(
-            "annotation_target must be between "
-            f"1 and {MAX_ANNOTATION_TARGET}"
-        )
+        target = validate_annotation_target(annotation_target)
     return ContextBlock(
         "annotation_support",
         ANNOTATION_SUPPORT_TEMPLATE.format(target=target),

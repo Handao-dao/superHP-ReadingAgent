@@ -33,6 +33,7 @@ JSONL      保存追加式诊断和审计事件
 | 选书候选与蓝思区间 | SQLite `recommendation_catalog` | `BookDifficultyCatalog` | 是，可从导入数据重建 |
 | 选书 Agent 对话 | SQLite `recommendation_sessions` | `RecommendationSessionRepository` | 否，属于进行中的用户对话 |
 | 用户主动查词事实 | SQLite `reading_lookup_events` | `ReadingLookupRepository` | 否，属于阅读行为 |
+| 每本书的译注支持目标 | SQLite `book_reading_support` | `ReadingSupportRepository` | 否，属于阅读适配状态 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -63,6 +64,7 @@ source_unit_id: hp01-ch01
 source_hash: <sha256>
 profile_id: english_novel
 annotation_format_version: 1
+annotation_target: 8      # 仅英文译注记录本次实际使用值
 status: completed        # 或 degraded
 validated_chunk_count: 4
 total_chunk_count: 5
@@ -70,7 +72,8 @@ annotated_at: <UTC timestamp>
 ```
 
 `source_hash` 用于发现原文修改后已经过期的译注。`status` 和 chunk 计数用于说明混合降级结果，
-但“译注是否存在”仍以文件实际存在为准，不在 Memory 或 SQLite 维护第二份布尔状态。
+`annotation_target` 用于追溯生成该副本时采用的支持强度；但“译注是否存在”仍以文件实际存在为准，
+不在 Memory 或 SQLite 维护第二份布尔状态。
 
 文件写入使用同目录临时文件加原子替换。标注文件是权威生成产物；SQLite 中的 vocabulary encounter
 只是可重建查询索引，因此不要求伪造跨文件系统和 SQLite 的事务。
@@ -219,6 +222,9 @@ RecommendationSessionRepository
 ReadingLookupRepository
     记录成功查词，并按明确的阅读单元集合聚合次数
 
+ReadingSupportRepository
+    保存每本书当前每 300 词的译注支持目标
+
 EventLogStore
     追加诊断事件
 ```
@@ -230,6 +236,11 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 密度的业务事实，保存 `unit_id/chapter_id/book_id`、归一化词项、是否已有译注以及时间；后者
 仍只是诊断日志。查词 Provider 失败不写业务事实，监控存储失败也不能中断已经成功的查词响应。
 
+`book_reading_support` 按 `book_id` 隔离英文译注目标。没有显式记录时，
+`ReadingSupportRepository` 返回默认值 8，不为一次读取创建冗余行。Dispatcher 在生成英文译注前
+读取该值并传给 Context Builder；文言文链路不使用它。修改目标只影响之后新生成的译注，不会自动
+重写已经存在的副本；自动升降仍由后续 `ReadingAdaptationPolicy` 决定。
+
 ## 渐进迁移顺序
 
 1. （已完成）为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
@@ -240,5 +251,7 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 6. （已完成）为 bookmarks 增加译注 level 和更稳定的文本定位字段。
 7. （已完成）停止在新 schema 中创建 `units` 的未使用运行状态字段；旧数据库中的冗余列可兼容保留，
    不需要为删除空列执行高风险表重建。
+8. （已完成）新增 `ReadingSupportRepository`，按书持久化英文译注支持目标，并把生成时使用值写入
+   译注副本元数据。
 
 每一步都先建立新读取路径和兼容迁移，再移除旧来源，避免同一状态长期双写。

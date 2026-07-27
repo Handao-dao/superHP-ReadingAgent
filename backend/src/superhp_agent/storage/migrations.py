@@ -142,6 +142,13 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS book_reading_support (
+            book_id TEXT PRIMARY KEY,
+            annotation_target INTEGER NOT NULL DEFAULT 8
+                CHECK (annotation_target BETWEEN 1 AND 20),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);

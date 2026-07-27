@@ -19,6 +19,7 @@ from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.ports.events import EventLogger, EventSink
 from superhp_agent.ports.repositories import (
     ReadingProgressRepository,
+    ReadingSupportRepository,
     VocabularyRepository,
 )
 from superhp_agent.profiles import ProfileRegistry, UnknownProfileError
@@ -77,6 +78,7 @@ class ReadingSocketSession:
         annotated_copies: AnnotatedCopyStore | None = None,
         annotator_service: AnnotationService | None = None,
         db: VocabularyRepository | None = None,
+        reading_support_repository: ReadingSupportRepository | None = None,
         selection_policy_resolver: SelectionPolicyResolver | None = None,
         profile_registry: ProfileRegistry | None = None,
     ):
@@ -92,6 +94,7 @@ class ReadingSocketSession:
         )
         self.annotator_service = annotator_service
         self.db = db
+        self.reading_support_repository = reading_support_repository
         self.selection_policy_resolver = selection_policy_resolver
         self.profile_registry = profile_registry
         self.event_sink: EventSink = ReadingSocketEventSink(websocket)
@@ -211,6 +214,7 @@ class ReadingSocketSession:
             annotated_copies=self.annotated_copies,
             annotator_service=self.annotator_service,
             db=self.db,
+            reading_support_repository=self.reading_support_repository,
             selection_policy_resolver=self.selection_policy_resolver,
             current_unit_id=self.current_unit_id,
         )

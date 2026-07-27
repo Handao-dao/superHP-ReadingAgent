@@ -275,6 +275,7 @@ contracts/
 
 - Corpus 中的阅读单元。
 - `ReadingProgressRepository` 中的已读和当前状态。
+- `ReadingDifficultyMonitor` 只读聚合已完成英文单元与主动查词事实，输出长期观察状态。
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 

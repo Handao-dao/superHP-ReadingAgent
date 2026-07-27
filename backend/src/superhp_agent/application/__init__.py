@@ -1,6 +1,10 @@
 """Application composition and use-case orchestration boundaries."""
 
 from superhp_agent.application.container import AppContainer, build_container
+from superhp_agent.application.reading_monitor import (
+    ReadingDifficultyMonitor,
+    ReadingDifficultyPolicy,
+)
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
@@ -8,6 +12,8 @@ from superhp_agent.application.recommendation_runner import (
 
 __all__ = [
     "AppContainer",
+    "ReadingDifficultyMonitor",
+    "ReadingDifficultyPolicy",
     "RecommendationAgentRunner",
     "RecommendationSessionNotFoundError",
     "build_container",

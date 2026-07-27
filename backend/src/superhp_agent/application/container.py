@@ -15,6 +15,7 @@ from superhp_agent.agent_tools import (
     ToolRegistry,
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
+from superhp_agent.application.reading_monitor import ReadingDifficultyMonitor
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
 )
@@ -63,6 +64,7 @@ class AppContainer:
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
     reading_lookup_repository: SQLiteReadingLookupRepository
+    reading_difficulty_monitor: ReadingDifficultyMonitor
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
     recommendation_candidate_service: RecommendationCandidateService
@@ -106,6 +108,11 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
     reading_lookup_repository = db.reading_lookup_repository
+    reading_difficulty_monitor = ReadingDifficultyMonitor(
+        corpus,
+        reading_progress_repository,
+        reading_lookup_repository,
+    )
     book_difficulty_catalog = db.book_difficulty_catalog
     recommendation_session_repository = db.recommendation_session_repository
     recommendation_candidate_service = RecommendationCandidateService(
@@ -169,6 +176,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
         reading_lookup_repository=reading_lookup_repository,
+        reading_difficulty_monitor=reading_difficulty_monitor,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,
         recommendation_candidate_service=recommendation_candidate_service,

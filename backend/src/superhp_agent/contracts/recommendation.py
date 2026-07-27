@@ -58,6 +58,13 @@ class RecommendationAgentPhase(StrEnum):
     FAILED = "failed"
 
 
+class ReadingDifficultyState(StrEnum):
+    """Deterministic long-window state; it never authorizes an Agent run."""
+
+    NORMAL = "normal"
+    WATCHING = "watching"
+
+
 class RecommendationAgentMessageRole(StrEnum):
     """Conversation roles preserved between paused Agent runs."""
 
@@ -176,6 +183,25 @@ class ReadingLookupSummary:
     def repeated_lookup_count(self) -> int:
         """Return valid clicks beyond the first occurrence of each lookup item."""
         return self.lookup_count - self.unique_lookup_count
+
+
+@dataclass(frozen=True)
+class ReadingDifficultyObservation:
+    """Read-only result produced from completed units and stored lookup facts."""
+
+    book_id: str
+    state: ReadingDifficultyState
+    evidence: ReadingDifficultyEvidence
+    observed_unit_ids: tuple[str, ...] = ()
+    window_ready: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.book_id.strip():
+            raise ValueError("book_id must not be empty")
+        if len(set(self.observed_unit_ids)) != len(self.observed_unit_ids):
+            raise ValueError("observed_unit_ids must be unique")
+        if self.state is ReadingDifficultyState.WATCHING and not self.window_ready:
+            raise ValueError("watching state requires a ready observation window")
 
 
 @dataclass(frozen=True)

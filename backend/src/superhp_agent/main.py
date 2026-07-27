@@ -29,6 +29,8 @@ from superhp_agent.schemas import (
     MarkByWordRequest,
     MutationResponse,
     ProfileMeta,
+    ReadingDifficultyEvidenceResponse,
+    ReadingDifficultyObservationResponse,
     SetMasteredRequest,
     VocabularyEntry,
     WordLookupRequest,
@@ -52,6 +54,7 @@ library_catalog = container.library_catalog
 event_log_store = container.event_log_store
 reading_progress_repository = container.reading_progress_repository
 reading_lookup_repository = container.reading_lookup_repository
+reading_difficulty_monitor = container.reading_difficulty_monitor
 db = container.db
 vocabulary_repository = container.vocabulary_repository
 bookmark_repository = container.bookmark_repository
@@ -312,6 +315,33 @@ async def lookup_word(payload: WordLookupRequest):
                     error=str(exc),
                 )
     return result
+
+
+@app.get(
+    "/api/reading-difficulty/{book_id}",
+    response_model=ReadingDifficultyObservationResponse,
+)
+async def get_reading_difficulty(book_id: str):
+    """Expose deterministic monitoring facts without triggering any action."""
+    try:
+        observation = reading_difficulty_monitor.observe_book(book_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    evidence = observation.evidence
+    return ReadingDifficultyObservationResponse(
+        book_id=observation.book_id,
+        state=observation.state,
+        window_ready=observation.window_ready,
+        observed_unit_ids=list(observation.observed_unit_ids),
+        evidence=ReadingDifficultyEvidenceResponse(
+            observed_word_count=evidence.observed_word_count,
+            observed_chapter_count=evidence.observed_chapter_count,
+            lookup_density=evidence.lookup_density,
+            unique_lookup_density=evidence.unique_lookup_density,
+            repeated_lookup_density=evidence.repeated_lookup_density,
+            annotated_lookup_density=evidence.annotated_lookup_density,
+        ),
+    )
 
 
 @app.post("/api/vocabulary", response_model=AddVocabularyResponse)

@@ -239,6 +239,30 @@ type WordLookupResult = {
 用户主动查词保存为长期阅读事实；Provider 失败不计入有效查词。旧客户端可以省略这两个字段，
 仍可完成查词，但该请求不会进入后续的难度观察。
 
+#### `GET /api/reading-difficulty/{book_id}`
+
+返回该书已完成英文阅读单元的只读长期观察：
+
+```ts
+type ReadingDifficultyObservation = {
+  book_id: string
+  state: 'normal' | 'watching'
+  window_ready: boolean
+  observed_unit_ids: string[]
+  evidence: {
+    observed_word_count: number
+    observed_chapter_count: number
+    lookup_density: number
+    unique_lookup_density: number
+    repeated_lookup_density: number
+    annotated_lookup_density: number
+  }
+}
+```
+
+`watching` 不等于应立即弹窗。当前前端不轮询此接口；后续只有在动态译注支持已经达到上限、多个
+观察窗口仍持续困难且冷却条件允许时，Flow Router 才会把它转成一次用户授权选择。
+
 #### `GET /api/vocabulary`
 
 可选查询参数：

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from superhp_agent.contracts import (
     BookEntryKind,
+    ReadingDifficultyState,
     ReadingPreference,
     RecommendationAgentPhase,
     RecommendationOrigin,
@@ -65,6 +66,27 @@ class WordLookupResult(BaseModel):
     word_cn: str
     pos: str = "other"
     sentence_cn: str = ""
+
+
+class ReadingDifficultyEvidenceResponse(BaseModel):
+    """Measured fields currently available from completed reading units."""
+
+    observed_word_count: int
+    observed_chapter_count: int
+    lookup_density: float
+    unique_lookup_density: float
+    repeated_lookup_density: float
+    annotated_lookup_density: float
+
+
+class ReadingDifficultyObservationResponse(BaseModel):
+    """Read-only monitoring state; it does not imply a user-facing alert."""
+
+    book_id: str
+    state: ReadingDifficultyState
+    window_ready: bool
+    observed_unit_ids: list[str] = Field(default_factory=list)
+    evidence: ReadingDifficultyEvidenceResponse
 
 
 class AddVocabularyRequest(BaseModel):

@@ -2,7 +2,12 @@ from fastapi.testclient import TestClient
 
 from superhp_agent import main
 from superhp_agent.artifacts import AnnotatedCopyStore
-from superhp_agent.contracts import ReadingProgressSnapshot
+from superhp_agent.contracts import (
+    ReadingDifficultyEvidence,
+    ReadingDifficultyObservation,
+    ReadingDifficultyState,
+    ReadingProgressSnapshot,
+)
 from superhp_agent.corpus import CorpusError, ReadingUnit, ReadingUnitDocument
 from superhp_agent.library_catalog import CatalogBook, CatalogCollection
 
@@ -90,6 +95,26 @@ class FailingReadingLookupRepository:
         raise RuntimeError("storage unavailable")
 
 
+class FakeReadingDifficultyMonitor:
+    def observe_book(self, book_id):
+        if book_id == "missing":
+            raise ValueError("Unknown English book id: missing")
+        return ReadingDifficultyObservation(
+            book_id=book_id,
+            state=ReadingDifficultyState.WATCHING,
+            window_ready=True,
+            observed_unit_ids=("book-1-ch01", "book-1-ch02", "book-1-ch03"),
+            evidence=ReadingDifficultyEvidence(
+                observed_word_count=6000,
+                observed_chapter_count=3,
+                lookup_density=11.0,
+                unique_lookup_density=9.0,
+                repeated_lookup_density=2.0,
+                annotated_lookup_density=1.0,
+            ),
+        )
+
+
 def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     annotated_dir = tmp_path / "annotated"
     annotated_dir.mkdir()
@@ -139,6 +164,39 @@ def test_recommendation_http_routes_are_registered():
         "/api/recommendations/sessions/{session_id}/messages",
         "/api/recommendations/sessions/{session_id}",
     } <= paths
+
+
+def test_reading_difficulty_api_exposes_read_only_observation(monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "reading_difficulty_monitor",
+        FakeReadingDifficultyMonitor(),
+    )
+
+    with TestClient(main.app) as client:
+        response = client.get("/api/reading-difficulty/book-1")
+        missing = client.get("/api/reading-difficulty/missing")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "book_id": "book-1",
+        "state": "watching",
+        "window_ready": True,
+        "observed_unit_ids": [
+            "book-1-ch01",
+            "book-1-ch02",
+            "book-1-ch03",
+        ],
+        "evidence": {
+            "observed_word_count": 6000,
+            "observed_chapter_count": 3,
+            "lookup_density": 11.0,
+            "unique_lookup_density": 9.0,
+            "repeated_lookup_density": 2.0,
+            "annotated_lookup_density": 1.0,
+        },
+    }
+    assert missing.status_code == 404
 
 
 def test_word_lookup_records_successful_click_with_reading_context(

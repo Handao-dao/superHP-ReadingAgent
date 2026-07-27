@@ -34,6 +34,7 @@ JSONL      保存追加式诊断和审计事件
 | 选书 Agent 对话 | SQLite `recommendation_sessions` | `RecommendationSessionRepository` | 否，属于进行中的用户对话 |
 | 用户主动查词事实 | SQLite `reading_lookup_events` | `ReadingLookupRepository` | 否，属于阅读行为 |
 | 每本书的译注支持目标 | SQLite `book_reading_support` | `ReadingSupportRepository` | 否，属于阅读适配状态 |
+| 完整章节阅读快照 | SQLite `chapter_reading_checkpoints` | `ChapterReadingCheckpointRepository` | 否，属于已冻结的阅读事实 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -225,6 +226,9 @@ ReadingLookupRepository
 ReadingSupportRepository
     保存每本书当前每 300 词的译注支持目标
 
+ChapterReadingCheckpointRepository
+    保存每个完整章节首次读完时的不可变观察快照
+
 EventLogStore
     追加诊断事件
 ```
@@ -241,6 +245,11 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 读取该值并传给 Context Builder；文言文链路不使用它。修改目标只影响之后新生成的译注，不会自动
 重写已经存在的副本；自动升降仍由后续 `ReadingAdaptationPolicy` 决定。
 
+`chapter_reading_checkpoints` 以 `book_id + chapter_id` 保证幂等。只有同一章节下全部
+`unit_id` 已读时才记录，内容包括章节词数、查词总数、已有译注词查词数以及各 section 共同使用的
+实际 `annotation_target`。缺少译注副本或 section 目标不一致时，目标诚实记录为 `NULL`。
+当前 checkpoint 只冻结事实，尚不触发 Policy 或修改支持目标。
+
 ## 渐进迁移顺序
 
 1. （已完成）为 `AnnotatedCopyStore` 增加原子写入和 `source_hash/status/chunk counts` 元数据。
@@ -253,5 +262,6 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
    不需要为删除空列执行高风险表重建。
 8. （已完成）新增 `ReadingSupportRepository`，按书持久化英文译注支持目标，并把生成时使用值写入
    译注副本元数据。
+9. （已完成）新增章节阅读 checkpoint，在完整章节首次读完时冻结后续增量观察需要的事实。
 
 每一步都先建立新读取路径和兼容迁移，再移除旧来源，避免同一状态长期双写。

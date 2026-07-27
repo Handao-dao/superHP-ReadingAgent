@@ -15,6 +15,9 @@ from superhp_agent.storage.migrations import initialize_schema
 from superhp_agent.storage.sqlite.bookmarks import (
     SQLiteBookmarkRepository,
 )
+from superhp_agent.storage.sqlite.chapter_checkpoints import (
+    SQLiteChapterReadingCheckpointRepository,
+)
 from superhp_agent.storage.sqlite.reading_lookups import (
     SQLiteReadingLookupRepository,
 )
@@ -62,6 +65,9 @@ class AppDB:
         )
         self.reading_support_repository = SQLiteReadingSupportRepository(
             self.database
+        )
+        self.chapter_checkpoint_repository = (
+            SQLiteChapterReadingCheckpointRepository(self.database)
         )
         self.book_difficulty_catalog = SQLiteBookDifficultyCatalog(self.database)
         self.recommendation_session_repository = (

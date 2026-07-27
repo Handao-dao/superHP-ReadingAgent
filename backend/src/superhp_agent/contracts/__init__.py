@@ -11,6 +11,7 @@ from superhp_agent.contracts.events import BackendEvent
 from superhp_agent.contracts.llm import LLMResponse, LLMToolCall
 from superhp_agent.contracts.reading import (
     AgentCard,
+    ChapterReadingCheckpoint,
     ReadingProgressSnapshot,
     ReadingUnitDetail,
     ReadingUnitMeta,
@@ -57,6 +58,7 @@ __all__ = [
     "BookRecommendationHandoff",
     "BookSearchQuery",
     "BookSnapshot",
+    "ChapterReadingCheckpoint",
     "LLMResponse",
     "LLMToolCall",
     "OperationalReadingBand",

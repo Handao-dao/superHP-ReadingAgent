@@ -57,8 +57,10 @@
 - 严格低于 3 且连续出现两个成熟窗口时降低 1，最低回到 8；
 - 已在 20 时仍连续出现两个高负担窗口，只产生一次 `difficulty_alert` 决策。
 
-`ReadingAdaptationPolicy` 是无存储、无 Corpus、无模型调用的确定性规则。当前只完成了规则及边界
-测试，观察窗口 checkpoint、状态持久化和章节完成后的自动执行仍由后续 Coordinator 接通。
+`ReadingAdaptationPolicy` 是无存储、无 Corpus、无模型调用的确定性规则。章节 checkpoint
+也已接入：同一 `chapter_id` 下全部阅读单元首次读完时，系统会冻结章节词数、查词统计和实际
+`annotation_target`；`book_id + chapter_id` 保证重复标记不会重复记录。当前尚未把多章
+checkpoint 聚合成成熟窗口，也不会自动执行 Policy 或修改目标。
 
 英文 Profile 已先把密度规则从固定 `system_policy` 拆成独立的
 `<annotation_support target_per_300="...">` System Context Block。默认目标为 8，当前调用链

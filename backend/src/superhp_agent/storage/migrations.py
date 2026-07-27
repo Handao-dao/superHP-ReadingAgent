@@ -149,6 +149,27 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         );
 
+        CREATE TABLE IF NOT EXISTS chapter_reading_checkpoints (
+            book_id TEXT NOT NULL,
+            chapter_id TEXT NOT NULL,
+            chapter_no INTEGER NOT NULL,
+            unit_ids_json TEXT NOT NULL,
+            word_count INTEGER NOT NULL CHECK (word_count >= 0),
+            lookup_count INTEGER NOT NULL CHECK (lookup_count >= 0),
+            annotated_lookup_count INTEGER NOT NULL
+                CHECK (
+                    annotated_lookup_count >= 0
+                    AND annotated_lookup_count <= lookup_count
+                ),
+            annotation_target INTEGER DEFAULT NULL
+                CHECK (
+                    annotation_target IS NULL
+                    OR annotation_target BETWEEN 1 AND 20
+                ),
+            completed_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            PRIMARY KEY (book_id, chapter_id)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
@@ -171,6 +192,8 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON reading_lookup_events(book_id, looked_up_at);
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_chapter
             ON reading_lookup_events(chapter_id);
+        CREATE INDEX IF NOT EXISTS idx_chapter_checkpoints_book_chapter
+            ON chapter_reading_checkpoints(book_id, chapter_no);
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_unit
             ON reading_lookup_events(unit_id);
         """

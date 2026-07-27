@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from superhp_agent.corpus import ReadingUnitDocument
 from superhp_agent.domain.reading_support import validate_annotation_target
 
@@ -31,6 +33,17 @@ class AnnotatedCopy:
     path: Path
     metadata: str
     body: str
+
+    @property
+    def annotation_target(self) -> int | None:
+        """Return the generation target recorded in frontmatter, when present."""
+        parsed = yaml.safe_load(self.metadata) or {}
+        if not isinstance(parsed, dict):
+            raise ValueError("annotated copy metadata must be a mapping")
+        raw_target = parsed.get("annotation_target")
+        if raw_target is None:
+            return None
+        return validate_annotation_target(raw_target)
 
 
 class AnnotatedCopyStore:

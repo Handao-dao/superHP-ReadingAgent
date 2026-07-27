@@ -1,6 +1,9 @@
 """SQLite implementations of repository capabilities."""
 
 from superhp_agent.storage.sqlite.bookmarks import SQLiteBookmarkRepository
+from superhp_agent.storage.sqlite.chapter_checkpoints import (
+    SQLiteChapterReadingCheckpointRepository,
+)
 from superhp_agent.storage.sqlite.reading_lookups import SQLiteReadingLookupRepository
 from superhp_agent.storage.sqlite.reading_progress import (
     SQLiteReadingProgressRepository,
@@ -19,6 +22,7 @@ from superhp_agent.storage.sqlite.vocabulary import SQLiteVocabularyRepository
 
 __all__ = [
     "SQLiteBookmarkRepository",
+    "SQLiteChapterReadingCheckpointRepository",
     "SQLiteReadingProgressRepository",
     "SQLiteReadingLookupRepository",
     "SQLiteReadingSupportRepository",

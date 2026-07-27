@@ -13,7 +13,12 @@ from time import perf_counter
 from typing import Any, Protocol
 
 from superhp_agent.artifacts import AnnotatedCopyStore
-from superhp_agent.contracts import AgentAction, ReadingUnitDetail, ReadingUnitMeta
+from superhp_agent.contracts import (
+    AgentAction,
+    ChapterReadingCheckpoint,
+    ReadingUnitDetail,
+    ReadingUnitMeta,
+)
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
 from superhp_agent.domain.reading_support import DEFAULT_ANNOTATION_TARGET
@@ -60,6 +65,15 @@ class SelectionPolicyResolver(Protocol):
     ) -> str | None: ...
 
 
+class ChapterCheckpointCapability(Protocol):
+    """Record a completed chapter without exposing persistence details."""
+
+    def record_if_complete(
+        self,
+        unit_id: str,
+    ) -> ChapterReadingCheckpoint | None: ...
+
+
 class UnsupportedActionError(ValueError):
     def __init__(self, action_id: str):
         super().__init__(f"Unsupported action: {action_id}")
@@ -95,6 +109,7 @@ class ActionContext:
     annotator_service: AnnotationService | None = None
     db: VocabularyRepository | None = None
     reading_support_repository: ReadingSupportRepository | None = None
+    chapter_checkpoint_recorder: ChapterCheckpointCapability | None = None
     selection_policy_resolver: SelectionPolicyResolver | None = None
     current_unit_id: str | None = None
 
@@ -239,6 +254,7 @@ class MarkReadHandler:
         context.current_unit_id = unit_id
         if context.progress_repository:
             context.progress_repository.mark_read(unit_id)
+            _record_chapter_checkpoint(context, unit_id)
         await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
@@ -259,6 +275,7 @@ class StartNextUnitHandler:
         completed_unit_id = str(action.payload.get("completed_unit_id") or context.current_unit_id or "")
         if completed_unit_id and context.progress_repository:
             context.progress_repository.mark_read(completed_unit_id)
+            _record_chapter_checkpoint(context, completed_unit_id)
             await context.emit_event(
                 "unit.marked_read",
                 request_id=request_id,
@@ -446,6 +463,37 @@ def _unit_id(payload: dict[str, Any]) -> str:
     """Read the canonical reading-unit identifier from an action payload."""
     value = payload.get("unit_id")
     return str(value) if value else ""
+
+
+def _record_chapter_checkpoint(
+    context: ActionContext,
+    unit_id: str,
+) -> None:
+    """Keep supplementary checkpoint failures out of the reading path."""
+    if context.chapter_checkpoint_recorder is None:
+        return
+    try:
+        checkpoint = context.chapter_checkpoint_recorder.record_if_complete(
+            unit_id
+        )
+    except Exception as exc:
+        context.log_event(
+            "chapter_checkpoint_record_failed",
+            unit_id=unit_id,
+            error=str(exc),
+        )
+        return
+    if checkpoint is not None:
+        context.log_event(
+            "chapter_checkpoint_recorded",
+            unit_id=unit_id,
+            book_id=checkpoint.book_id,
+            chapter_id=checkpoint.chapter_id,
+            word_count=checkpoint.word_count,
+            lookup_count=checkpoint.lookup_count,
+            annotated_lookup_count=checkpoint.annotated_lookup_count,
+            annotation_target=checkpoint.annotation_target,
+        )
 
 
 def _require_unit_id(payload: dict[str, Any]) -> str:

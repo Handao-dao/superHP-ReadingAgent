@@ -8,7 +8,6 @@ application steps.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from superhp_agent.contracts import (
@@ -17,12 +16,11 @@ from superhp_agent.contracts import (
     ReadingDifficultyState,
 )
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
+from superhp_agent.domain.reading_metrics import count_english_words
 from superhp_agent.ports.repositories import (
     ReadingLookupRepository,
     ReadingProgressRepository,
 )
-
-_ENGLISH_WORD_RE = re.compile(r"[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*")
 
 
 @dataclass(frozen=True)
@@ -125,7 +123,7 @@ class ReadingDifficultyMonitor:
 
 def _english_word_count(document: ReadingUnitDocument) -> int:
     """Count English words only; punctuation does not affect monitor density."""
-    return len(_ENGLISH_WORD_RE.findall(document.body))
+    return count_english_words(document.body)
 
 
 def _density(count: int, observed_word_count: int) -> float:

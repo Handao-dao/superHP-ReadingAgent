@@ -15,6 +15,7 @@ from superhp_agent.agent_tools import (
     ToolRegistry,
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
+from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
 from superhp_agent.application.reading_monitor import ReadingDifficultyMonitor
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
@@ -42,6 +43,7 @@ from superhp_agent.storage import AppDB
 from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
+    SQLiteChapterReadingCheckpointRepository,
     SQLiteReadingLookupRepository,
     SQLiteReadingProgressRepository,
     SQLiteReadingSupportRepository,
@@ -66,6 +68,8 @@ class AppContainer:
     reading_progress_repository: SQLiteReadingProgressRepository
     reading_lookup_repository: SQLiteReadingLookupRepository
     reading_support_repository: SQLiteReadingSupportRepository
+    chapter_checkpoint_repository: SQLiteChapterReadingCheckpointRepository
+    chapter_checkpoint_recorder: ChapterCheckpointRecorder
     reading_difficulty_monitor: ReadingDifficultyMonitor
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
@@ -111,6 +115,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     reading_progress_repository = db.reading_progress_repository
     reading_lookup_repository = db.reading_lookup_repository
     reading_support_repository = db.reading_support_repository
+    chapter_checkpoint_repository = db.chapter_checkpoint_repository
     reading_difficulty_monitor = ReadingDifficultyMonitor(
         corpus,
         reading_progress_repository,
@@ -131,6 +136,13 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     )
     recommendation_context_builder = RecommendationContextBuilder()
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
+    chapter_checkpoint_recorder = ChapterCheckpointRecorder(
+        corpus,
+        reading_progress_repository,
+        reading_lookup_repository,
+        chapter_checkpoint_repository,
+        annotated_copies,
+    )
 
     def provider_factory():
         return make_provider(resolved_settings)
@@ -180,6 +192,8 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         reading_progress_repository=reading_progress_repository,
         reading_lookup_repository=reading_lookup_repository,
         reading_support_repository=reading_support_repository,
+        chapter_checkpoint_repository=chapter_checkpoint_repository,
+        chapter_checkpoint_recorder=chapter_checkpoint_recorder,
         reading_difficulty_monitor=reading_difficulty_monitor,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,

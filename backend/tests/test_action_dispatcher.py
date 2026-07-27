@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from superhp_agent.contracts import AgentAction
+from superhp_agent.contracts import AgentAction, ChapterReadingCheckpoint
 from superhp_agent.contracts.annotation import (
     AnnotationItem,
     AnnotationResult,
@@ -71,6 +71,24 @@ class FullyDegradedAnnotator:
             ],
             validated_chunk_count=0,
             total_chunk_count=1,
+        )
+
+
+class FakeChapterCheckpointRecorder:
+    def __init__(self):
+        self.unit_ids = []
+
+    def record_if_complete(self, unit_id):
+        self.unit_ids.append(unit_id)
+        return ChapterReadingCheckpoint(
+            book_id="hp01",
+            chapter_id=unit_id,
+            chapter_no=1,
+            unit_ids=(unit_id,),
+            word_count=2,
+            lookup_count=0,
+            annotated_lookup_count=0,
+            annotation_target=8,
         )
 
 
@@ -179,11 +197,13 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
         events = sink.events
 
         memory = memory_store()
+        checkpoint_recorder = FakeChapterCheckpointRecorder()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
+            chapter_checkpoint_recorder=checkpoint_recorder,
             current_unit_id="hp01-ch01",
         )
         dispatcher = ActionDispatcher()
@@ -196,6 +216,8 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
 
         assert events[0]["type"] == "unit.marked_read"
         assert memory.load().read_unit_ids == ["hp01-ch01"]
+        assert checkpoint_recorder.unit_ids == ["hp01-ch01"]
+        assert memory.logged_events[0]["type"] == "chapter_checkpoint_recorded"
 
     asyncio.run(run_case())
 
@@ -209,11 +231,13 @@ def test_dispatch_start_next_marks_completed_and_selects_next_unit(tmp_path):
         events = sink.events
 
         memory = memory_store()
+        checkpoint_recorder = FakeChapterCheckpointRecorder()
         context = ActionContext(
             corpus=CorpusStore(corpus_root),
             event_sink=sink,
             event_log_store=memory,
             progress_repository=memory,
+            chapter_checkpoint_recorder=checkpoint_recorder,
         )
         dispatcher = ActionDispatcher()
 
@@ -236,6 +260,7 @@ def test_dispatch_start_next_marks_completed_and_selects_next_unit(tmp_path):
         assert stored.read_unit_ids == ["hp01-ch01"]
         assert stored.current_unit_id == "hp01-ch02"
         assert context.current_unit_id == "hp01-ch02"
+        assert checkpoint_recorder.unit_ids == ["hp01-ch01"]
 
     asyncio.run(run_case())
 

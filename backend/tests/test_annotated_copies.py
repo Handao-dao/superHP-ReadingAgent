@@ -58,6 +58,7 @@ def test_store_writes_and_reads_canonical_copy(tmp_path):
     assert "validated_chunk_count: 1" in copy.metadata
     assert "total_chunk_count: 2" in copy.metadata
     assert "annotation_target: 12" in copy.metadata
+    assert copy.annotation_target == 12
     assert "# - text: 文本 (other)" in path.read_text(encoding="utf-8")
     assert store.exists_any("hp01-ch01") is True
 

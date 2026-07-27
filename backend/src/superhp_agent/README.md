@@ -276,6 +276,8 @@ contracts/
 - Corpus 中的阅读单元。
 - `ReadingProgressRepository` 中的已读和当前状态。
 - `ReadingDifficultyMonitor` 只读聚合已完成英文单元与主动查词事实，输出长期观察状态。
+- `ReadingAdaptationPolicy` 根据成熟窗口的未覆盖查词密度输出保持、升高、降低或难度告警决策；
+  当前是纯规则层，尚未接入自动执行。
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 

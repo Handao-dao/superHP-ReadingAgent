@@ -1,8 +1,20 @@
-export async function lookupWord(word, sentence = '', profileId = '') {
+export async function lookupWord(
+  word,
+  sentence = '',
+  profileId = '',
+  unitId = '',
+  wasAnnotated = false,
+) {
   const response = await fetch('/api/word-lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ word, sentence, profile_id: profileId || undefined }),
+    body: JSON.stringify({
+      word,
+      sentence,
+      profile_id: profileId || undefined,
+      unit_id: unitId || undefined,
+      was_annotated: Boolean(wasAnnotated),
+    }),
   })
   if (!response.ok) {
     const detail = await response.json().catch(() => null)

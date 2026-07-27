@@ -55,6 +55,7 @@ def test_initialize_schema_creates_current_repository_tables(tmp_path):
             "unit_progress",
             "recommendation_catalog",
             "recommendation_sessions",
+            "reading_lookup_events",
         } <= tables
         assert "vocabulary" not in tables
 

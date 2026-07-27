@@ -5,6 +5,8 @@ models for the frontend, while the WebSocket endpoint delegates guided reading
 side effects to ``ReadingSocketSession`` and the runtime action dispatcher.
 """
 
+from contextlib import suppress
+
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -49,6 +51,7 @@ corpus = container.corpus
 library_catalog = container.library_catalog
 event_log_store = container.event_log_store
 reading_progress_repository = container.reading_progress_repository
+reading_lookup_repository = container.reading_lookup_repository
 db = container.db
 vocabulary_repository = container.vocabulary_repository
 bookmark_repository = container.bookmark_repository
@@ -272,10 +275,43 @@ async def lookup_word(payload: WordLookupRequest):
     if not word:
         raise HTTPException(status_code=400, detail="word is required")
     _require_known_profile(payload.profile_id)
+    unit = None
+    if payload.unit_id:
+        try:
+            unit = corpus.get_unit(payload.unit_id).meta
+        except CorpusError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        if payload.profile_id and unit.profile_id != payload.profile_id:
+            raise HTTPException(
+                status_code=400,
+                detail="unit_id does not belong to the requested profile",
+            )
+    resolved_profile_id = payload.profile_id or (unit.profile_id if unit else None)
     try:
-        return await lookup_service.lookup(word, payload.sentence.strip(), profile_id=payload.profile_id)
+        result = await lookup_service.lookup(
+            word,
+            payload.sentence.strip(),
+            profile_id=resolved_profile_id,
+        )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if unit is not None:
+        try:
+            reading_lookup_repository.record_lookup(
+                unit,
+                word=word,
+                was_annotated=payload.was_annotated,
+            )
+        except Exception as exc:
+            # Monitoring is supplementary: a storage problem must not discard
+            # an otherwise valid dictionary response from the reading path.
+            with suppress(Exception):
+                event_log_store.log_event(
+                    "reading_lookup_record_failed",
+                    unit_id=unit.id,
+                    error=str(exc),
+                )
+    return result
 
 
 @app.post("/api/vocabulary", response_model=AddVocabularyResponse)

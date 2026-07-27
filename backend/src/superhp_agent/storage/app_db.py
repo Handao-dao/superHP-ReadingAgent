@@ -15,6 +15,9 @@ from superhp_agent.storage.migrations import initialize_schema
 from superhp_agent.storage.sqlite.bookmarks import (
     SQLiteBookmarkRepository,
 )
+from superhp_agent.storage.sqlite.reading_lookups import (
+    SQLiteReadingLookupRepository,
+)
 from superhp_agent.storage.sqlite.reading_progress import (
     SQLiteReadingProgressRepository,
 )
@@ -50,6 +53,10 @@ class AppDB:
             sync_unit=self.unit_repository.sync,
         )
         self.reading_progress_repository = SQLiteReadingProgressRepository(self.database)
+        self.reading_lookup_repository = SQLiteReadingLookupRepository(
+            self.database,
+            sync_unit=self.unit_repository.sync,
+        )
         self.book_difficulty_catalog = SQLiteBookDifficultyCatalog(self.database)
         self.recommendation_session_repository = (
             SQLiteRecommendationSessionRepository(self.database)
@@ -106,6 +113,22 @@ class AppDB:
 
     def count_vocabulary_for_unit(self, unit_id: str) -> int:
         return self.vocabulary_repository.count_vocabulary_for_unit(unit_id)
+
+    def record_lookup(
+        self,
+        unit: ReadingUnit,
+        *,
+        word: str,
+        was_annotated: bool = False,
+    ) -> int:
+        return self.reading_lookup_repository.record_lookup(
+            unit,
+            word=word,
+            was_annotated=was_annotated,
+        )
+
+    def summarize_lookups(self, *, unit_ids):
+        return self.reading_lookup_repository.summarize_lookups(unit_ids=unit_ids)
 
     def list_vocabulary(
         self,

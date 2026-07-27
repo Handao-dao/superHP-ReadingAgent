@@ -56,6 +56,8 @@ class WordLookupRequest(BaseModel):
     word: str
     sentence: str = ""
     profile_id: str | None = None
+    unit_id: str | None = None
+    was_annotated: bool = False
 
 
 class WordLookupResult(BaseModel):

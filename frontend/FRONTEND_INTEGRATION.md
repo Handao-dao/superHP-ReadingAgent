@@ -215,7 +215,9 @@ type RecommendationSessionResponse = {
 {
   "word": "conviction",
   "sentence": "I said it with conviction.",
-  "profile_id": "english_novel"
+  "profile_id": "english_novel",
+  "unit_id": "hp01-ch01",
+  "was_annotated": false
 }
 ```
 
@@ -232,6 +234,10 @@ type WordLookupResult = {
 
 英文查词是通用小说上下文查词，不绑定某个系列。后端要求 `word_cn` 非空；请求带句子时也要求
 `sentence_cn` 非空。格式或必需字段不合规时，Lookup Service 会执行内容重试。
+
+阅读页应同时上传当前 `unit_id`，以及点击目标是否已有译注。一次查词成功后，后端才把这次
+用户主动查词保存为长期阅读事实；Provider 失败不计入有效查词。旧客户端可以省略这两个字段，
+仍可完成查词，但该请求不会进入后续的难度观察。
 
 #### `GET /api/vocabulary`
 

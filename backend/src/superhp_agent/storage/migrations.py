@@ -130,6 +130,18 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         );
 
+        CREATE TABLE IF NOT EXISTS reading_lookup_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            unit_id TEXT NOT NULL,
+            chapter_id TEXT NOT NULL,
+            book_id TEXT NOT NULL,
+            normalized_word TEXT NOT NULL,
+            was_annotated INTEGER NOT NULL DEFAULT 0
+                CHECK (was_annotated IN (0, 1)),
+            looked_up_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
@@ -148,6 +160,12 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON recommendation_catalog(entry_kind);
         CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_phase_updated
             ON recommendation_sessions(phase, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_book_time
+            ON reading_lookup_events(book_id, looked_up_at);
+        CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_chapter
+            ON reading_lookup_events(chapter_id);
+        CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_unit
+            ON reading_lookup_events(unit_id);
         """
     )
     connection.commit()

@@ -153,6 +153,32 @@ class ReadingDifficultyEvidence:
 
 
 @dataclass(frozen=True)
+class ReadingLookupSummary:
+    """Stored lookup facts aggregated over an explicit set of reading units."""
+
+    lookup_count: int = 0
+    unique_lookup_count: int = 0
+    annotated_lookup_count: int = 0
+
+    def __post_init__(self) -> None:
+        if min(
+            self.lookup_count,
+            self.unique_lookup_count,
+            self.annotated_lookup_count,
+        ) < 0:
+            raise ValueError("lookup summary counts must not be negative")
+        if self.unique_lookup_count > self.lookup_count:
+            raise ValueError("unique_lookup_count must not exceed lookup_count")
+        if self.annotated_lookup_count > self.lookup_count:
+            raise ValueError("annotated_lookup_count must not exceed lookup_count")
+
+    @property
+    def repeated_lookup_count(self) -> int:
+        """Return valid clicks beyond the first occurrence of each lookup item."""
+        return self.lookup_count - self.unique_lookup_count
+
+
+@dataclass(frozen=True)
 class BookRecommendationHandoff:
     """Structured context created after the reader authorizes a book change."""
 

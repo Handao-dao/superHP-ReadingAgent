@@ -41,6 +41,7 @@ from superhp_agent.storage import AppDB
 from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
+    SQLiteReadingLookupRepository,
     SQLiteReadingProgressRepository,
     SQLiteRecommendationSessionRepository,
     SQLiteVocabularyRepository,
@@ -61,6 +62,7 @@ class AppContainer:
     vocabulary_repository: SQLiteVocabularyRepository
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
+    reading_lookup_repository: SQLiteReadingLookupRepository
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
     recommendation_candidate_service: RecommendationCandidateService
@@ -103,6 +105,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     vocabulary_repository = db.vocabulary_repository
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
+    reading_lookup_repository = db.reading_lookup_repository
     book_difficulty_catalog = db.book_difficulty_catalog
     recommendation_session_repository = db.recommendation_session_repository
     recommendation_candidate_service = RecommendationCandidateService(
@@ -165,6 +168,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         vocabulary_repository=vocabulary_repository,
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
+        reading_lookup_repository=reading_lookup_repository,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,
         recommendation_candidate_service=recommendation_candidate_service,

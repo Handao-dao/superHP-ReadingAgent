@@ -32,6 +32,7 @@ JSONL      保存追加式诊断和审计事件
 | 当前章节和阅读进度 | 目标为 SQLite | `ReadingProgressRepository` | 否，属于用户状态 |
 | 选书候选与蓝思区间 | SQLite `recommendation_catalog` | `BookDifficultyCatalog` | 是，可从导入数据重建 |
 | 选书 Agent 对话 | SQLite `recommendation_sessions` | `RecommendationSessionRepository` | 否，属于进行中的用户对话 |
+| 用户主动查词事实 | SQLite `reading_lookup_events` | `ReadingLookupRepository` | 否，属于阅读行为 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -215,12 +216,19 @@ BookDifficultyCatalog
 RecommendationSessionRepository
     保存和恢复完整选书 Agent 会话
 
+ReadingLookupRepository
+    记录成功查词，并按明确的阅读单元集合聚合次数
+
 EventLogStore
     追加诊断事件
 ```
 
 Store 面向文件内容或追加型记录；Repository 面向可查询、可更新的领域记录。统一存储边界不等于
 把所有能力都命名为 Repository，也不等于把所有正文都塞进 SQLite。
+
+`reading_lookup_events` 与 `events.jsonl` 的职责不同：前者是后续 Reading Monitor 计算查词
+密度的业务事实，保存 `unit_id/chapter_id/book_id`、归一化词项、是否已有译注以及时间；后者
+仍只是诊断日志。查词 Provider 失败不写业务事实，监控存储失败也不能中断已经成功的查词响应。
 
 ## 渐进迁移顺序
 

@@ -66,6 +66,30 @@ class FakeCorpus:
         return ReadingUnitDocument(meta=self.unit, body="Body")
 
 
+class FakeLookupService:
+    async def lookup(self, word: str, sentence: str, *, profile_id=None):
+        return {
+            "word": word,
+            "word_cn": "魔杖",
+            "pos": "noun",
+            "sentence_cn": "他挥动了魔杖。",
+        }
+
+
+class FakeReadingLookupRepository:
+    def __init__(self):
+        self.calls = []
+
+    def record_lookup(self, unit, *, word: str, was_annotated: bool = False):
+        self.calls.append((unit.id, word, was_annotated))
+        return len(self.calls)
+
+
+class FailingReadingLookupRepository:
+    def record_lookup(self, unit, *, word: str, was_annotated: bool = False):
+        raise RuntimeError("storage unavailable")
+
+
 def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     annotated_dir = tmp_path / "annotated"
     annotated_dir.mkdir()
@@ -115,6 +139,113 @@ def test_recommendation_http_routes_are_registered():
         "/api/recommendations/sessions/{session_id}/messages",
         "/api/recommendations/sessions/{session_id}",
     } <= paths
+
+
+def test_word_lookup_records_successful_click_with_reading_context(
+    tmp_path,
+    monkeypatch,
+):
+    unit = ReadingUnit(
+        id="hp01-ch01",
+        chapter_id="hp01-ch01",
+        book_id="hp01",
+        book_title="Harry Potter and the Philosopher's Stone",
+        chapter_no=1,
+        chapter_title="The Boy Who Lived",
+        section_no=1,
+        section_count=1,
+        summary="Summary",
+        path=tmp_path / "hp01-ch01.md",
+    )
+    repository = FakeReadingLookupRepository()
+    monkeypatch.setattr(main, "corpus", FakeCorpus(unit))
+    monkeypatch.setattr(main, "lookup_service", FakeLookupService())
+    monkeypatch.setattr(main, "reading_lookup_repository", repository)
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/api/word-lookup",
+            json={
+                "word": "wand",
+                "sentence": "He waved his wand.",
+                "profile_id": "english_novel",
+                "unit_id": unit.id,
+                "was_annotated": True,
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["word_cn"] == "魔杖"
+    assert repository.calls == [(unit.id, "wand", True)]
+
+
+def test_word_lookup_rejects_unknown_context_unit_without_calling_provider(
+    tmp_path,
+    monkeypatch,
+):
+    unit = ReadingUnit(
+        id="hp01-ch01",
+        chapter_id="hp01-ch01",
+        book_id="hp01",
+        book_title="Book",
+        chapter_no=1,
+        chapter_title="Chapter",
+        section_no=1,
+        section_count=1,
+        summary="",
+        path=tmp_path / "hp01-ch01.md",
+    )
+    repository = FakeReadingLookupRepository()
+    monkeypatch.setattr(main, "corpus", FakeCorpus(unit))
+    monkeypatch.setattr(main, "lookup_service", FakeLookupService())
+    monkeypatch.setattr(main, "reading_lookup_repository", repository)
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/api/word-lookup",
+            json={
+                "word": "wand",
+                "profile_id": "english_novel",
+                "unit_id": "missing",
+            },
+        )
+
+    assert response.status_code == 404
+    assert repository.calls == []
+
+
+def test_word_lookup_result_survives_monitoring_storage_failure(
+    tmp_path,
+    monkeypatch,
+):
+    unit = ReadingUnit(
+        id="hp01-ch01",
+        chapter_id="hp01-ch01",
+        book_id="hp01",
+        book_title="Book",
+        chapter_no=1,
+        chapter_title="Chapter",
+        section_no=1,
+        section_count=1,
+        summary="",
+        path=tmp_path / "hp01-ch01.md",
+    )
+    monkeypatch.setattr(main, "corpus", FakeCorpus(unit))
+    monkeypatch.setattr(main, "lookup_service", FakeLookupService())
+    monkeypatch.setattr(
+        main,
+        "reading_lookup_repository",
+        FailingReadingLookupRepository(),
+    )
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/api/word-lookup",
+            json={"word": "wand", "unit_id": unit.id},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["word_cn"] == "魔杖"
 
 
 def test_profile_filtered_api_rejects_unknown_profile():

@@ -142,7 +142,13 @@ export function useWordLookup({
     lookupStyle.value = calcLookupStyle(target)
 
     try {
-      const result = await lookupWord(word, lookupSentence.value, getProfileId?.())
+      const result = await lookupWord(
+        word,
+        lookupSentence.value,
+        getProfileId?.(),
+        getUnitId?.(),
+        lookupIsAnnotated.value,
+      )
       if (revision !== lookupRequestRevision) return
       if (!result.word_cn && lookupTranslation.value) result.word_cn = lookupTranslation.value
       lookupResult.value = result

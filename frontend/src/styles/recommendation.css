@@ -285,6 +285,36 @@
   font-size: 13px;
 }
 
+.recommendation-retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 clamp(28px, 5vw, 64px) 14px;
+  border: 1px solid rgba(148, 100, 35, 0.22);
+  border-radius: 7px;
+  background: rgba(255, 249, 231, 0.82);
+  color: #684b28;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.recommendation-retry button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(83, 58, 31, 0.2);
+  border-radius: 6px;
+  background: #6f4d2c;
+  color: #fffaf0;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.recommendation-retry button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .recommendation-composer {
   border-top: 1px solid rgba(83, 58, 31, 0.13);
   padding: 16px clamp(28px, 5vw, 64px) 20px;

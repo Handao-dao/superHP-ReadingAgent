@@ -7,7 +7,9 @@ import { computed, nextTick, ref, watch } from 'vue'
 import RecommendationBookCard from './RecommendationBookCard.vue'
 
 const props = defineProps({
+  canRetry: { type: Boolean, default: false },
   canSend: { type: Boolean, default: false },
+  errorCode: { type: String, default: '' },
   errorMessage: { type: String, default: '' },
   hasSession: { type: Boolean, default: false },
   hasStoredSession: { type: Boolean, default: false },
@@ -19,7 +21,7 @@ const props = defineProps({
   selectedCatalogId: { type: String, default: '' },
 })
 
-const emit = defineEmits(['restore', 'send', 'start'])
+const emit = defineEmits(['restore', 'retry', 'send', 'start'])
 const draft = ref('')
 const transcript = ref(null)
 const isDifficultyHandoff = () => props.origin === 'difficulty_alert'
@@ -129,6 +131,21 @@ watch(
     <p v-if="errorMessage" class="recommendation-error" role="alert">
       {{ errorMessage }}
     </p>
+
+    <div
+      v-if="hasSession && canRetry"
+      class="recommendation-retry"
+      role="status"
+    >
+      <span>
+        {{ errorCode === 'invalid_model_response'
+          ? '助手刚才没有返回有效内容，对话记录已经保留。'
+          : '模型服务暂时没有响应，对话记录已经保留。' }}
+      </span>
+      <button type="button" :disabled="loading" @click="$emit('retry')">
+        {{ loading ? '正在重试…' : '重新尝试' }}
+      </button>
+    </div>
 
     <form
       v-if="hasSession && phase === 'awaiting_user'"

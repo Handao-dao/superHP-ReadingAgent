@@ -132,12 +132,30 @@ class BookRecommendationAgent:
                     tools=self.provider_tools,
                 )
             except Exception:
-                return self._failed_reply(session, error_code="model_error")
+                logger.exception(
+                    "recommendation provider failed session=%s",
+                    session.session_id,
+                )
+                return self._recoverable_reply(
+                    session,
+                    error_code="model_error",
+                )
 
             if response.is_error:
-                return self._failed_reply(session, error_code="model_error")
+                logger.warning(
+                    "recommendation provider exhausted retries "
+                    "session=%s kind=%s status=%s code=%s",
+                    session.session_id,
+                    response.error_kind,
+                    response.error_status_code,
+                    response.error_code,
+                )
+                return self._recoverable_reply(
+                    session,
+                    error_code="model_error",
+                )
             if not response.content and not response.tool_calls:
-                return self._failed_reply(
+                return self._recoverable_reply(
                     session,
                     error_code="invalid_model_response",
                     message="选书助手没有返回可用内容，请稍后重试。",
@@ -224,7 +242,7 @@ class BookRecommendationAgent:
                     recommended_catalog_ids=presentation.catalog_ids,
                 )
 
-        return self._failed_reply(
+        return self._pause_reply(
             session,
             error_code="turn_limit_reached",
             message="选书助手未能在限定步骤内完成推荐，请补充偏好后重试。",
@@ -248,7 +266,7 @@ class BookRecommendationAgent:
                     "awaiting_user session requires a user message"
                 )
         if user_message is None:
-            return session
+            return replace(session, error_code="")
         if not user_message.strip():
             raise ValueError("user_message must not be empty")
         accepted = self._append_message(
@@ -368,6 +386,11 @@ class BookRecommendationAgent:
                 "detail": str(exc),
             }
         except Exception:
+            logger.exception(
+                "recommendation tool failed tool=%s call_id=%s",
+                tool_call.name,
+                tool_call.id,
+            )
             return None, {"ok": False, "error": "tool_unavailable"}
 
     @staticmethod
@@ -410,20 +433,36 @@ class BookRecommendationAgent:
             phase=RecommendationAgentPhase.SEARCHING,
         )
 
-    def _failed_reply(
-        self,
+    @staticmethod
+    def _recoverable_reply(
         session: RecommendationAgentSession,
         *,
         error_code: str,
         message: str = "选书助手暂时无法继续思考，请稍后重试。",
     ) -> RecommendationAgentReply:
+        """Return an operational error without changing the model transcript."""
+        session = replace(session, error_code=error_code)
+        return RecommendationAgentReply(
+            session=session,
+            message=message,
+            error_code=error_code,
+        )
+
+    def _pause_reply(
+        self,
+        session: RecommendationAgentSession,
+        *,
+        error_code: str,
+        message: str,
+    ) -> RecommendationAgentReply:
+        """Pause a valid but exhausted turn and ask for new user input."""
         session = self._append_message(
             session,
             RecommendationAgentMessage(
                 role=RecommendationAgentMessageRole.ASSISTANT,
                 content=message,
             ),
-            phase=RecommendationAgentPhase.FAILED,
+            phase=RecommendationAgentPhase.AWAITING_USER,
         )
         session = replace(session, error_code=error_code)
         return RecommendationAgentReply(

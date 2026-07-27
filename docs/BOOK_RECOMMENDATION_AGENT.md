@@ -477,6 +477,11 @@ resume(session_id, user_message)
     → RecommendationSessionRepository.load
     → 运行同一个 Loop
     → RecommendationSessionRepository.save
+
+retry(session_id)
+    → 加载 Provider 失败前的同一轮 Session
+    → 不新增或重复用户消息
+    → 重新运行 Loop 并保存结果
 ```
 
 SQLite 的 `recommendation_sessions` 表以 `session_id` 为主键，保存可查询的 `phase` 和带版本号的
@@ -490,6 +495,9 @@ POST /api/recommendations/sessions
 
 POST /api/recommendations/sessions/{session_id}/messages
     向 awaiting_user 会话发送下一条用户消息
+
+POST /api/recommendations/sessions/{session_id}/retry
+    在模型服务恢复后重试尚未完成的同一轮输入
 
 POST /api/recommendations/difficulty-handoffs
     用户确认换书后，凭 book_id 读取持久化证据并复用原会话
@@ -513,7 +521,10 @@ Reading Handoff 的专用入口重激活原会话。
 - 明确选书工具只能引用最近展示批次中的一个 id；
 - 模型因输出长度限制而截断的 Tool Call 不会执行，而是返回错误结果要求模型重试；
 - 无效搜索、超额参数和未知候选作为 Tool Result 返回，允许模型在剩余预算内修正；
-- 达到轮次上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
+- Provider 自身 retry 后仍失败或返回空响应时，保存可恢复 `error_code`，不追加伪造对话消息；
+- 可恢复模型错误允许通过同一 `session_id` 原地重试，不重复已经接受的用户消息；
+- 达到单次模型轮次上限时暂停为 `awaiting_user`，请求用户补充信息，而不是锁死会话；
+- `failed` 只为真正不可恢复的状态损坏和旧 Session 兼容保留。
 
 当前实现已经把 Loop 通过原生 Tool Call 连接到现有 OpenAI-compatible Provider，并用假的
 Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTTP API 跨请求恢复，前端也已

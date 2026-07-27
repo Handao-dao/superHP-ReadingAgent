@@ -144,6 +144,14 @@ class RecordingCatalogTool:
         }
 
 
+class UnavailableCatalogTool(RecordingCatalogTool):
+    """Simulate an operational tool failure rather than bad model input."""
+
+    async def run(self, **arguments):
+        self.calls.append(arguments)
+        raise RuntimeError("catalog temporarily unavailable")
+
+
 def onboarding_request() -> RecommendationRequest:
     return RecommendationRequest(origin=RecommendationOrigin.ONBOARDING)
 
@@ -273,6 +281,52 @@ async def test_agent_presents_verified_candidates_then_finishes_on_selection():
     assert selected.message == (
         "已确认《Cam Jansen》，接下来可以进入书库阅读。"
     )
+
+
+@pytest.mark.asyncio
+async def test_full_conversation_supports_rejection_new_batch_and_selection():
+    provider = ScriptedProvider(
+        LLMResponse(content="你喜欢哪类故事？"),
+        search(),
+        present("cam-jansen", message="先看看 Cam Jansen。"),
+        search(
+            call_id="search-2",
+            genres=("mystery", "adventure"),
+        ),
+        present(
+            "nate-the-great",
+            call_id="present-2",
+            message="换成更偏冒险的 Nate the Great。",
+        ),
+        select(
+            "nate-the-great",
+            message="已确认 Nate the Great。",
+        ),
+    )
+    agent, tool = make_agent(provider)
+
+    question = await agent.run(
+        agent.start(onboarding_request(), session_id="full-path")
+    )
+    first_batch = await agent.run(
+        question.session,
+        user_message="我喜欢轻松的侦探故事。",
+    )
+    second_batch = await agent.run(
+        first_batch.session,
+        user_message="第一本不太感兴趣，换一批更偏冒险的。",
+    )
+    selected = await agent.run(
+        second_batch.session,
+        user_message="就选 Nate the Great。",
+    )
+
+    assert first_batch.recommended_catalog_ids == ("cam-jansen",)
+    assert second_batch.recommended_catalog_ids == ("nate-the-great",)
+    assert selected.session.phase is RecommendationAgentPhase.COMPLETED
+    assert selected.session.selected_catalog_id == "nate-the-great"
+    assert len(tool.calls) == 2
+    assert tool.calls[1]["genres"] == ["mystery", "adventure"]
 
 
 @pytest.mark.asyncio
@@ -412,30 +466,94 @@ async def test_agent_stops_after_model_turn_limit():
         agent.start(onboarding_request(), session_id="session")
     )
 
-    assert reply.session.phase is RecommendationAgentPhase.FAILED
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
     assert reply.error_code == "turn_limit_reached"
+    assert reply.session.conversation[-1].role is (
+        RecommendationAgentMessageRole.ASSISTANT
+    )
 
 
 @pytest.mark.asyncio
-async def test_agent_normalizes_provider_and_empty_response_failures():
+async def test_provider_failure_keeps_pending_turn_and_retry_does_not_duplicate_user():
     provider = ScriptedProvider(
-        LLMResponse(content="provider unavailable", finish_reason="error")
+        LLMResponse(content="你喜欢哪类故事？"),
+        RuntimeError("provider unavailable"),
+        LLMResponse(content="我会继续根据侦探题材帮你筛选。"),
     )
     agent, _ = make_agent(provider)
-
-    failed = await agent.run(
+    question = await agent.run(
         agent.start(onboarding_request(), session_id="provider-error")
     )
 
+    interrupted = await agent.run(
+        question.session,
+        user_message="我喜欢轻松的侦探故事。",
+    )
+
+    assert interrupted.error_code == "model_error"
+    assert interrupted.session.phase is (
+        RecommendationAgentPhase.COLLECTING_PREFERENCES
+    )
+    assert [message.role for message in interrupted.session.conversation] == [
+        RecommendationAgentMessageRole.ASSISTANT,
+        RecommendationAgentMessageRole.USER,
+    ]
+
+    recovered = await agent.run(interrupted.session)
+
+    assert recovered.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert recovered.session.error_code == ""
+    assert [message.role for message in recovered.session.conversation] == [
+        RecommendationAgentMessageRole.ASSISTANT,
+        RecommendationAgentMessageRole.USER,
+        RecommendationAgentMessageRole.ASSISTANT,
+    ]
+
+
+@pytest.mark.asyncio
+async def test_error_and_empty_provider_responses_are_recoverable():
+    error_provider = ScriptedProvider(
+        LLMResponse(content="provider unavailable", finish_reason="error")
+    )
+    error_agent, _ = make_agent(error_provider)
+    failed = await error_agent.run(
+        error_agent.start(onboarding_request(), session_id="provider-error")
+    )
+    assert failed.session.phase is (
+        RecommendationAgentPhase.COLLECTING_PREFERENCES
+    )
+    assert failed.session.conversation == ()
     assert failed.error_code == "model_error"
-    assert failed.session.error_code == "model_error"
 
     empty_provider = ScriptedProvider(LLMResponse(content=None))
     empty_agent, _ = make_agent(empty_provider)
     empty = await empty_agent.run(
         empty_agent.start(onboarding_request(), session_id="empty")
     )
+    assert empty.session.phase is (
+        RecommendationAgentPhase.COLLECTING_PREFERENCES
+    )
+    assert empty.session.conversation == ()
     assert empty.error_code == "invalid_model_response"
+
+
+@pytest.mark.asyncio
+async def test_unavailable_tool_returns_error_to_model_and_loop_recovers():
+    provider = ScriptedProvider(
+        search(),
+        LLMResponse(content="目录暂时不可用，请稍后再试。"),
+    )
+    agent, tool = make_agent(provider, UnavailableCatalogTool())
+
+    reply = await agent.run(
+        agent.start(onboarding_request(), session_id="session")
+    )
+
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert len(tool.calls) == 1
+    payload = json.loads(reply.session.conversation[1].content)
+    assert payload["error"] == "tool_unavailable"
+    assert reply.session.conversation[1].is_error is True
 
 
 @pytest.mark.asyncio

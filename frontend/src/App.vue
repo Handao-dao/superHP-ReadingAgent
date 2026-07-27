@@ -79,7 +79,9 @@ const currentRenderer = computed(() => getReadingRenderer(currentMeta.value?.pro
 const profileShellClass = computed(() => `profile-${selectedProfileId.value}`)
 
 const {
+  canRetry: recommendationCanRetry,
   canSend: recommendationCanSend,
+  errorCode: recommendationErrorCode,
   errorMessage: recommendationError,
   hasSession: hasRecommendationSession,
   hasStoredSession: hasStoredRecommendationSession,
@@ -88,6 +90,7 @@ const {
   origin: recommendationOrigin,
   phase: recommendationPhase,
   recommendedBooks,
+  retrySession: retryRecommendationSession,
   selectedCatalogId: recommendationSelectedCatalogId,
   restoreSession: restoreRecommendationSession,
   sendMessage: sendRecommendationMessage,
@@ -613,7 +616,9 @@ onBeforeUnmount(() => {
       <section v-else class="recommendation-stage">
         <article class="paper-surface recommendation-surface">
           <RecommendationChatPage
+            :can-retry="recommendationCanRetry"
             :can-send="recommendationCanSend"
+            :error-code="recommendationErrorCode"
             :error-message="recommendationError"
             :has-session="hasRecommendationSession"
             :has-stored-session="hasStoredRecommendationSession"
@@ -624,6 +629,7 @@ onBeforeUnmount(() => {
             :recommended-books="recommendedBooks"
             :selected-catalog-id="recommendationSelectedCatalogId"
             @restore="restoreRecommendationSession"
+            @retry="retryRecommendationSession"
             @send="sendRecommendationMessage"
             @start="startRecommendationSession"
           />

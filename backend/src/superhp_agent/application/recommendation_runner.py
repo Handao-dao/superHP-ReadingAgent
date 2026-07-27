@@ -65,6 +65,17 @@ class RecommendationAgentRunner:
         self.session_repository.save(reply.session)
         return reply
 
+    async def retry(self, session_id: str) -> RecommendationAgentReply:
+        """Retry the pending model turn without duplicating a user message."""
+        session = self.session_repository.load(session_id)
+        if session is None:
+            raise RecommendationSessionNotFoundError(
+                f"recommendation session not found: {session_id}"
+            )
+        reply = await self.agent.run(session)
+        self.session_repository.save(reply.session)
+        return reply
+
     async def handoff(
         self,
         request: RecommendationRequest,

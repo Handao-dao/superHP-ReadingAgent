@@ -36,6 +36,12 @@ export function getRecommendationSession(sessionId) {
   return requestJson(`/api/recommendations/sessions/${encodeURIComponent(sessionId)}`)
 }
 
+export function retryRecommendationSession(sessionId) {
+  return requestJson(`/api/recommendations/sessions/${encodeURIComponent(sessionId)}/retry`, {
+    method: 'POST',
+  })
+}
+
 export function sendRecommendationMessage(sessionId, message) {
   return requestJson(`/api/recommendations/sessions/${encodeURIComponent(sessionId)}/messages`, {
     method: 'POST',

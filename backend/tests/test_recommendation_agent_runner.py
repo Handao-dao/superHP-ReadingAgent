@@ -51,7 +51,10 @@ class ScriptedProvider:
         tools=None,
         on_retry_wait=None,
     ):
-        return self.responses.pop(0)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
 
 
 def make_runner(*responses):
@@ -131,6 +134,25 @@ async def test_runner_rejects_unknown_session_without_creating_agent():
         await runner.resume("missing", user_message="继续")
 
     assert created_agents == []
+
+
+@pytest.mark.asyncio
+async def test_runner_retries_saved_pending_turn_without_new_user_message():
+    runner, repository, _ = make_runner(
+        RuntimeError("provider unavailable"),
+        LLMResponse(content="你喜欢哪类故事？"),
+    )
+    request = RecommendationRequest(origin=RecommendationOrigin.ONBOARDING)
+
+    interrupted = await runner.start(request, session_id="session-1")
+    recovered = await runner.retry("session-1")
+
+    assert interrupted.error_code == "model_error"
+    assert interrupted.session.conversation == ()
+    assert recovered.session.phase is RecommendationAgentPhase.AWAITING_USER
+    assert recovered.session.error_code == ""
+    assert len(recovered.session.conversation) == 1
+    assert repository.load("session-1") == recovered.session
 
 
 @pytest.mark.asyncio

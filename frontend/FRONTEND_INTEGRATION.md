@@ -185,9 +185,15 @@ Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units
 { "message": "我喜欢轻松一点的侦探故事。" }
 ```
 
+#### `POST /api/recommendations/sessions/{session_id}/retry`
+
+当返回的 `error_code` 为 `model_error` 或 `invalid_model_response` 时，表示本轮输入仍保存在
+Session 中。前端可以调用此无请求体接口原地重试；后端不会重复追加上一条用户消息。当前页面会
+显示“重新尝试”入口，成功后用返回的完整公开 Session 替换本地状态。
+
 #### `GET /api/recommendations/sessions/{session_id}`
 
-页面刷新后恢复相同会话。三个接口统一返回：
+页面刷新后恢复相同会话。以上接口统一返回：
 
 ```ts
 type RecommendationSessionResponse = {

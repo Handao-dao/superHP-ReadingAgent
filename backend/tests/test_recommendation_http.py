@@ -34,9 +34,11 @@ class FakeRecommendationRunner:
         self.started_request = None
         self.resumed = None
         self.handed_off = None
+        self.retried = None
         self.start_reply = None
         self.resume_reply = None
         self.handoff_reply = None
+        self.retry_reply = None
 
     async def start(self, request):
         self.started_request = request
@@ -57,6 +59,12 @@ class FakeRecommendationRunner:
             self.handoff_reply.session
         )
         return self.handoff_reply
+
+    async def retry(self, session_id):
+        self.retried = session_id
+        assert self.retry_reply is not None
+        self.sessions[session_id] = self.retry_reply.session
+        return self.retry_reply
 
     def load(self, session_id):
         return self.sessions.get(session_id)
@@ -360,6 +368,37 @@ def test_get_session_restores_failed_error_code():
     assert response.status_code == 200
     assert response.json()["phase"] == "failed"
     assert response.json()["error_code"] == "model_error"
+
+
+def test_retry_session_continues_without_adding_a_user_message():
+    client, runner = make_client()
+    pending = replace(
+        question_session(),
+        phase=RecommendationAgentPhase.COLLECTING_PREFERENCES,
+        conversation=(),
+        error_code="model_error",
+    )
+    recovered = replace(
+        question_session(),
+        error_code="",
+    )
+    runner.sessions["session-1"] = pending
+    runner.retry_reply = RecommendationAgentReply(
+        session=recovered,
+        message="你喜欢哪类故事？",
+    )
+
+    response = client.post(
+        "/api/recommendations/sessions/session-1/retry"
+    )
+
+    assert response.status_code == 200
+    assert runner.retried == "session-1"
+    assert response.json()["phase"] == "awaiting_user"
+    assert response.json()["error_code"] == ""
+    assert response.json()["messages"] == [
+        {"role": "assistant", "content": "你喜欢哪类故事？"}
+    ]
 
 
 def test_api_rejects_missing_sessions_blank_messages_and_unready_handoffs():

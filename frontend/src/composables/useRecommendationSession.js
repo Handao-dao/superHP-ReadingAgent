@@ -8,6 +8,7 @@ import {
   createDifficultyRecommendationHandoff,
   createRecommendationSession,
   getRecommendationSession,
+  retryRecommendationSession,
   sendRecommendationMessage,
 } from '../api/recommendations'
 
@@ -26,7 +27,12 @@ export function useRecommendationSession() {
   const selectedCatalogId = computed(() => session.value?.selected_catalog_id || '')
   const phase = computed(() => session.value?.phase || '')
   const origin = computed(() => session.value?.origin || '')
+  const errorCode = computed(() => session.value?.error_code || '')
   const canSend = computed(() => phase.value === 'awaiting_user' && !loading.value)
+  const canRetry = computed(() => (
+    ['model_error', 'invalid_model_response'].includes(errorCode.value)
+    && !loading.value
+  ))
 
   async function restoreSession() {
     const sessionId = storedSessionId.value
@@ -105,8 +111,25 @@ export function useRecommendationSession() {
     }
   }
 
+  async function retrySession() {
+    if (!session.value?.session_id || !canRetry.value) return null
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      session.value = await retryRecommendationSession(session.value.session_id)
+      return session.value
+    } catch (error) {
+      errorMessage.value = error.message || '选书对话重试失败'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
+    canRetry,
     canSend,
+    errorCode,
     errorMessage,
     hasSession,
     hasStoredSession,
@@ -115,6 +138,7 @@ export function useRecommendationSession() {
     origin,
     phase,
     recommendedBooks,
+    retrySession,
     selectedCatalogId,
     restoreSession,
     sendMessage,

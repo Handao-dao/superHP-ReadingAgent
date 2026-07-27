@@ -142,6 +142,26 @@ def create_recommendation_router(
             error_code=reply.error_code,
         )
 
+    @router.post(
+        "/sessions/{session_id}/retry",
+        response_model=RecommendationSessionResponse,
+    )
+    async def retry_session(
+        session_id: str,
+    ) -> RecommendationSessionResponse:
+        """Retry one recoverable model turn without adding chat content."""
+        try:
+            reply = await runner.retry(session_id)
+        except RecommendationSessionNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except RecommendationAgentStateError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return await _public_session(
+            reply.session,
+            catalog,
+            error_code=reply.error_code,
+        )
+
     @router.get(
         "/sessions/{session_id}",
         response_model=RecommendationSessionResponse,

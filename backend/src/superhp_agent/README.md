@@ -178,6 +178,12 @@ Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Mod
 和真实 user / assistant / tool 消息；Provider 统一负责 SDK、模型配置、原生 Tool Call 解析和
 retry。
 
+Provider 在自身 retry 后仍然不可用，或返回空响应时，Loop 会保存 `error_code`，但不追加一条
+伪造的 Assistant 消息，也不把 Session 变成不可继续的终态。Runner 的 `retry(session_id)` 可以
+从同一轮输入继续，用户消息不会重复写入历史。工具参数、权限、目录可用性和候选校验错误仍作为
+结构化 Tool Result 返回模型；达到单次模型轮数上限则暂停为 `awaiting_user`，请用户补充信息。
+`failed` 只为真正不可恢复的状态错误和旧数据保留。
+
 困难 Handoff 会通过 Session 的 `context_start_index` 开启新的工具上下文周期：旧的可见
 user / assistant 对话仍可帮助 Agent 延续交流，但此前 Tool Call 和 Tool Result 不再进入新一轮
 模型输入。当前展示批次和最终选择作为结构化运行时事实显式注入；每次模型请求还会记录 Context

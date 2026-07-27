@@ -154,8 +154,33 @@ Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units
 }
 ```
 
-`origin` 当前支持 `onboarding` 和 `user_request`。阅读困难后的 `difficulty_alert` 需要结构化
-Reading Handoff，将由后续专用入口触发，不能从这个初次创建接口伪造。
+`origin` 当前支持 `onboarding` 和 `user_request`。阅读困难后的 `difficulty_alert` 必须由下面
+的结构化 Reading Handoff 专用入口触发，不能从这个初次创建接口伪造。
+
+#### `POST /api/recommendations/difficulty-handoffs`
+
+用户在章节结束困难提示中明确选择“换一本”后调用。它会复用已有 `session_id` 的可见对话历史；
+若历史会话不存在，则创建新的推荐会话。请求携带阅读策略刚刚产生的三章聚合数据：
+
+```json
+{
+  "session_id": "existing-session-id",
+  "current_book": {
+    "book_id": "hp01",
+    "title": "Harry Potter and the Philosopher's Stone"
+  },
+  "evidence": {
+    "observed_word_count": 7200,
+    "observed_chapter_count": 3,
+    "lookup_density": 12.1,
+    "annotated_lookup_density": 3.2,
+    "annotation_target": 20
+  }
+}
+```
+
+后端会重置新一轮 Agent 工具预算，将用户的换书选择和聚合事实追加为可见消息，再由同一个 Loop
+先分析阅读负担、后搜索新候选。该动作只启动推荐，不自动切换、下载或导入图书。
 
 #### `POST /api/recommendations/sessions/{session_id}/messages`
 
@@ -172,6 +197,7 @@ Reading Handoff，将由后续专用入口触发，不能从这个初次创建�
 ```ts
 type RecommendationSessionResponse = {
   session_id: string
+  origin: 'onboarding' | 'user_request' | 'difficulty_alert'
   phase:
     | 'collecting_preferences'
     | 'searching'
@@ -202,8 +228,18 @@ type RecommendationSessionResponse = {
 模型调用；点击后才创建 Session。刷新页面时，如果本地存在 session id，Composable 使用 GET
 恢复对话。临时网络错误会保留本地 id，只有后端明确返回 404 才清除失效指针。
 
-当前完成态只提示用户从左侧本地书库进入既有阅读流程，不伪造“选择图书”写操作。阅读困难后的
-被动重激活、近期阅读 Handoff 和用户授权提示属于后续步骤。
+当前完成态只提示用户从左侧本地书库进入既有阅读流程，不伪造“选择图书”写操作。
+
+章节的最后一页之后是一个虚拟页面边界。进入该边界时，前端先发送已有
+`mark_chapter_read` action；后端记录章节检查点并运行三章滑动窗口：
+
+- 没有 `difficulty_alert`：显示原有章节完成卡片；
+- 有 `difficulty_alert`：先显示“继续尝试 / 换一本”的困难提示页；
+- “继续尝试”：留在阅读视图并显示原完成卡片；
+- “换一本”：调用专用 Handoff 接口并切换到已有推荐对话视图。
+
+这张提示页只消费本次 `unit.marked_read` 事件携带的聚合证据，不轮询长期观察接口，也不会在正文
+阅读过程中弹窗打断用户。
 
 ### 查词与词表
 
@@ -260,8 +296,8 @@ type ReadingDifficultyObservation = {
 }
 ```
 
-`watching` 不等于应立即弹窗。当前前端不轮询此接口；后续只有在动态译注支持已经达到上限、多个
-观察窗口仍持续困难且冷却条件允许时，Flow Router 才会把它转成一次用户授权选择。
+`watching` 不等于应立即弹窗。当前前端不轮询此接口；只有动态译注支持已经达到上限且策略在
+章节完成检查点正式产生 `difficulty_alert` 时，才会显示一次用户授权选择。
 
 #### `GET /api/vocabulary`
 

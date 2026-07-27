@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue'
 import {
+  createDifficultyRecommendationHandoff,
   createRecommendationSession,
   getRecommendationSession,
   sendRecommendationMessage,
@@ -23,6 +24,7 @@ export function useRecommendationSession() {
   const messages = computed(() => session.value?.messages || [])
   const recommendedBooks = computed(() => session.value?.recommended_books || [])
   const phase = computed(() => session.value?.phase || '')
+  const origin = computed(() => session.value?.origin || '')
   const canSend = computed(() => phase.value === 'awaiting_user' && !loading.value)
 
   async function restoreSession() {
@@ -63,6 +65,27 @@ export function useRecommendationSession() {
     }
   }
 
+  async function startDifficultyHandoff({ currentBook, evidence }) {
+    if (loading.value) return null
+    loading.value = true
+    errorMessage.value = ''
+    try {
+      session.value = await createDifficultyRecommendationHandoff({
+        session_id: storedSessionId.value,
+        current_book: currentBook,
+        evidence,
+      })
+      storedSessionId.value = session.value.session_id
+      localStorage.setItem(SESSION_STORAGE_KEY, session.value.session_id)
+      return session.value
+    } catch (error) {
+      errorMessage.value = error.message || '阅读情况交接失败'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function sendMessage(message) {
     const content = String(message || '').trim()
     if (!content || !session.value?.session_id || !canSend.value) return null
@@ -89,11 +112,13 @@ export function useRecommendationSession() {
     hasStoredSession,
     loading,
     messages,
+    origin,
     phase,
     recommendedBooks,
     restoreSession,
     sendMessage,
     session,
+    startDifficultyHandoff,
     startSession,
   }
 }

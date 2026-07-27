@@ -163,6 +163,38 @@ class ContinueRecommendationSessionRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
 
 
+class DifficultyHandoffBook(BaseModel):
+    """Current local book identity available at the reading boundary."""
+
+    book_id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=500)
+    title_zh: str = Field(default="", max_length=500)
+    author: str = Field(default="", max_length=300)
+    genres: list[str] = Field(default_factory=list, max_length=20)
+
+
+class DifficultyHandoffEvidence(BaseModel):
+    """Three-chapter aggregate emitted by the adaptation evaluator."""
+
+    observed_word_count: int = Field(ge=0)
+    observed_chapter_count: int = Field(ge=0)
+    lookup_density: float = Field(ge=0)
+    unique_lookup_density: float = Field(default=0, ge=0)
+    repeated_lookup_density: float = Field(default=0, ge=0)
+    annotated_lookup_density: float = Field(default=0, ge=0)
+    actual_annotation_density: float = Field(default=0, ge=0)
+    annotation_target: int | None = Field(default=None, ge=0)
+
+
+class CreateDifficultyHandoffRequest(BaseModel):
+    """User-authorized transition from reading into recommendation."""
+
+    session_id: str = Field(default="", max_length=200)
+    current_book: DifficultyHandoffBook
+    evidence: DifficultyHandoffEvidence
+    preserve_genre_by_default: bool = True
+
+
 class RecommendationChatMessage(BaseModel):
     """A user-visible message; internal Tool messages are never exposed."""
 
@@ -187,6 +219,7 @@ class RecommendationSessionResponse(BaseModel):
     """Restorable public view of one recommendation conversation."""
 
     session_id: str
+    origin: RecommendationOrigin
     phase: RecommendationAgentPhase
     messages: list[RecommendationChatMessage]
     recommended_books: list[RecommendationBookCard] = Field(default_factory=list)

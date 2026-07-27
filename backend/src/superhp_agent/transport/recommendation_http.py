@@ -15,6 +15,9 @@ from superhp_agent.application import (
     RecommendationSessionNotFoundError,
 )
 from superhp_agent.contracts import (
+    BookRecommendationHandoff,
+    BookSnapshot,
+    ReadingDifficultyEvidence,
     RecommendationAgentMessageRole,
     RecommendationAgentSession,
     RecommendationOrigin,
@@ -23,6 +26,7 @@ from superhp_agent.contracts import (
 from superhp_agent.ports import BookDifficultyCatalog
 from superhp_agent.schemas import (
     ContinueRecommendationSessionRequest,
+    CreateDifficultyHandoffRequest,
     CreateRecommendationSessionRequest,
     RecommendationBookCard,
     RecommendationChatMessage,
@@ -64,6 +68,51 @@ def create_recommendation_router(
             user_notes=payload.user_notes.strip(),
         )
         reply = await runner.start(request)
+        return await _public_session(
+            reply.session,
+            catalog,
+            error_code=reply.error_code,
+        )
+
+    @router.post(
+        "/difficulty-handoffs",
+        response_model=RecommendationSessionResponse,
+        status_code=status.HTTP_201_CREATED,
+    )
+    async def create_difficulty_handoff(
+        payload: CreateDifficultyHandoffRequest,
+    ) -> RecommendationSessionResponse:
+        """Continue the recommendation transcript after explicit consent."""
+        evidence = ReadingDifficultyEvidence(
+            **payload.evidence.model_dump()
+        )
+        current_book = BookSnapshot(
+            book_id=payload.current_book.book_id.strip(),
+            title=payload.current_book.title.strip(),
+            title_zh=payload.current_book.title_zh.strip(),
+            author=payload.current_book.author.strip(),
+            genres=_clean_values(payload.current_book.genres),
+        )
+        request = RecommendationRequest(
+            origin=RecommendationOrigin.DIFFICULTY_ALERT,
+            preferred_genres=(
+                current_book.genres
+                if payload.preserve_genre_by_default
+                else ()
+            ),
+            handoff=BookRecommendationHandoff(
+                current_book=current_book,
+                evidence=evidence,
+                preserve_genre_by_default=(
+                    payload.preserve_genre_by_default
+                ),
+            ),
+        )
+        reply = await runner.handoff(
+            request,
+            session_id=payload.session_id.strip() or None,
+            user_message=_difficulty_handoff_message(evidence),
+        )
         return await _public_session(
             reply.session,
             catalog,
@@ -150,6 +199,7 @@ async def _public_session(
         )
     return RecommendationSessionResponse(
         session_id=session.session_id,
+        origin=session.request.origin,
         phase=session.phase,
         messages=messages,
         recommended_books=books,
@@ -169,3 +219,17 @@ def _clean_values(values: list[str]) -> tuple[str, ...]:
         seen.add(key)
         cleaned.append(normalized)
     return tuple(cleaned)
+
+
+def _difficulty_handoff_message(
+    evidence: ReadingDifficultyEvidence,
+) -> str:
+    """Turn the reader's button choice into one visible conversation turn."""
+    return (
+        "我想换一本更适合持续阅读的书。"
+        f"最近 {evidence.observed_chapter_count} 章共约 "
+        f"{evidence.observed_word_count} 词，平均每 300 词主动查词 "
+        f"{evidence.lookup_density:g} 次，其中约 "
+        f"{evidence.annotated_lookup_density:g} 次发生在已有译注词上。"
+        "请先简要分析这段阅读体验，再给我新的建议。"
+    )

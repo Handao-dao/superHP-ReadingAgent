@@ -1,9 +1,15 @@
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-from superhp_agent.contracts import AgentAction, ChapterReadingCheckpoint
+from superhp_agent.application import ReadingAdaptationAction
+from superhp_agent.contracts import (
+    AgentAction,
+    ChapterReadingCheckpoint,
+    ReadingDifficultyEvidence,
+)
 from superhp_agent.contracts.annotation import (
     AnnotationItem,
     AnnotationResult,
@@ -102,6 +108,25 @@ class FakeReadingAdaptationEvaluator:
             "reading_adaptation_evaluated",
             book_id=book_id,
             shadow_mode=True,
+        )
+
+
+class FakeDifficultyAlertEvaluator(FakeReadingAdaptationEvaluator):
+    def evaluate_and_log(self, book_id, event_logger):
+        super().evaluate_and_log(book_id, event_logger)
+        return SimpleNamespace(
+            decision=SimpleNamespace(
+                action=ReadingAdaptationAction.DIFFICULTY_ALERT
+            ),
+            window=SimpleNamespace(
+                evidence=ReadingDifficultyEvidence(
+                    observed_word_count=7200,
+                    observed_chapter_count=3,
+                    lookup_density=12.1,
+                    annotated_lookup_density=3.2,
+                    annotation_target=20,
+                )
+            ),
         )
 
 
@@ -235,6 +260,40 @@ def test_dispatch_mark_read_uses_current_unit(tmp_path):
         assert memory.logged_events[0]["type"] == "chapter_checkpoint_recorded"
         assert adaptation_evaluator.book_ids == ["hp01"]
         assert memory.logged_events[1]["type"] == "reading_adaptation_evaluated"
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_mark_read_emits_difficulty_alert_evidence(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        sink = RecordingEventSink()
+        memory = memory_store()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            event_sink=sink,
+            event_log_store=memory,
+            progress_repository=memory,
+            chapter_checkpoint_recorder=FakeChapterCheckpointRecorder(),
+            reading_adaptation_evaluator=FakeDifficultyAlertEvaluator(),
+            current_unit_id="hp01-ch01",
+        )
+
+        await ActionDispatcher().dispatch(
+            AgentAction(
+                id=MARK_CHAPTER_READ,
+                label="完成本章",
+                payload={},
+            ),
+            context,
+        )
+
+        alert = sink.events[0]["difficulty_alert"]
+        assert alert["book_id"] == "hp01"
+        assert alert["chapter_id"] == "hp01-ch01"
+        assert alert["evidence"]["lookup_density"] == 12.1
+        assert alert["evidence"]["annotation_target"] == 20
 
     asyncio.run(run_case())
 

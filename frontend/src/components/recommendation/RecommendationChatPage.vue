@@ -13,6 +13,7 @@ const props = defineProps({
   hasStoredSession: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
   messages: { type: Array, default: () => [] },
+  origin: { type: String, default: '' },
   phase: { type: String, default: '' },
   recommendedBooks: { type: Array, default: () => [] },
 })
@@ -20,6 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['restore', 'send', 'start'])
 const draft = ref('')
 const transcript = ref(null)
+const isDifficultyHandoff = () => props.origin === 'difficulty_alert'
 
 const phaseLabels = {
   collecting_preferences: '了解偏好',
@@ -55,8 +57,15 @@ watch(
     <header class="recommendation-chat-header">
       <div>
         <p class="small-label">Book Match</p>
-        <h2>找到适合持续阅读的下一本书</h2>
-        <p>通过简短对话了解题材偏好和阅读感受，再从本地图书目录中给出建议。</p>
+        <h2>
+          {{ isDifficultyHandoff() ? '重新找一本读起来更顺的书' : '找到适合持续阅读的下一本书' }}
+        </h2>
+        <p v-if="isDifficultyHandoff()">
+          助手已收到最近三章的阅读情况，会先分析阅读负担，再从本地图书目录中给出更合适的建议。
+        </p>
+        <p v-else>
+          通过简短对话了解题材偏好和阅读感受，再从本地图书目录中给出建议。
+        </p>
       </div>
       <span v-if="phase" class="recommendation-phase" :data-phase="phase">
         {{ phaseLabels[phase] || phase }}

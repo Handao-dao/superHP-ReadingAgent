@@ -8,9 +8,11 @@ transport-specific request handling.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 
 from superhp_agent.agents import BookRecommendationAgent
 from superhp_agent.contracts import (
+    RecommendationAgentPhase,
     RecommendationAgentReply,
     RecommendationAgentSession,
     RecommendationRequest,
@@ -60,6 +62,39 @@ class RecommendationAgentRunner:
                 f"recommendation session not found: {session_id}"
             )
         reply = await self.agent.run(session, user_message=user_message)
+        self.session_repository.save(reply.session)
+        return reply
+
+    async def handoff(
+        self,
+        request: RecommendationRequest,
+        *,
+        session_id: str | None = None,
+        user_message: str,
+    ) -> RecommendationAgentReply:
+        """Start a difficulty turn, retaining a prior visible conversation."""
+        session = (
+            self.session_repository.load(session_id)
+            if session_id
+            else None
+        )
+        if session is None:
+            session = self.agent.start(request)
+        else:
+            session = replace(
+                session,
+                request=request,
+                phase=RecommendationAgentPhase.COLLECTING_PREFERENCES,
+                tool_call_count=0,
+                observed_catalog_ids=(),
+                recommended_catalog_ids=(),
+                error_code="",
+            )
+        self.session_repository.save(session)
+        reply = await self.agent.run(
+            session,
+            user_message=user_message,
+        )
         self.session_repository.save(reply.session)
         return reply
 

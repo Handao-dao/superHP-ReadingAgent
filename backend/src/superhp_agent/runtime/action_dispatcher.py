@@ -12,6 +12,9 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Protocol
 
+from superhp_agent.application.reading_adaptation import (
+    ReadingAdaptationAction,
+)
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import (
     AgentAction,
@@ -81,7 +84,7 @@ class ReadingAdaptationEvaluationCapability(Protocol):
         self,
         book_id: str,
         event_logger: EventLogger | None,
-    ) -> None: ...
+    ) -> Any | None: ...
 
 
 class UnsupportedActionError(ValueError):
@@ -265,13 +268,19 @@ class MarkReadHandler:
             raise MissingActionPayloadError("unit_id")
 
         context.current_unit_id = unit_id
+        difficulty_alert = None
         if context.progress_repository:
             context.progress_repository.mark_read(unit_id)
-            _record_chapter_checkpoint(context, unit_id)
+            difficulty_alert = _record_chapter_checkpoint(context, unit_id)
         await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
             unit_id=unit_id,
+            **(
+                {"difficulty_alert": difficulty_alert}
+                if difficulty_alert is not None
+                else {}
+            ),
         )
 
 
@@ -288,11 +297,19 @@ class StartNextUnitHandler:
         completed_unit_id = str(action.payload.get("completed_unit_id") or context.current_unit_id or "")
         if completed_unit_id and context.progress_repository:
             context.progress_repository.mark_read(completed_unit_id)
-            _record_chapter_checkpoint(context, completed_unit_id)
+            difficulty_alert = _record_chapter_checkpoint(
+                context,
+                completed_unit_id,
+            )
             await context.emit_event(
                 "unit.marked_read",
                 request_id=request_id,
                 unit_id=completed_unit_id,
+                **(
+                    {"difficulty_alert": difficulty_alert}
+                    if difficulty_alert is not None
+                    else {}
+                ),
             )
 
         context.corpus.get_unit(next_unit_id)
@@ -481,10 +498,10 @@ def _unit_id(payload: dict[str, Any]) -> str:
 def _record_chapter_checkpoint(
     context: ActionContext,
     unit_id: str,
-) -> None:
-    """Keep supplementary checkpoint failures out of the reading path."""
+) -> dict[str, Any] | None:
+    """Record and evaluate one chapter without blocking the reading path."""
     if context.chapter_checkpoint_recorder is None:
-        return
+        return None
     try:
         checkpoint = context.chapter_checkpoint_recorder.record_if_complete(
             unit_id
@@ -495,7 +512,7 @@ def _record_chapter_checkpoint(
             unit_id=unit_id,
             error=str(exc),
         )
-        return
+        return None
     if checkpoint is not None:
         context.log_event(
             "chapter_checkpoint_recorded",
@@ -509,9 +526,11 @@ def _record_chapter_checkpoint(
         )
         if context.reading_adaptation_evaluator is not None:
             try:
-                context.reading_adaptation_evaluator.evaluate_and_log(
-                    checkpoint.book_id,
-                    context.event_log_store,
+                evaluation = (
+                    context.reading_adaptation_evaluator.evaluate_and_log(
+                        checkpoint.book_id,
+                        context.event_log_store,
+                    )
                 )
             except Exception as exc:
                 context.log_event(
@@ -520,6 +539,39 @@ def _record_chapter_checkpoint(
                     chapter_id=checkpoint.chapter_id,
                     error=str(exc),
                 )
+                return None
+            decision = getattr(evaluation, "decision", None)
+            if (
+                decision is not None
+                and decision.action
+                is ReadingAdaptationAction.DIFFICULTY_ALERT
+            ):
+                evidence = evaluation.window.evidence
+                return {
+                    "book_id": checkpoint.book_id,
+                    "chapter_id": checkpoint.chapter_id,
+                    "evidence": {
+                        "observed_word_count": evidence.observed_word_count,
+                        "observed_chapter_count": (
+                            evidence.observed_chapter_count
+                        ),
+                        "lookup_density": evidence.lookup_density,
+                        "unique_lookup_density": (
+                            evidence.unique_lookup_density
+                        ),
+                        "repeated_lookup_density": (
+                            evidence.repeated_lookup_density
+                        ),
+                        "annotated_lookup_density": (
+                            evidence.annotated_lookup_density
+                        ),
+                        "actual_annotation_density": (
+                            evidence.actual_annotation_density
+                        ),
+                        "annotation_target": evidence.annotation_target,
+                    },
+                }
+    return None
 
 
 def _require_unit_id(payload: dict[str, Any]) -> str:

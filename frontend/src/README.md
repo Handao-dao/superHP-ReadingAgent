@@ -35,6 +35,7 @@ src/
 │       ├── GuidancePanel.vue       # Guided cards 与 action 选择
 │       ├── LookupPopover.vue       # 查词结果浮层
 │       ├── ReaderStatePage.vue     # 生成、错误和空状态
+│       ├── ReadingDifficultyPrompt.vue # 章节结束后的困难授权页
 │       ├── ReadingPaperFooter.vue  # 正文模式、书签按钮和页码
 │       ├── ReadingSidebar.vue      # Profile、章节和书签目录
 │       ├── ReadingTextPage.vue     # 正文块与分页 DOM 节点
@@ -139,6 +140,12 @@ flowchart LR
 3. Composable 通过 `api/recommendations.js` 创建、继续或恢复 Session。
 4. 后端只返回 user / assistant 可见消息和验证后的图书卡片。
 5. Composable 以 `session_id` 为唯一恢复指针，展示组件不访问 `localStorage`。
+
+困难后的再次推荐仍复用这条数据流。用户越过正文最后一页时，`useReadingSocket` 先发送
+`mark_chapter_read`，等待 `unit.marked_read` 中的策略结果，再请求原章节完成卡片。若事件携带
+`difficulty_alert`，`App.vue` 先组合 `ReadingDifficultyPrompt`；“继续尝试”只移除这层条件页，
+“换一本”则把聚合证据交给 `useRecommendationSession`，在保留原对话记录的前提下开启新一轮
+Agent Loop。
 
 ## 分页 DOM 边界
 

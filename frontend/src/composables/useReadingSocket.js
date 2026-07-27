@@ -34,10 +34,12 @@ export function useReadingSocket(options = {}) {
   const progressMessage = ref('')
   const errorMessage = ref('')
   const cardsRevision = ref(0)
+  const difficultyAlert = ref(null)
   const degradationCounts = ref({ provider: 0, validation: 0, other: 0 })
 
   let socket = null
   let intentionalClose = false
+  let completingUnitId = ''
 
   const canSend = computed(() => connected.value && socket?.readyState === WebSocket.OPEN)
   const selectedProfileId = () => options.profileId?.value || options.profileId || ''
@@ -147,6 +149,24 @@ export function useReadingSocket(options = {}) {
     })
 
     if (!sent) busy.value = false
+    return sent
+  }
+
+  function completeChapter(unitId = currentChapterId.value) {
+    const targetUnitId = unitId || currentChapterId.value
+    if (!targetUnitId || completingUnitId === targetUnitId) return false
+    completingUnitId = targetUnitId
+    const sent = sendAction({
+      id: 'mark_chapter_read',
+      label: '完成本章',
+      payload: { unit_id: targetUnitId },
+    })
+    if (!sent) completingUnitId = ''
+    return sent
+  }
+
+  function clearDifficultyAlert() {
+    difficultyAlert.value = null
   }
 
   function requestCards(phase = 'start', unitId = currentChapterId.value) {
@@ -174,6 +194,13 @@ export function useReadingSocket(options = {}) {
         statusMessage.value = '阅读会话已连接'
         return
       case 'cards.updated':
+        if (
+          completingUnitId
+          && message.current_unit_id === completingUnitId
+          && message.phase !== 'complete'
+        ) {
+          return
+        }
         if (message.current_unit_id && activeChapter.value?.meta?.id !== message.current_unit_id) {
           activeChapter.value = null
         }
@@ -181,7 +208,20 @@ export function useReadingSocket(options = {}) {
         currentChapterId.value = message.current_unit_id || currentChapterId.value
         cardsRevision.value += 1
         busy.value = false
+        if (message.phase === 'complete') completingUnitId = ''
         if (!['failed', 'offline'].includes(loadStatus.value)) loadStatus.value = 'idle'
+        return
+      case 'unit.marked_read':
+        if (message.difficulty_alert) {
+          difficultyAlert.value = message.difficulty_alert
+        }
+        if (completingUnitId === message.unit_id) {
+          const sent = requestCards('complete', message.unit_id)
+          if (!sent) {
+            completingUnitId = ''
+            busy.value = false
+          }
+        }
         return
       case 'chapter.loading':
         resetAnnotationWarning()
@@ -251,6 +291,7 @@ export function useReadingSocket(options = {}) {
         loadStatus.value = 'failed'
         return
       case 'error':
+        completingUnitId = ''
         errorMessage.value = userFacingError(message.error?.message, '阅读会话发生错误。')
         progressMessage.value = ''
         busy.value = false
@@ -274,11 +315,14 @@ export function useReadingSocket(options = {}) {
     cards,
     connected,
     currentChapterId,
+    difficultyAlert,
     errorMessage,
     loadStatus,
     noticeMessage,
     progressMessage,
     statusMessage,
+    clearDifficultyAlert,
+    completeChapter,
     connect,
     disconnect,
     requestCards,

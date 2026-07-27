@@ -28,7 +28,9 @@ _ROLE_AND_RULES = """\
 4. 完成推荐时必须调用 present_book_recommendations，不要只在普通文本里列出最终书目。
 5. present_book_recommendations 只能引用当前会话搜索工具已经返回的 catalog_id。
 6. 不替用户下载、导入或切换图书，也不启动阅读标注工作流。
-7. 每次只调用一个工具，等待工具结果后再决定下一步。"""
+7. 每次只调用一个工具，等待工具结果后再决定下一步。
+8. 当 request.origin 为 difficulty_alert 时，先根据 handoff 简要说明近期阅读负担，再优先寻找
+   比当前作品更容易持续阅读的候选；默认延续原题材，但用户的新偏好优先。"""
 
 
 class RecommendationContextBuilder:

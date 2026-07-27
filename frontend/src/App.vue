@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReadingDifficultyPrompt from './components/reading/ReadingDifficultyPrompt.vue'
 import ReaderStatePage from './components/reading/ReaderStatePage.vue'
 import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
 import ReadingSidebar from './components/reading/ReadingSidebar.vue'
@@ -50,8 +51,11 @@ const {
   canSend,
   cards,
   cardsRevision,
+  clearDifficultyAlert,
+  completeChapter,
   connected,
   currentChapterId,
+  difficultyAlert,
   errorMessage,
   loadStatus,
   noticeMessage,
@@ -78,10 +82,12 @@ const {
   hasStoredSession: hasStoredRecommendationSession,
   loading: recommendationLoading,
   messages: recommendationMessages,
+  origin: recommendationOrigin,
   phase: recommendationPhase,
   recommendedBooks,
   restoreSession: restoreRecommendationSession,
   sendMessage: sendRecommendationMessage,
+  startDifficultyHandoff: startRecommendationDifficultyHandoff,
   startSession: startRecommendationSession,
 } = useRecommendationSession()
 
@@ -229,6 +235,7 @@ const topbarSubtitle = computed(() => {
 const topbarPageLabel = computed(() => {
   if (activeView.value === 'recommendation') return '选书对话'
   if (activeView.value === 'vocabulary') return '生词表'
+  if (difficultyAlert.value) return '阅读反馈'
   return pageLabel.value
 })
 
@@ -328,6 +335,28 @@ function handleViewChange(view) {
   if (view !== 'reader') sidebarOpen.value = false
 }
 
+function handleContinueAfterDifficulty() {
+  clearDifficultyAlert()
+}
+
+async function handleChangeBookAfterDifficulty() {
+  const meta = currentMeta.value
+  const evidence = difficultyAlert.value?.evidence
+  if (!meta || !evidence) return
+  activeView.value = 'recommendation'
+  closeLookupBubble()
+  paperThemeOpen.value = false
+  sidebarOpen.value = false
+  await startRecommendationDifficultyHandoff({
+    currentBook: {
+      book_id: meta.book_id,
+      title: meta.book_title,
+    },
+    evidence,
+  })
+  clearDifficultyAlert()
+}
+
 function selectPaperTheme(theme) {
   if (!PAPER_THEMES.has(theme)) return
   paperTheme.value = theme
@@ -368,6 +397,7 @@ watch(
   async () => {
     resetPagination()
     completeCardsRequestedFor.value = ''
+    clearDifficultyAlert()
     resetLookupAnnotations()
     closeLookupBubble()
     recalculatePages()
@@ -390,7 +420,7 @@ watch(isGuidancePage, (isGuidance) => {
   const unitId = activeChapter.value?.meta?.id
   if (!isGuidance || !unitId || completeCardsRequestedFor.value === unitId) return
   completeCardsRequestedFor.value = unitId
-  requestCards('complete')
+  completeChapter(unitId)
 })
 
 onMounted(() => {
@@ -488,7 +518,16 @@ onBeforeUnmount(() => {
         </template>
 
         <template v-else-if="readerMode === 'guidance'">
+          <ReadingDifficultyPrompt
+            v-if="difficultyAlert"
+            :alert="difficultyAlert"
+            :busy="busy || recommendationLoading"
+            :current-meta="currentMeta"
+            @change-book="handleChangeBookAfterDifficulty"
+            @continue-reading="handleContinueAfterDifficulty"
+          />
           <GuidancePanel
+            v-else
             :busy="busy"
             :can-send="canSend"
             :cards="cards"
@@ -568,6 +607,7 @@ onBeforeUnmount(() => {
             :has-stored-session="hasStoredRecommendationSession"
             :loading="recommendationLoading"
             :messages="recommendationMessages"
+            :origin="recommendationOrigin"
             :phase="recommendationPhase"
             :recommended-books="recommendedBooks"
             @restore="restoreRecommendationSession"

@@ -1,5 +1,7 @@
 """Tests for persistence around the recommendation Agent Loop."""
 
+from dataclasses import replace
+
 import pytest
 
 from superhp_agent.agent_tools import ToolRegistry
@@ -129,3 +131,37 @@ async def test_runner_rejects_unknown_session_without_creating_agent():
 
     assert created_agents == []
 
+
+@pytest.mark.asyncio
+async def test_runner_handoff_keeps_transcript_and_starts_new_agent_turn():
+    runner, repository, _ = make_runner(
+        LLMResponse(content="你最近想读哪类故事？"),
+        LLMResponse(content="我会根据近期阅读负担重新推荐。"),
+    )
+    initial = await runner.start(
+        RecommendationRequest(origin=RecommendationOrigin.ONBOARDING),
+        session_id="session-1",
+    )
+    repository.save(
+        replace(
+            initial.session,
+            phase=RecommendationAgentPhase.COMPLETED,
+        )
+    )
+
+    reply = await runner.handoff(
+        RecommendationRequest(
+            origin=RecommendationOrigin.DIFFICULTY_ALERT
+        ),
+        session_id="session-1",
+        user_message="我想换一本更容易持续阅读的书。",
+    )
+
+    assert reply.session.session_id == "session-1"
+    assert reply.session.request.origin is RecommendationOrigin.DIFFICULTY_ALERT
+    assert [message.role for message in reply.session.conversation] == [
+        RecommendationAgentMessageRole.ASSISTANT,
+        RecommendationAgentMessageRole.USER,
+        RecommendationAgentMessageRole.ASSISTANT,
+    ]
+    assert repository.load("session-1") == reply.session

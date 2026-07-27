@@ -3,7 +3,8 @@
 > 状态：分阶段实现中。
 >
 > 初次选书 Agent、SQLite 会话恢复、HTTP 对话页和主动查词事实存储已经实现；长期聚合策略、
-> 困难授权提示和带 Reading Handoff 的会话重激活仍按本文继续推进。
+> 困难授权提示和带 Reading Handoff 的会话重激活已经接入章节完成流程；推荐结果反馈仍按本文
+> 后续路线推进。
 
 ## 1. 设计目标
 
@@ -469,14 +470,17 @@ POST /api/recommendations/sessions
 POST /api/recommendations/sessions/{session_id}/messages
     向 awaiting_user 会话发送下一条用户消息
 
+POST /api/recommendations/difficulty-handoffs
+    用户确认换书后，携带三章聚合证据并复用原会话
+
 GET /api/recommendations/sessions/{session_id}
     恢复用户可见对话和最终推荐卡片
 ```
 
 HTTP Response 只投影 user / assistant 文本，不暴露内部 Tool Call、Tool Result、Prompt 或
 Provider 对象。终止工具确认的候选 id 会写入 Session，恢复时再通过本地 Catalog 解析为经过
-验证的中英文书名、蓝思区间和题材卡片。`difficulty_alert` 暂不复用初次创建接口；后续由带
-Reading Handoff 的专用重激活入口接入。
+验证的中英文书名、蓝思区间和题材卡片。`difficulty_alert` 不复用初次创建接口，而由带
+Reading Handoff 的专用入口重激活原会话。
 
 当前守卫条件：
 
@@ -490,9 +494,11 @@ Reading Handoff 的专用重激活入口接入。
 
 当前实现已经把 Loop 通过原生 Tool Call 连接到现有 OpenAI-compatible Provider，并用假的
 Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTTP API 跨请求恢复，前端也已
-提供可恢复的独立选书对话页。Reading Monitor 已能保存主动查词事实并计算只读长期窗口，但
-动态译注目标、困难授权提示、推荐反馈和会话重激活仍未接入；用户收到 1～3 本候选后，仍自行
-进入已有阅读区和标注工作流。
+提供可恢复的独立选书对话页。动态译注目标会在章节完成检查点按最近三章滑动窗口调整；达到最高
+支持后仍连续困难时，`unit.marked_read` 会携带一次 `difficulty_alert`。前端把授权页插在正文
+最后一页与原章节完成卡片之间：继续尝试不启动 Agent，换书则通过
+`POST /api/recommendations/difficulty-handoffs` 保留原对话并启动新一轮 Loop。推荐结果反馈尚未
+接入；用户收到 1～3 本候选后，仍自行进入已有阅读区和标注工作流。
 
 建议的停止条件：
 
@@ -555,8 +561,8 @@ Agent 每次只读取聚合后的事实和可修正判断，不依赖无限增�
 
 ## 10. 与现有后端分层的关系
 
-本节记录未来“阅读困难后主动换书”的可能连接点，不属于当前初次选书 Agent 的实现范围。
-当前 Agent 在返回 1～3 本候选后即结束，用户自行进入已有阅读区。
+本节描述当前“阅读困难后主动换书”的已接入边界。Agent 在返回 1～3 本候选后仍结束本轮，用户
+自行进入已有阅读区。
 
 ```text
 Reading Monitor / Adaptation Policy

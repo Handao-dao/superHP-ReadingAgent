@@ -24,6 +24,14 @@ export function createRecommendationSession(payload = {}) {
   })
 }
 
+export function createDifficultyRecommendationHandoff(payload) {
+  return requestJson('/api/recommendations/difficulty-handoffs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export function getRecommendationSession(sessionId) {
   return requestJson(`/api/recommendations/sessions/${encodeURIComponent(sessionId)}`)
 }

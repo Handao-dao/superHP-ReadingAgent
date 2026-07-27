@@ -28,8 +28,10 @@ class FakeRecommendationRunner:
         self.sessions = {}
         self.started_request = None
         self.resumed = None
+        self.handed_off = None
         self.start_reply = None
         self.resume_reply = None
+        self.handoff_reply = None
 
     async def start(self, request):
         self.started_request = request
@@ -42,6 +44,14 @@ class FakeRecommendationRunner:
         assert self.resume_reply is not None
         self.sessions[session_id] = self.resume_reply.session
         return self.resume_reply
+
+    async def handoff(self, request, *, session_id=None, user_message):
+        self.handed_off = (request, session_id, user_message)
+        assert self.handoff_reply is not None
+        self.sessions[self.handoff_reply.session.session_id] = (
+            self.handoff_reply.session
+        )
+        return self.handoff_reply
 
     def load(self, session_id):
         return self.sessions.get(session_id)
@@ -153,6 +163,7 @@ def test_create_session_returns_only_user_visible_messages():
     assert response.status_code == 201
     assert response.json() == {
         "session_id": "session-1",
+        "origin": "onboarding",
         "phase": "awaiting_user",
         "messages": [
             {"role": "assistant", "content": "你喜欢哪类故事？"},
@@ -211,6 +222,48 @@ def test_get_session_restores_completed_public_view():
     assert response.status_code == 200
     assert response.json()["phase"] == "completed"
     assert response.json()["recommended_books"][0]["catalog_id"] == "cam-jansen"
+
+
+def test_difficulty_handoff_reuses_transcript_and_passes_reading_evidence():
+    client, runner = make_client()
+    session = replace(
+        question_session(),
+        request=RecommendationRequest(
+            origin=RecommendationOrigin.DIFFICULTY_ALERT
+        ),
+    )
+    runner.handoff_reply = RecommendationAgentReply(
+        session=session,
+        message="我先分析最近的阅读情况。",
+    )
+
+    response = client.post(
+        "/api/recommendations/difficulty-handoffs",
+        json={
+            "session_id": "session-1",
+            "current_book": {
+                "book_id": "hp01",
+                "title": "Harry Potter and the Philosopher's Stone",
+                "genres": ["fantasy"],
+            },
+            "evidence": {
+                "observed_word_count": 7200,
+                "observed_chapter_count": 3,
+                "lookup_density": 12.1,
+                "annotated_lookup_density": 3.2,
+                "annotation_target": 20,
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["origin"] == "difficulty_alert"
+    request, session_id, message = runner.handed_off
+    assert session_id == "session-1"
+    assert request.handoff.current_book.book_id == "hp01"
+    assert request.handoff.evidence.lookup_density == 12.1
+    assert request.preferred_genres == ("fantasy",)
+    assert "最近 3 章" in message
 
 
 def test_get_session_restores_failed_error_code():

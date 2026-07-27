@@ -214,11 +214,13 @@ class ReadingAdaptationEvaluator:
         self,
         book_id: str,
         event_logger: EventLogger | None,
-    ) -> None:
-        """Evaluate once and emit an audit event describing any target write."""
+    ) -> ReadingAdaptationEvaluation | None:
+        """Evaluate once, audit the result, and return it to the reading flow."""
         evaluation = self.evaluate_book(book_id)
-        if evaluation is None or event_logger is None:
-            return
+        if evaluation is None:
+            return None
+        if event_logger is None:
+            return evaluation
         decision = evaluation.decision
         current_target = evaluation.window.evidence.annotation_target
         uncovered_lookup_density = (
@@ -259,6 +261,7 @@ class ReadingAdaptationEvaluator:
             ),
             shadow_mode=evaluation.shadow_mode,
         )
+        return evaluation
 
 
 def _build_window(

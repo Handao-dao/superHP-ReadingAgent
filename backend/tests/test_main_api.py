@@ -161,6 +161,7 @@ def test_recommendation_http_routes_are_registered():
 
     assert {
         "/api/recommendations/sessions",
+        "/api/recommendations/difficulty-handoffs",
         "/api/recommendations/sessions/{session_id}/messages",
         "/api/recommendations/sessions/{session_id}",
     } <= paths

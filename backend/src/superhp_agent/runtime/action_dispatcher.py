@@ -43,6 +43,7 @@ class AnnotationService(Protocol):
         request_id: str | None = None,
         profile_id: str | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> AnnotationResult: ...
 
 

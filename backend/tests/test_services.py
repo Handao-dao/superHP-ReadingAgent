@@ -102,6 +102,7 @@ def test_annotator_service_returns_text_and_extracts_vocabulary():
         assert "<annotation_contract>" in system_prompt
         assert "<annotation_examples>" in system_prompt
         assert "<output_contract>" in system_prompt
+        assert '<annotation_support target_per_300="8">' in system_prompt
         assert "<density_profile" not in user_prompt
         assert "<mastered_words>" in user_prompt
         assert "<mastered_words_policy>" in system_prompt
@@ -124,8 +125,9 @@ def test_annotator_prompt_uses_context_blocks():
     assert "<reader_text>\na wand on the table\n</reader_text>" in prompt
     assert "Return only the passage text with any selected inline annotations." in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "approximately B1-B2 English level" in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "aim for about 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
-    assert "increase up to 15" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert '<annotation_support target_per_300="8">' in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "use no more than about 8 annotations" in BASE_ANNOTATOR_SYSTEM_PROMPT
+    assert "increase up to 15" not in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "[[exact source span|context-specific Chinese gloss|pos]]" in BASE_ANNOTATOR_SYSTEM_PROMPT
     assert "<annotation_examples>" in BASE_ANNOTATOR_SYSTEM_PROMPT
 
@@ -141,6 +143,24 @@ def test_annotator_base_context_excludes_reader_text():
     assert "<mastered_words_policy>" in system_prompt
     assert "<mastered_words_policy>" not in user_prompt
     assert "<reader_text>" not in user_prompt
+
+
+def test_annotator_service_passes_dynamic_support_target_to_system_context():
+    async def run_case():
+        provider = ScriptedProvider([LLMResponse(content="a wand on the table")])
+        service = AnnotatorService(provider)
+
+        await service.annotate_text(
+            "a wand on the table",
+            annotation_target=12,
+        )
+
+        system_prompt = provider.messages[0][0]["content"]
+        assert '<annotation_support target_per_300="12">' in system_prompt
+        assert "use no more than about 12 annotations" in system_prompt
+        assert "use no more than about 8 annotations" not in system_prompt
+
+    asyncio.run(run_case())
 
 
 def test_annotator_service_deduplicates_vocabulary():

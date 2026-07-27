@@ -38,13 +38,16 @@ Adapter 中。
 的顺序组织：
 
 ```text
-System / Static
+System / Stable
     system_policy
     annotation_contract
     selection_policy（可选的系列补充）
     annotation_examples
     mastered_words_policy
     output_contract
+
+System / Reading Support
+    annotation_support（当前每 300 词的支持上限）
 
 User / Chapter Task
     mastered_words
@@ -55,24 +58,27 @@ User / Chunk Data
 
 各 block 的职责如下：
 
-- `system_policy`：定义英文词汇译注任务、优先级和统一密度。
+- `system_policy`：定义英文词汇译注任务、目标读者和选词优先级，不再硬编码密度。
 - `annotation_contract`：定义 marker 格式、POS、原文还原不变式和释义质量。
 - `selection_policy`：可选的系列特色补充；普通英文小说不生成此 block。当前仅哈利波特系列使用，其他小说直接采用通用规则。
 - `annotation_examples`：演示单词、完整短语和错误重复替换。
 - `mastered_words_policy`：解释熟词排除以及熟词作为更长表达组成部分时的边界。
 - `output_contract`：约束响应外壳，并明确零标注时原样返回输入。
+- `annotation_support`：携带当前每 300 词的译注支持上限；它是可少用的 ceiling，不是必须凑满的 quota。
 
-英文译注不再按高、中、低分级，统一以 B1–B2 读者为参考。每约 300 个英文单词以 8 处标注为参考：
-文本简单时可以更少，相关难词较多时可增加到 15 处。Prompt 仍要求模型尽量保持原文，
-但阅读主链路不再使用逐字符一致性作为整块成功与否的判定条件。
+英文译注不再按高、中、低三套固定模板分级，统一以 B1–B2 读者为参考。当前默认
+`annotation_target` 为每 300 词 8 处，调用方可以在 1～20 之间显式传入新的支持目标；模型可以
+少用，但不能为了填满目标加入弱相关标注。当前步骤只建立 Context 参数入口，尚未持久化每本书
+的目标，也不会根据 Reading Monitor 自动调整。Prompt 仍要求模型尽量保持原文，但阅读主链路
+不再使用逐字符一致性作为整块成功与否的判定条件。
 
 标注边界以单词为优先；只有固定搭配、习语或拆开后会丢失、误解整体含义的特殊表达，才整体标注为 phrase。
 
 ### 整章复用与 prompt caching
 
 Dispatcher 在并发译注前一次性准备整章相关的 `mastered_words`。`AnnotatorService` 随后只构造一份
-基础 Context，所有 chunk 共用完全相同的 system blocks 和章节级熟词 JSON。每个模型请求只在最后追加
-自己的 `reader_text`：
+基础 Context，所有 chunk 共用完全相同的 system blocks、当前 `annotation_support` 和章节级熟词
+JSON。每个模型请求只在最后追加自己的 `reader_text`：
 
 ```text
 chunk_0 request = shared_base_context + reader_text(chunk_0)
@@ -80,9 +86,10 @@ chunk_1 request = shared_base_context + reader_text(chunk_1)
 chunk_2 request = shared_base_context + reader_text(chunk_2)
 ```
 
-这种“固定内容在前、变动内容在后”的排列为 Provider 的 prompt caching 提供稳定前缀；是否实际命中缓存
-仍取决于所用 Provider 和模型。请求中不应在 `reader_text` 之前插入 chunk 索引、进度或其他
-会逐块变化的数据。
+`annotation_support` 位于固定 System Blocks 末尾：当阅读情况改变目标时，前面的合同、示例和
+可选系列规则仍构成稳定缓存前缀；同一章的所有 chunk 又共享同一个支持目标。是否实际命中缓存仍
+取决于所用 Provider 和模型。请求中不应在 `reader_text` 之前插入 chunk 索引、进度或其他会逐块
+变化的数据。
 
 `selection_policy` 不是每个系列都必须实现的模板。`corpus/catalog.yaml` 只有在某个系列确实需要
 稳定的额外选词边界时才配置 `selection_policy_id`；没有配置时，英文 Profile 不插入空 block，

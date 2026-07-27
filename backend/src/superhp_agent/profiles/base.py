@@ -53,6 +53,7 @@ class AnnotationProfile(Protocol):
         *,
         mastered_words: list[str] | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> ContextBundle: ...
 
     def build_lookup_user_prompt(self, *, word: str, sentence: str) -> str: ...

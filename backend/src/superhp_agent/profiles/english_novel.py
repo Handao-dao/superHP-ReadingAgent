@@ -28,8 +28,6 @@ Prioritize exact source preservation, importance-based selection, and concise co
 
 Target a Chinese reader at approximately B1-B2 English level.
 Annotate words that this reader is likely not to know or whose meaning is unclear in context.
-For approximately every 300 English words, aim for about 8 annotations.
-Use fewer when the passage is easy, and increase up to 15 when it contains more relevant difficult words.
 """.strip()
 
 ANNOTATION_CONTRACT = """
@@ -81,6 +79,39 @@ Treat mastered_words as vocabulary the reader already understands.
 - If mastered_words is an empty JSON array, apply no mastery exclusions.
 """.strip()
 
+DEFAULT_ANNOTATION_TARGET = 8
+MAX_ANNOTATION_TARGET = 20
+ANNOTATION_SUPPORT_TEMPLATE = """
+For approximately every 300 English words, use no more than about {target} annotations.
+This is the current support ceiling, not a quota that must be filled.
+Use fewer annotations when fewer words or expressions materially affect comprehension.
+Do not add weak or unnecessary annotations merely to reach the target.
+""".strip()
+
+
+def _annotation_support_block(annotation_target: int | None) -> ContextBlock:
+    if annotation_target is None:
+        target = DEFAULT_ANNOTATION_TARGET
+    elif isinstance(annotation_target, bool) or not isinstance(
+        annotation_target,
+        int,
+    ):
+        raise ValueError("annotation_target must be an integer")
+    else:
+        target = annotation_target
+    if not 1 <= target <= MAX_ANNOTATION_TARGET:
+        raise ValueError(
+            "annotation_target must be between "
+            f"1 and {MAX_ANNOTATION_TARGET}"
+        )
+    return ContextBlock(
+        "annotation_support",
+        ANNOTATION_SUPPORT_TEMPLATE.format(target=target),
+        role="system",
+        attrs={"target_per_300": str(target)},
+    )
+
+
 ANNOTATION_SYSTEM_BLOCKS = (
     ContextBlock("system_policy", SYSTEM_POLICY, role="system"),
     ContextBlock("annotation_contract", ANNOTATION_CONTRACT, role="system"),
@@ -90,7 +121,10 @@ ANNOTATION_SYSTEM_BLOCKS = (
 )
 
 BASE_ANNOTATOR_SYSTEM_PROMPT = ContextBundle(
-    system_blocks=ANNOTATION_SYSTEM_BLOCKS,
+    system_blocks=(
+        *ANNOTATION_SYSTEM_BLOCKS,
+        _annotation_support_block(DEFAULT_ANNOTATION_TARGET),
+    ),
 ).render_role("system")
 
 LOOKUP_SYSTEM_PROMPT = """
@@ -156,10 +190,12 @@ class EnglishNovelProfile:
         *,
         mastered_words: list[str] | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> ContextBundle:
         return self.build_annotator_base_context(
             mastered_words=mastered_words,
             selection_policy_id=selection_policy_id,
+            annotation_target=annotation_target,
         ).with_blocks(_reader_text_block(text))
 
     def build_annotator_base_context(
@@ -167,9 +203,13 @@ class EnglishNovelProfile:
         *,
         mastered_words: list[str] | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> ContextBundle:
         return ContextBundle(
-            system_blocks=_annotation_system_blocks(selection_policy_id),
+            system_blocks=_annotation_system_blocks(
+                selection_policy_id,
+                annotation_target,
+            ),
             user_blocks=(_mastered_words_block(mastered_words),),
         )
 
@@ -227,19 +267,24 @@ def _mastered_words_block(mastered_words: list[str] | None) -> ContextBlock:
 
 def _annotation_system_blocks(
     selection_policy_id: str | None,
+    annotation_target: int | None,
 ) -> tuple[ContextBlock, ...]:
-    """Insert an optional series addition after the shared contract."""
-    if selection_policy_id is None:
-        return ANNOTATION_SYSTEM_BLOCKS
-    selection_policy = ContextBlock(
-        "selection_policy",
-        get_english_selection_policy(selection_policy_id),
-        role="system",
-    )
+    """Insert optional series policy and append the dynamic support ceiling."""
+    blocks = ANNOTATION_SYSTEM_BLOCKS
+    if selection_policy_id is not None:
+        selection_policy = ContextBlock(
+            "selection_policy",
+            get_english_selection_policy(selection_policy_id),
+            role="system",
+        )
+        blocks = (
+            *ANNOTATION_SYSTEM_BLOCKS[:2],
+            selection_policy,
+            *ANNOTATION_SYSTEM_BLOCKS[2:],
+        )
     return (
-        *ANNOTATION_SYSTEM_BLOCKS[:2],
-        selection_policy,
-        *ANNOTATION_SYSTEM_BLOCKS[2:],
+        *blocks,
+        _annotation_support_block(annotation_target),
     )
 
 

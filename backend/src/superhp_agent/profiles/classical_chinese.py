@@ -183,9 +183,11 @@ class ClassicalChineseProfile:
         text: str,
         *,
         mastered_words: list[str] | None = None,
+        annotation_target: int | None = None,
     ) -> ContextBundle:
         return self.build_annotator_base_context(
             mastered_words=mastered_words,
+            annotation_target=annotation_target,
         ).with_blocks(_reader_text_block(text))
 
     def build_annotator_base_context(
@@ -193,10 +195,15 @@ class ClassicalChineseProfile:
         *,
         mastered_words: list[str] | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> ContextBundle:
         if selection_policy_id is not None:
             raise ValueError(
                 f"Profile {self.id} does not support selection policy: {selection_policy_id}"
+            )
+        if annotation_target is not None:
+            raise ValueError(
+                f"Profile {self.id} does not support annotation_target"
             )
         return ContextBundle(
             system_blocks=ANNOTATION_SYSTEM_BLOCKS,

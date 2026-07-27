@@ -50,6 +50,11 @@
 
 未来的 `ReadingAdaptationPolicy` 可以把默认译注目标设为每 300 词约 8 处，并在系统边界内逐步调整，硬上限为每 300 词 20 处。这里的 8 是默认目标，不是必须凑满的最低数量；简单文本允许更少。单次提高最多 2，单次降低最多 1，防止支持强度来回震荡。
 
+英文 Profile 已先把密度规则从固定 `system_policy` 拆成独立的
+`<annotation_support target_per_300="...">` System Context Block。默认目标为 8，当前调用链
+允许显式传入 1～20；该 Block 把数字定义为可以少用的支持上限，而不是要求模型填满的配额。
+目标持久化和 `ReadingAdaptationPolicy` 自动调整仍属于后续步骤。
+
 ### 2.3 Agent
 
 Agent 只处理无法用一张固定决策表完整描述的开放任务：

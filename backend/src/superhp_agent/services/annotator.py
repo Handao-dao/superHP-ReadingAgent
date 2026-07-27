@@ -126,6 +126,7 @@ class AnnotatorService:
         request_id: str | None = None,
         profile_id: str | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> AnnotationResult:
         """Annotate a reading unit and return complete text plus degradation data."""
         chunks = self.chunker.split(text)
@@ -134,6 +135,7 @@ class AnnotatorService:
         base_context = self.profile.build_annotator_base_context(
             mastered_words=mastered_words,
             selection_policy_id=selection_policy_id,
+            annotation_target=annotation_target,
         )
 
         outcomes = await self._annotate_chunks(
@@ -412,6 +414,7 @@ class LazyAnnotatorService:
         request_id: str | None = None,
         profile_id: str | None = None,
         selection_policy_id: str | None = None,
+        annotation_target: int | None = None,
     ) -> AnnotationResult:
         return await self._get_service(profile_id).annotate_text(
             text,
@@ -420,4 +423,5 @@ class LazyAnnotatorService:
             request_id=request_id,
             profile_id=profile_id,
             selection_policy_id=selection_policy_id,
+            annotation_target=annotation_target,
         )

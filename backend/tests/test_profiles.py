@@ -60,8 +60,10 @@ def test_english_novel_profile_builds_prompt_context():
     assert "lexical annotation assistant" in system_prompt
     assert "Prioritize exact source preservation" in system_prompt
     assert "approximately B1-B2 English level" in system_prompt
-    assert "aim for about 8 annotations" in system_prompt
-    assert "increase up to 15" in system_prompt
+    assert '<annotation_support target_per_300="8">' in system_prompt
+    assert "use no more than about 8 annotations" in system_prompt
+    assert "current support ceiling, not a quota" in system_prompt
+    assert "increase up to 15" not in system_prompt
     assert "<selection_policy>" not in system_prompt
     assert "Harry Potter" not in system_prompt
     assert "widely established Chinese rendering" not in system_prompt
@@ -82,6 +84,9 @@ def test_english_novel_profile_adds_harry_potter_policy_when_selected():
     assert "particular familiarity with the Harry Potter series" in system_prompt
     assert "widely established Chinese rendering" in system_prompt
     assert "solely because it is magical, fictional, or capitalized" in system_prompt
+    assert system_prompt.index("<selection_policy>") < system_prompt.index(
+        "<annotation_support"
+    )
 
 
 def test_english_novel_profile_rejects_unknown_selection_policy():
@@ -91,11 +96,37 @@ def test_english_novel_profile_rejects_unknown_selection_policy():
         profile.build_annotator_base_context(selection_policy_id="missing")
 
 
+def test_english_novel_profile_builds_dynamic_annotation_support_block():
+    profile = EnglishNovelProfile()
+
+    system_prompt = profile.build_annotator_base_context(
+        annotation_target=14,
+    ).render_role("system")
+
+    assert '<annotation_support target_per_300="14">' in system_prompt
+    assert "use no more than about 14 annotations" in system_prompt
+    assert "use no more than about 8 annotations" not in system_prompt
+
+    with pytest.raises(ValueError, match="between 1 and 20"):
+        profile.build_annotator_base_context(annotation_target=0)
+    with pytest.raises(ValueError, match="between 1 and 20"):
+        profile.build_annotator_base_context(annotation_target=21)
+    with pytest.raises(ValueError, match="must be an integer"):
+        profile.build_annotator_base_context(annotation_target=8.5)
+
+
 def test_classical_profile_rejects_selection_policy():
     profile = ClassicalChineseProfile()
 
     with pytest.raises(ValueError, match="does not support selection policy"):
         profile.build_annotator_base_context(selection_policy_id="harry_potter")
+
+
+def test_classical_profile_does_not_claim_dynamic_english_support_policy():
+    profile = ClassicalChineseProfile()
+
+    with pytest.raises(ValueError, match="does not support annotation_target"):
+        profile.build_annotator_base_context(annotation_target=8)
 
 
 def test_english_annotation_examples_prefer_words_and_limit_phrases():

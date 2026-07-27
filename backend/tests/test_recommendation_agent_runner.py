@@ -165,4 +165,5 @@ async def test_runner_handoff_keeps_transcript_and_starts_new_agent_turn():
         RecommendationAgentMessageRole.USER,
         RecommendationAgentMessageRole.ASSISTANT,
     ]
+    assert reply.session.context_start_index == 1
     assert repository.load("session-1") == reply.session

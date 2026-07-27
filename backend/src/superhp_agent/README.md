@@ -178,6 +178,12 @@ Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Mod
 和真实 user / assistant / tool 消息；Provider 统一负责 SDK、模型配置、原生 Tool Call 解析和
 retry。
 
+困难 Handoff 会通过 Session 的 `context_start_index` 开启新的工具上下文周期：旧的可见
+user / assistant 对话仍可帮助 Agent 延续交流，但此前 Tool Call 和 Tool Result 不再进入新一轮
+模型输入。当前展示批次和最终选择作为结构化运行时事实显式注入；每次模型请求还会记录 Context
+消息数和粗略字符规模。长期对话压缩与记忆属于后续能力，规划见
+`docs/BOOK_RECOMMENDATION_MEMORY.md`。
+
 ```text
 Recommendation HTTP Router
     → RecommendationAgentRunner

@@ -336,6 +336,7 @@ class RecommendationAgentSession:
     observed_catalog_ids: tuple[str, ...] = ()
     recommended_catalog_ids: tuple[str, ...] = ()
     selected_catalog_id: str = ""
+    context_start_index: int = 0
     error_code: str = ""
 
     def __post_init__(self) -> None:
@@ -343,6 +344,10 @@ class RecommendationAgentSession:
             raise ValueError("session_id must not be empty")
         if self.tool_call_count < 0:
             raise ValueError("tool_call_count must not be negative")
+        if not 0 <= self.context_start_index <= len(self.conversation):
+            raise ValueError(
+                "context_start_index must point inside the conversation"
+            )
         if len(set(self.recommended_catalog_ids)) != len(
             self.recommended_catalog_ids
         ):
@@ -364,11 +369,18 @@ class RecommendationAgentObservation:
     phase: RecommendationAgentPhase
     conversation: tuple[RecommendationAgentMessage, ...]
     observed_catalog_ids: tuple[str, ...]
+    presented_catalog_ids: tuple[str, ...]
+    selected_catalog_id: str
+    context_start_index: int
     remaining_tool_calls: int
 
     def __post_init__(self) -> None:
         if self.remaining_tool_calls < 0:
             raise ValueError("remaining_tool_calls must not be negative")
+        if not 0 <= self.context_start_index <= len(self.conversation):
+            raise ValueError(
+                "context_start_index must point inside the conversation"
+            )
 
 
 @dataclass(frozen=True)

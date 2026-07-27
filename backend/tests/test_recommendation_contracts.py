@@ -137,6 +137,9 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
         phase=session.phase,
         conversation=session.conversation,
         observed_catalog_ids=session.observed_catalog_ids,
+        presented_catalog_ids=(),
+        selected_catalog_id="",
+        context_start_index=0,
         remaining_tool_calls=2,
     )
     reply = RecommendationAgentReply(
@@ -226,6 +229,16 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
             "selected_catalog_id",
         ),
         (
+            lambda: RecommendationAgentSession(
+                session_id="session",
+                request=RecommendationRequest(
+                    origin=RecommendationOrigin.ONBOARDING
+                ),
+                context_start_index=1,
+            ),
+            "context_start_index",
+        ),
+        (
             lambda: RecommendationAgentObservation(
                 request=RecommendationRequest(
                     origin=RecommendationOrigin.ONBOARDING
@@ -233,6 +246,9 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
                 phase=RecommendationAgentPhase.SEARCHING,
                 conversation=(),
                 observed_catalog_ids=(),
+                presented_catalog_ids=(),
+                selected_catalog_id="",
+                context_start_index=0,
                 remaining_tool_calls=-1,
             ),
             "remaining_tool_calls",

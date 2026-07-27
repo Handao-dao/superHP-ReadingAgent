@@ -8,6 +8,7 @@ transport, streaming UI, and long-term recovery stay outside the loop.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, replace
 from uuid import uuid4
 
@@ -30,6 +31,8 @@ from superhp_agent.contracts import (
     RecommendationRequest,
 )
 from superhp_agent.ports import LLMProvider
+
+logger = logging.getLogger(__name__)
 
 
 class RecommendationAgentStateError(RuntimeError):
@@ -100,20 +103,32 @@ class BookRecommendationAgent:
         """Advance until normal text, a terminal tool, or a safety guard."""
         session = self._accept_user_message(session, user_message)
 
-        for _ in range(self.max_model_turns_per_run):
+        for model_turn in range(1, self.max_model_turns_per_run + 1):
             observation = RecommendationAgentObservation(
                 request=session.request,
                 phase=session.phase,
                 conversation=session.conversation,
                 observed_catalog_ids=session.observed_catalog_ids,
+                presented_catalog_ids=session.recommended_catalog_ids,
+                selected_catalog_id=session.selected_catalog_id,
+                context_start_index=session.context_start_index,
                 remaining_tool_calls=max(
                     0,
                     self.max_tool_calls - session.tool_call_count,
                 ),
             )
+            provider_messages = self.context_builder.build(observation)
+            logger.debug(
+                "recommendation context session=%s model_turn=%s "
+                "messages=%s characters=%s",
+                session.session_id,
+                model_turn,
+                len(provider_messages),
+                _context_character_count(provider_messages),
+            )
             try:
                 response = await self.provider.chat_with_retry(
-                    self.context_builder.build(observation),
+                    provider_messages,
                     tools=self.provider_tools,
                 )
             except Exception:
@@ -383,7 +398,6 @@ class BookRecommendationAgent:
                 content=json.dumps(
                     {
                         "tool": tool_call.name,
-                        "arguments": tool_call.arguments,
                         **payload,
                     },
                     ensure_ascii=False,
@@ -538,3 +552,11 @@ def _merge_unique(existing: tuple[str, ...], added: tuple[str, ...]) -> tuple[st
         seen.add(value)
         values.append(value)
     return tuple(values)
+
+
+def _context_character_count(messages: list[dict[str, object]]) -> int:
+    """Return a stable coarse context-size metric without tokenization cost."""
+    return sum(
+        len(json.dumps(message, ensure_ascii=False, sort_keys=True))
+        for message in messages
+    )

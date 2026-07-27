@@ -70,10 +70,7 @@ class RecommendationContextBuilder:
             ),
         )
         messages: list[dict[str, Any]] = bundle.to_messages()
-        messages.extend(
-            _message_to_provider(message)
-            for message in observation.conversation
-        )
+        messages.extend(_project_conversation(observation))
         return messages
 
 
@@ -84,6 +81,8 @@ def _serialize_runtime(
         "request": asdict(observation.request),
         "phase": observation.phase.value,
         "observed_catalog_ids": list(observation.observed_catalog_ids),
+        "presented_catalog_ids": list(observation.presented_catalog_ids),
+        "selected_catalog_id": observation.selected_catalog_id,
         "remaining_tool_calls": observation.remaining_tool_calls,
     }
 
@@ -121,3 +120,25 @@ def _message_to_provider(
         "tool_call_id": message.tool_call_id,
         "content": message.content,
     }
+
+
+def _project_conversation(
+    observation: RecommendationAgentObservation,
+) -> list[dict[str, Any]]:
+    """Keep old visible dialogue but expose tools only from the active epoch."""
+    messages: list[dict[str, Any]] = []
+    for index, message in enumerate(observation.conversation):
+        if index >= observation.context_start_index:
+            messages.append(_message_to_provider(message))
+            continue
+        if message.role is RecommendationAgentMessageRole.USER:
+            messages.append({"role": "user", "content": message.content})
+            continue
+        if (
+            message.role is RecommendationAgentMessageRole.ASSISTANT
+            and message.content.strip()
+        ):
+            messages.append(
+                {"role": "assistant", "content": message.content}
+            )
+    return messages

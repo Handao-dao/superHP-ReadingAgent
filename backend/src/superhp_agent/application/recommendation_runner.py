@@ -81,6 +81,7 @@ class RecommendationAgentRunner:
         if session is None:
             session = self.agent.start(request)
         else:
+            context_start_index = len(session.conversation)
             session = replace(
                 session,
                 request=request,
@@ -89,6 +90,7 @@ class RecommendationAgentRunner:
                 observed_catalog_ids=(),
                 recommended_catalog_ids=(),
                 selected_catalog_id="",
+                context_start_index=context_start_index,
                 error_code="",
             )
         self.session_repository.save(session)

@@ -453,6 +453,17 @@ Tool Call 与对应的 Tool Result 通过 `tool_call_id` 配对，因此下一�
 ContextBuilder 负责固定提示词和运行时事实；Loop 负责消息追加、工具执行和状态更新；Provider
 负责底层模型调用、原生 Tool Call 解析与 retry。
 
+Session 通过 `context_start_index` 标记当前工具上下文周期。阅读困难 Handoff 会保留此前
+user / assistant 可见对话，但旧周期的 Tool Call 和 Tool Result 只留在持久化事实历史中，
+不再发给新一轮模型。运行时还显式提供当前 `presented_catalog_ids` 和
+`selected_catalog_id`，因此模型不必只靠回看 Tool Result 推断当前展示批次。每次模型请求会
+以 debug 日志记录消息数和粗略字符规模，为后续阈值设计提供数据。
+
+旧对话自动压缩和跨 Session 记忆尚未实现，后续规划见
+[`BOOK_RECOMMENDATION_MEMORY.md`](BOOK_RECOMMENDATION_MEMORY.md)。规划采用“完整历史不删除、
+摘要记忆追加保存、近期完整 turn 原样保留”的方式，并参考 Pi Agent 的 Compaction 边界，
+但不引入分支树和通用 Harness。
+
 Application 层使用 `RecommendationAgentRunner` 管理持久化边界：
 
 ```text

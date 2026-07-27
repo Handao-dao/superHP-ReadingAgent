@@ -133,6 +133,7 @@ def _session_from_dict(data: dict[str, Any]) -> RecommendationAgentSession:
             data.get("recommended_catalog_ids", ())
         ),
         selected_catalog_id=str(data.get("selected_catalog_id", "")),
+        context_start_index=int(data.get("context_start_index", 0)),
         error_code=str(data.get("error_code", "")),
     )
 

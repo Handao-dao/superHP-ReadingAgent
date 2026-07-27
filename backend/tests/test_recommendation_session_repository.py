@@ -98,6 +98,7 @@ def complex_session() -> RecommendationAgentSession:
         ),
         tool_call_count=1,
         observed_catalog_ids=("cam-jansen",),
+        context_start_index=1,
     )
 
 

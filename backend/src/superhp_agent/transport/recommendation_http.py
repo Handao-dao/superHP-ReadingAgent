@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from superhp_agent.agents.book_recommendation import RecommendationAgentStateError
 from superhp_agent.application import (
+    ReadingDifficultyPromptCoordinator,
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
 )
@@ -37,6 +38,9 @@ from superhp_agent.schemas import (
 def create_recommendation_router(
     runner: RecommendationAgentRunner,
     catalog: BookDifficultyCatalog,
+    difficulty_prompt_coordinator: (
+        ReadingDifficultyPromptCoordinator | None
+    ) = None,
 ) -> APIRouter:
     """Create a router bound to explicit Application capabilities."""
     router = APIRouter(
@@ -108,11 +112,23 @@ def create_recommendation_router(
                 ),
             ),
         )
+        if difficulty_prompt_coordinator is not None:
+            try:
+                difficulty_prompt_coordinator.require_pending(
+                    current_book.book_id
+                )
+            except ValueError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
         reply = await runner.handoff(
             request,
             session_id=payload.session_id.strip() or None,
             user_message=_difficulty_handoff_message(evidence),
         )
+        if difficulty_prompt_coordinator is not None:
+            difficulty_prompt_coordinator.choose_change_book(
+                current_book.book_id,
+                recommendation_session_id=reply.session.session_id,
+            )
         return await _public_session(
             reply.session,
             catalog,

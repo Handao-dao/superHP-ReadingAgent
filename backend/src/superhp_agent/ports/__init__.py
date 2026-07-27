@@ -10,6 +10,7 @@ from superhp_agent.ports.llm import LLMProvider
 from superhp_agent.ports.repositories import (
     BookmarkRepository,
     ChapterReadingCheckpointRepository,
+    ReadingDifficultyPromptRepository,
     ReadingLookupRepository,
     ReadingSupportRepository,
     RecommendationSessionRepository,
@@ -24,6 +25,7 @@ __all__ = [
     "EventSink",
     "LLMProvider",
     "ReadingLookupRepository",
+    "ReadingDifficultyPromptRepository",
     "ReadingSupportRepository",
     "RecommendationSessionRepository",
     "VocabularyRepository",

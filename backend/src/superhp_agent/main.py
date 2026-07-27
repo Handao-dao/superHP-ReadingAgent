@@ -6,6 +6,7 @@ side effects to ``ReadingSocketSession`` and the runtime action dispatcher.
 """
 
 from contextlib import suppress
+from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,8 @@ from superhp_agent.schemas import (
     ProfileMeta,
     ReadingDifficultyEvidenceResponse,
     ReadingDifficultyObservationResponse,
+    ReadingDifficultyPromptEvidenceResponse,
+    ReadingDifficultyPromptResponse,
     SetMasteredRequest,
     VocabularyEntry,
     WordLookupRequest,
@@ -57,6 +60,12 @@ reading_lookup_repository = container.reading_lookup_repository
 reading_support_repository = container.reading_support_repository
 chapter_checkpoint_recorder = container.chapter_checkpoint_recorder
 reading_adaptation_evaluator = container.reading_adaptation_evaluator
+reading_difficulty_prompt_repository = (
+    container.reading_difficulty_prompt_repository
+)
+reading_difficulty_prompt_coordinator = (
+    container.reading_difficulty_prompt_coordinator
+)
 reading_difficulty_monitor = container.reading_difficulty_monitor
 db = container.db
 vocabulary_repository = container.vocabulary_repository
@@ -83,6 +92,7 @@ app.include_router(
     create_recommendation_router(
         recommendation_agent_runner,
         book_difficulty_catalog,
+        reading_difficulty_prompt_coordinator,
     )
 )
 
@@ -347,6 +357,51 @@ async def get_reading_difficulty(book_id: str):
     )
 
 
+@app.get(
+    "/api/reading-difficulty-prompts/{book_id}",
+    response_model=ReadingDifficultyPromptResponse,
+)
+async def get_reading_difficulty_prompt(book_id: str):
+    """Restore the latest persisted prompt state for one book."""
+    prompt = reading_difficulty_prompt_repository.get(book_id)
+    if prompt is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"difficulty prompt not found: {book_id}",
+        )
+    return _difficulty_prompt_response(prompt)
+
+
+@app.post(
+    "/api/reading-difficulty-prompts/{book_id}/continue",
+    response_model=ReadingDifficultyPromptResponse,
+)
+async def continue_after_difficulty_prompt(book_id: str):
+    """Persist explicit consent to continue and begin prompt cooldown."""
+    try:
+        prompt = reading_difficulty_prompt_coordinator.choose_continue(
+            book_id
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _difficulty_prompt_response(prompt)
+
+
+def _difficulty_prompt_response(prompt) -> ReadingDifficultyPromptResponse:
+    return ReadingDifficultyPromptResponse(
+        book_id=prompt.book_id,
+        chapter_id=prompt.chapter_id,
+        status=prompt.status,
+        cooldown_chapters_remaining=(
+            prompt.cooldown_chapters_remaining
+        ),
+        recommendation_session_id=prompt.recommendation_session_id,
+        evidence=ReadingDifficultyPromptEvidenceResponse(
+            **asdict(prompt.evidence)
+        ),
+    )
+
+
 @app.post("/api/vocabulary", response_model=AddVocabularyResponse)
 async def add_vocabulary(payload: AddVocabularyRequest):
     try:
@@ -425,6 +480,9 @@ async def reading_socket(websocket: WebSocket):
         annotator_service=annotator_service,
         db=vocabulary_repository,
         reading_support_repository=reading_support_repository,
+        reading_difficulty_prompt_repository=(
+            reading_difficulty_prompt_repository
+        ),
         chapter_checkpoint_recorder=chapter_checkpoint_recorder,
         reading_adaptation_evaluator=reading_adaptation_evaluator,
         selection_policy_resolver=library_catalog,

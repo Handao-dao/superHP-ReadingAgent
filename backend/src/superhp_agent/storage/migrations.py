@@ -180,6 +180,25 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             PRIMARY KEY (book_id, chapter_id)
         );
 
+        CREATE TABLE IF NOT EXISTS reading_difficulty_prompts (
+            book_id TEXT PRIMARY KEY,
+            chapter_id TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (
+                    status IN (
+                        'pending',
+                        'continue_reading',
+                        'change_book'
+                    )
+                ),
+            evidence_json TEXT NOT NULL,
+            cooldown_chapters_remaining INTEGER NOT NULL DEFAULT 0
+                CHECK (cooldown_chapters_remaining >= 0),
+            last_cooldown_chapter_id TEXT NOT NULL DEFAULT '',
+            recommendation_session_id TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_units_book_chapter_section
             ON units(book_id, chapter_no, section_no);
         CREATE INDEX IF NOT EXISTS idx_units_chapter_id ON units(chapter_id);
@@ -204,6 +223,8 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON reading_lookup_events(chapter_id);
         CREATE INDEX IF NOT EXISTS idx_chapter_checkpoints_book_chapter
             ON chapter_reading_checkpoints(book_id, chapter_no);
+        CREATE INDEX IF NOT EXISTS idx_difficulty_prompts_status
+            ON reading_difficulty_prompts(status);
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_unit
             ON reading_lookup_events(unit_id);
         """

@@ -4,6 +4,9 @@ from superhp_agent.storage.sqlite.bookmarks import SQLiteBookmarkRepository
 from superhp_agent.storage.sqlite.chapter_checkpoints import (
     SQLiteChapterReadingCheckpointRepository,
 )
+from superhp_agent.storage.sqlite.reading_difficulty_prompts import (
+    SQLiteReadingDifficultyPromptRepository,
+)
 from superhp_agent.storage.sqlite.reading_lookups import SQLiteReadingLookupRepository
 from superhp_agent.storage.sqlite.reading_progress import (
     SQLiteReadingProgressRepository,
@@ -25,6 +28,7 @@ __all__ = [
     "SQLiteChapterReadingCheckpointRepository",
     "SQLiteReadingProgressRepository",
     "SQLiteReadingLookupRepository",
+    "SQLiteReadingDifficultyPromptRepository",
     "SQLiteReadingSupportRepository",
     "SQLiteBookDifficultyCatalog",
     "SQLiteRecommendationSessionRepository",

@@ -10,6 +10,7 @@ const props = defineProps({
   alert: { type: Object, required: true },
   busy: { type: Boolean, default: false },
   currentMeta: { type: Object, default: null },
+  errorMessage: { type: String, default: '' },
 })
 
 defineEmits(['change-book', 'continue-reading'])
@@ -37,6 +38,9 @@ const observedChapters = computed(() => Number(evidence.value.observed_chapter_c
     <div class="guide-action-panel difficulty-prompt-actions">
       <p class="small-label">Choose your next step</p>
       <p>你想继续尝试这本书，还是让选书助手推荐一本更适合持续阅读的作品？</p>
+      <p v-if="errorMessage" class="paper-alert" role="alert">
+        {{ errorMessage }}
+      </p>
       <div class="actions">
         <button
           type="button"

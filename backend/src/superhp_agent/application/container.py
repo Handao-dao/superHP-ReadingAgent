@@ -19,6 +19,9 @@ from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecor
 from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
 )
+from superhp_agent.application.reading_difficulty_prompts import (
+    ReadingDifficultyPromptCoordinator,
+)
 from superhp_agent.application.reading_monitor import ReadingDifficultyMonitor
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
@@ -47,6 +50,7 @@ from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
     SQLiteChapterReadingCheckpointRepository,
+    SQLiteReadingDifficultyPromptRepository,
     SQLiteReadingLookupRepository,
     SQLiteReadingProgressRepository,
     SQLiteReadingSupportRepository,
@@ -70,10 +74,16 @@ class AppContainer:
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
     reading_lookup_repository: SQLiteReadingLookupRepository
+    reading_difficulty_prompt_repository: (
+        SQLiteReadingDifficultyPromptRepository
+    )
     reading_support_repository: SQLiteReadingSupportRepository
     chapter_checkpoint_repository: SQLiteChapterReadingCheckpointRepository
     chapter_checkpoint_recorder: ChapterCheckpointRecorder
     reading_adaptation_evaluator: ReadingAdaptationEvaluator
+    reading_difficulty_prompt_coordinator: (
+        ReadingDifficultyPromptCoordinator
+    )
     reading_difficulty_monitor: ReadingDifficultyMonitor
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
@@ -118,6 +128,9 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
     reading_lookup_repository = db.reading_lookup_repository
+    reading_difficulty_prompt_repository = (
+        db.reading_difficulty_prompt_repository
+    )
     reading_support_repository = db.reading_support_repository
     chapter_checkpoint_repository = db.chapter_checkpoint_repository
     reading_difficulty_monitor = ReadingDifficultyMonitor(
@@ -150,6 +163,13 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     reading_adaptation_evaluator = ReadingAdaptationEvaluator(
         chapter_checkpoint_repository,
         reading_support_repository,
+        prompt_repository=reading_difficulty_prompt_repository,
+    )
+    reading_difficulty_prompt_coordinator = (
+        ReadingDifficultyPromptCoordinator(
+            reading_difficulty_prompt_repository,
+            reading_support_repository,
+        )
     )
 
     def provider_factory():
@@ -199,10 +219,16 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
         reading_lookup_repository=reading_lookup_repository,
+        reading_difficulty_prompt_repository=(
+            reading_difficulty_prompt_repository
+        ),
         reading_support_repository=reading_support_repository,
         chapter_checkpoint_repository=chapter_checkpoint_repository,
         chapter_checkpoint_recorder=chapter_checkpoint_recorder,
         reading_adaptation_evaluator=reading_adaptation_evaluator,
+        reading_difficulty_prompt_coordinator=(
+            reading_difficulty_prompt_coordinator
+        ),
         reading_difficulty_monitor=reading_difficulty_monitor,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,

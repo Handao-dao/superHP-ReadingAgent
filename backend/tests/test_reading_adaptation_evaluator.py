@@ -3,8 +3,15 @@
 from superhp_agent.application import (
     ReadingAdaptationAction,
     ReadingAdaptationEvaluator,
+    ReadingDifficultyPromptCoordinator,
 )
-from superhp_agent.contracts import ChapterReadingCheckpoint
+from superhp_agent.contracts import (
+    ChapterReadingCheckpoint,
+    ReadingDifficultyEvidence,
+)
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPromptStatus,
+)
 from superhp_agent.domain.reading_support import ReadingSupportState
 from superhp_agent.storage import AppDB
 
@@ -261,5 +268,109 @@ def test_evaluator_applies_decrease_after_two_low_density_windows(tmp_path):
         assert second.target_changed is True
         assert db.get_annotation_target("book-1") == 9
         assert db.get_state("book-1").cooldown_chapters_remaining == 3
+    finally:
+        db.close()
+
+
+def test_evaluator_observes_three_chapter_prompt_cooldown_then_rearms(
+    tmp_path,
+):
+    db = AppDB(tmp_path / "app.db")
+    evaluator = ReadingAdaptationEvaluator(
+        db.chapter_checkpoint_repository,
+        db.reading_support_repository,
+        prompt_repository=db.reading_difficulty_prompt_repository,
+    )
+    try:
+        for chapter_no in (1, 2, 3):
+            db.chapter_checkpoint_repository.record(
+                _checkpoint(
+                    chapter_no,
+                    lookup_count=4,
+                    annotation_target=20,
+                )
+            )
+        db.save_evaluation_state(
+            "book-1",
+            ReadingSupportState(
+                annotation_target=20,
+                max_target_high_density_streak=2,
+                last_evaluated_chapter_id="book-1-ch03",
+            ),
+        )
+        db.reading_difficulty_prompt_repository.open_prompt(
+            book_id="book-1",
+            chapter_id="book-1-ch03",
+            evidence=ReadingDifficultyEvidence(
+                observed_word_count=300,
+                observed_chapter_count=3,
+                lookup_density=12,
+                annotation_target=20,
+            ),
+        )
+        ReadingDifficultyPromptCoordinator(
+            db.reading_difficulty_prompt_repository,
+            db.reading_support_repository,
+        ).choose_continue("book-1")
+
+        for chapter_no, remaining in ((4, 2), (5, 1)):
+            db.chapter_checkpoint_repository.record(
+                _checkpoint(
+                    chapter_no,
+                    lookup_count=4,
+                    annotation_target=20,
+                )
+            )
+            evaluation = evaluator.evaluate_book("book-1")
+            assert evaluation is not None
+            assert evaluation.reason == "difficulty_prompt_cooldown"
+            assert (
+                db.reading_difficulty_prompt_repository.get(
+                    "book-1"
+                ).cooldown_chapters_remaining
+                == remaining
+            )
+
+        db.chapter_checkpoint_repository.record(
+            _checkpoint(6, lookup_count=4, annotation_target=20)
+        )
+        rearmed = evaluator.evaluate_book("book-1")
+        assert rearmed is not None
+        assert rearmed.decision is not None
+        assert rearmed.decision.action is ReadingAdaptationAction.HOLD
+        assert (
+            db.reading_difficulty_prompt_repository.get(
+                "book-1"
+            ).cooldown_chapters_remaining
+            == 0
+        )
+
+        db.chapter_checkpoint_repository.record(
+            _checkpoint(7, lookup_count=4, annotation_target=20)
+        )
+        alerted = evaluator.evaluate_book("book-1")
+
+        assert alerted is not None
+        assert alerted.decision is not None
+        assert (
+            alerted.decision.action
+            is ReadingAdaptationAction.DIFFICULTY_ALERT
+        )
+        assert (
+            db.reading_difficulty_prompt_repository.get("book-1").status
+            is ReadingDifficultyPromptStatus.PENDING
+        )
+
+        db.chapter_checkpoint_repository.record(
+            _checkpoint(8, lookup_count=4, annotation_target=20)
+        )
+        awaiting_choice = evaluator.evaluate_book("book-1")
+
+        assert awaiting_choice is not None
+        assert awaiting_choice.decision is None
+        assert (
+            awaiting_choice.reason
+            == "difficulty_prompt_awaiting_choice"
+        )
     finally:
         db.close()

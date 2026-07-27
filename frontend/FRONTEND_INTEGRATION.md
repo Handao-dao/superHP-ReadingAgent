@@ -241,6 +241,21 @@ type RecommendationSessionResponse = {
 这张提示页只消费本次 `unit.marked_read` 事件携带的聚合证据，不轮询长期观察接口，也不会在正文
 阅读过程中弹窗打断用户。
 
+#### `GET /api/reading-difficulty-prompts/{book_id}`
+
+读取该书最近一次持久化提示，供刷新恢复和诊断使用。状态为：
+
+- `pending`：等待用户选择；
+- `continue_reading`：用户选择继续，并可能仍处于三章冷却；
+- `change_book`：用户选择换书，响应中包含关联的推荐 Session。
+
+#### `POST /api/reading-difficulty-prompts/{book_id}/continue`
+
+保存“继续尝试”，把提醒冷却设为三个新的完整章节。前端只有在请求成功后才移除提示页；保存失败
+会保留页面和用户选择，允许再次提交。选择“换一本”不调用此接口，而由
+`POST /api/recommendations/difficulty-handoffs` 在创建 Agent 轮次后保存
+`recommendation_session_id`。
+
 ### 查词与词表
 
 #### `POST /api/word-lookup`

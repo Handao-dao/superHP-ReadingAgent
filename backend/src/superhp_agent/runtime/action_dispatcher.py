@@ -19,15 +19,20 @@ from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.contracts import (
     AgentAction,
     ChapterReadingCheckpoint,
+    ReadingDifficultyEvidence,
     ReadingUnitDetail,
     ReadingUnitMeta,
 )
 from superhp_agent.contracts.annotation import AnnotationResult
 from superhp_agent.corpus import CorpusStore, ReadingUnitDocument
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPromptStatus,
+)
 from superhp_agent.domain.reading_support import DEFAULT_ANNOTATION_TARGET
 from superhp_agent.domain.vocabulary import extract_vocabulary_candidates
 from superhp_agent.ports.events import EventLogger, EventSink, emit_backend_event
 from superhp_agent.ports.repositories import (
+    ReadingDifficultyPromptRepository,
     ReadingProgressRepository,
     ReadingSupportRepository,
     VocabularyRepository,
@@ -122,6 +127,9 @@ class ActionContext:
     annotator_service: AnnotationService | None = None
     db: VocabularyRepository | None = None
     reading_support_repository: ReadingSupportRepository | None = None
+    reading_difficulty_prompt_repository: (
+        ReadingDifficultyPromptRepository | None
+    ) = None
     chapter_checkpoint_recorder: ChapterCheckpointCapability | None = None
     reading_adaptation_evaluator: (
         ReadingAdaptationEvaluationCapability | None
@@ -272,6 +280,11 @@ class MarkReadHandler:
         if context.progress_repository:
             context.progress_repository.mark_read(unit_id)
             difficulty_alert = _record_chapter_checkpoint(context, unit_id)
+            if difficulty_alert is None:
+                difficulty_alert = _pending_difficulty_prompt(
+                    context,
+                    unit_id,
+                )
         await context.emit_event(
             "unit.marked_read",
             request_id=request_id,
@@ -301,6 +314,11 @@ class StartNextUnitHandler:
                 context,
                 completed_unit_id,
             )
+            if difficulty_alert is None:
+                difficulty_alert = _pending_difficulty_prompt(
+                    context,
+                    completed_unit_id,
+                )
             await context.emit_event(
                 "unit.marked_read",
                 request_id=request_id,
@@ -547,31 +565,60 @@ def _record_chapter_checkpoint(
                 is ReadingAdaptationAction.DIFFICULTY_ALERT
             ):
                 evidence = evaluation.window.evidence
-                return {
-                    "book_id": checkpoint.book_id,
-                    "chapter_id": checkpoint.chapter_id,
-                    "evidence": {
-                        "observed_word_count": evidence.observed_word_count,
-                        "observed_chapter_count": (
-                            evidence.observed_chapter_count
-                        ),
-                        "lookup_density": evidence.lookup_density,
-                        "unique_lookup_density": (
-                            evidence.unique_lookup_density
-                        ),
-                        "repeated_lookup_density": (
-                            evidence.repeated_lookup_density
-                        ),
-                        "annotated_lookup_density": (
-                            evidence.annotated_lookup_density
-                        ),
-                        "actual_annotation_density": (
-                            evidence.actual_annotation_density
-                        ),
-                        "annotation_target": evidence.annotation_target,
-                    },
-                }
+                return _difficulty_alert_payload(
+                    book_id=checkpoint.book_id,
+                    chapter_id=checkpoint.chapter_id,
+                    evidence=evidence,
+                )
     return None
+
+
+def _pending_difficulty_prompt(
+    context: ActionContext,
+    unit_id: str,
+) -> dict[str, Any] | None:
+    """Recover a pending prompt after a reconnect or repeated completion."""
+    repository = context.reading_difficulty_prompt_repository
+    if repository is None:
+        return None
+    document = context.corpus.get_unit(unit_id)
+    prompt = repository.get(document.meta.book_id)
+    if (
+        prompt is None
+        or prompt.status is not ReadingDifficultyPromptStatus.PENDING
+    ):
+        return None
+    return _difficulty_alert_payload(
+        book_id=prompt.book_id,
+        chapter_id=prompt.chapter_id,
+        evidence=prompt.evidence,
+    )
+
+
+def _difficulty_alert_payload(
+    *,
+    book_id: str,
+    chapter_id: str,
+    evidence: ReadingDifficultyEvidence,
+) -> dict[str, Any]:
+    return {
+        "book_id": book_id,
+        "chapter_id": chapter_id,
+        "evidence": {
+            "observed_word_count": evidence.observed_word_count,
+            "observed_chapter_count": evidence.observed_chapter_count,
+            "lookup_density": evidence.lookup_density,
+            "unique_lookup_density": evidence.unique_lookup_density,
+            "repeated_lookup_density": evidence.repeated_lookup_density,
+            "annotated_lookup_density": (
+                evidence.annotated_lookup_density
+            ),
+            "actual_annotation_density": (
+                evidence.actual_annotation_density
+            ),
+            "annotation_target": evidence.annotation_target,
+        },
+    }
 
 
 def _require_unit_id(payload: dict[str, Any]) -> str:

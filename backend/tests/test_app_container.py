@@ -33,6 +33,10 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.db.reading_support_repository
         )
         assert (
+            container.reading_difficulty_prompt_repository
+            is container.db.reading_difficulty_prompt_repository
+        )
+        assert (
             container.chapter_checkpoint_repository
             is container.db.chapter_checkpoint_repository
         )
@@ -47,6 +51,14 @@ def test_build_container_wires_shared_capabilities(tmp_path):
         assert (
             container.reading_adaptation_evaluator.support_repository
             is container.reading_support_repository
+        )
+        assert (
+            container.reading_adaptation_evaluator.prompt_repository
+            is container.reading_difficulty_prompt_repository
+        )
+        assert (
+            container.reading_difficulty_prompt_coordinator.prompt_repository
+            is container.reading_difficulty_prompt_repository
         )
         assert (
             container.recommendation_session_repository

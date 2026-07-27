@@ -13,6 +13,9 @@ from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
     ReadingAdaptationWindow,
 )
+from superhp_agent.application.reading_difficulty_prompts import (
+    ReadingDifficultyPromptCoordinator,
+)
 from superhp_agent.application.reading_monitor import (
     ReadingDifficultyMonitor,
     ReadingDifficultyPolicy,
@@ -34,6 +37,7 @@ __all__ = [
     "ReadingAdaptationWindow",
     "ReadingDifficultyMonitor",
     "ReadingDifficultyPolicy",
+    "ReadingDifficultyPromptCoordinator",
     "RecommendationAgentRunner",
     "RecommendationSessionNotFoundError",
     "build_container",

@@ -354,6 +354,7 @@ storage/
     ├── bookmarks.py       # 已完成：书签 SQL 实现
     ├── reading_progress.py # 已完成：阅读进度 SQL 实现
     ├── reading_support.py  # 已完成：每本书译注目标 SQL 实现
+    ├── reading_difficulty_prompts.py # 已完成：困难授权与冷却
     └── chapter_checkpoints.py # 已完成：完整章节观察快照
 ```
 
@@ -362,6 +363,7 @@ storage/
 - `ReadingProgressRepository`：通过 SQLite 保存当前、已打开和已读状态。
 - `ReadingSupportRepository`：按书保存当前英文译注支持目标；未设置时返回默认值 8。
 - `ChapterReadingCheckpointRepository`：幂等保存完整章节首次读完时的词数、查词和实际支持目标。
+- `ReadingDifficultyPromptRepository`：保存困难提示证据、用户选择、三章冷却和推荐会话关联。
 - `EventLogStore`：只向 JSONL 追加诊断事件，不读取或重建业务状态。
 - Repository：提供业务数据操作，不向上层暴露 SQL row 细节。
 

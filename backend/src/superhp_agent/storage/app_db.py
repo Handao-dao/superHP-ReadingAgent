@@ -19,6 +19,9 @@ from superhp_agent.storage.sqlite.bookmarks import (
 from superhp_agent.storage.sqlite.chapter_checkpoints import (
     SQLiteChapterReadingCheckpointRepository,
 )
+from superhp_agent.storage.sqlite.reading_difficulty_prompts import (
+    SQLiteReadingDifficultyPromptRepository,
+)
 from superhp_agent.storage.sqlite.reading_lookups import (
     SQLiteReadingLookupRepository,
 )
@@ -63,6 +66,9 @@ class AppDB:
         self.reading_lookup_repository = SQLiteReadingLookupRepository(
             self.database,
             sync_unit=self.unit_repository.sync,
+        )
+        self.reading_difficulty_prompt_repository = (
+            SQLiteReadingDifficultyPromptRepository(self.database)
         )
         self.reading_support_repository = SQLiteReadingSupportRepository(
             self.database

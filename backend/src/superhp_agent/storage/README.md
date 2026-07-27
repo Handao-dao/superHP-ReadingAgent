@@ -35,6 +35,7 @@ JSONL      保存追加式诊断和审计事件
 | 用户主动查词事实 | SQLite `reading_lookup_events` | `ReadingLookupRepository` | 否，属于阅读行为 |
 | 每本书的译注支持目标 | SQLite `book_reading_support` | `ReadingSupportRepository` | 否，属于阅读适配状态 |
 | 完整章节阅读快照 | SQLite `chapter_reading_checkpoints` | `ChapterReadingCheckpointRepository` | 否，属于已冻结的阅读事实 |
+| 困难提示、用户选择与冷却 | SQLite `reading_difficulty_prompts` | `ReadingDifficultyPromptRepository` | 否，属于用户授权状态 |
 | 行为历史 | `events.jsonl` | `EventLogStore` | 不参与当前状态计算 |
 
 ## 原文：CorpusStore
@@ -229,6 +230,9 @@ ReadingSupportRepository
 ChapterReadingCheckpointRepository
     保存每个完整章节首次读完时的不可变观察快照
 
+ReadingDifficultyPromptRepository
+    保存每本书最近一次困难提示、用户选择、提示冷却和推荐会话关联
+
 EventLogStore
     追加诊断事件
 ```
@@ -252,6 +256,11 @@ Store 面向文件内容或追加型记录；Repository 面向可查询、可更
 窗口。`book_reading_support` 同时保存每本书的最后评估章节、连续窗口计数和三章调整冷却。
 `INCREASE/DECREASE` 会把新目标、评估位置、streak 与冷却作为同一份状态写回；
 `HOLD/DIFFICULTY_ALERT` 不改变目标。已有译注副本不会被自动重写。
+
+`reading_difficulty_prompts` 与 `book_reading_support` 刻意分开：前者保存用户看到并操作的授权
+状态，后者保存自动译注策略状态。`difficulty_alert` 产生时保存最近三章的聚合证据；选择继续后
+按新的 `chapter_id` 扣减三章冷却，同一章重复完成不重复扣减；选择换书后保存对应的
+`recommendation_session_id`。页面或 WebSocket 重连后可以重新读取仍为 `pending` 的提示。
 
 ## 渐进迁移顺序
 

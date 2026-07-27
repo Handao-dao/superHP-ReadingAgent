@@ -18,6 +18,9 @@ from superhp_agent.contracts import (
     ChapterReadingCheckpoint,
     ReadingDifficultyEvidence,
 )
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPromptStatus,
+)
 from superhp_agent.domain.reading_metrics import density_per_300
 from superhp_agent.domain.reading_support import (
     TARGET_CHANGE_COOLDOWN_CHAPTERS,
@@ -26,6 +29,7 @@ from superhp_agent.domain.reading_support import (
 from superhp_agent.ports.events import EventLogger
 from superhp_agent.ports.repositories import (
     ChapterReadingCheckpointRepository,
+    ReadingDifficultyPromptRepository,
     ReadingSupportRepository,
 )
 
@@ -70,11 +74,13 @@ class ReadingAdaptationEvaluator:
         *,
         policy: ReadingAdaptationPolicy | None = None,
         apply_target_changes: bool = True,
+        prompt_repository: ReadingDifficultyPromptRepository | None = None,
     ):
         self.checkpoint_repository = checkpoint_repository
         self.support_repository = support_repository
         self.policy = policy or ReadingAdaptationPolicy()
         self.apply_target_changes = bool(apply_target_changes)
+        self.prompt_repository = prompt_repository
 
     def evaluate_book(
         self,
@@ -94,6 +100,58 @@ class ReadingAdaptationEvaluator:
             == newest.chapter_id
         ):
             return None
+
+        prompt = (
+            self.prompt_repository.advance_cooldown(
+                book_id,
+                chapter_id=newest.chapter_id,
+            )
+            if self.prompt_repository is not None
+            else None
+        )
+        prompt_block_reason = ""
+        if (
+            prompt is not None
+            and prompt.status is ReadingDifficultyPromptStatus.PENDING
+        ):
+            prompt_block_reason = "difficulty_prompt_awaiting_choice"
+        elif (
+            prompt is not None
+            and prompt.status
+            is ReadingDifficultyPromptStatus.CONTINUE_READING
+            and prompt.cooldown_chapters_remaining > 0
+        ):
+            prompt_block_reason = "difficulty_prompt_cooldown"
+        if prompt_block_reason:
+            self.support_repository.save_evaluation_state(
+                book_id,
+                _next_support_state(
+                    support_state,
+                    newest_chapter_id=newest.chapter_id,
+                    cooldown_chapters_remaining=(
+                        support_state.cooldown_chapters_remaining
+                    ),
+                    last_decision=prompt_block_reason,
+                ),
+            )
+            if len(checkpoints) < ADAPTATION_WINDOW_CHAPTERS:
+                return None
+            window = _build_window(
+                book_id,
+                checkpoints,
+                annotation_target=support_state.annotation_target,
+            )
+            return ReadingAdaptationEvaluation(
+                window=window,
+                decision=None,
+                reason=prompt_block_reason,
+                cooldown_chapters_remaining=(
+                    support_state.cooldown_chapters_remaining
+                ),
+                active_target=support_state.annotation_target,
+                target_changed=False,
+                shadow_mode=not self.apply_target_changes,
+            )
 
         cooldown_remaining = support_state.cooldown_chapters_remaining
         if cooldown_remaining > 0:
@@ -193,6 +251,16 @@ class ReadingAdaptationEvaluator:
                 decision.uncovered_lookup_density
             ),
         )
+        if (
+            self.prompt_repository is not None
+            and decision.action
+            is ReadingAdaptationAction.DIFFICULTY_ALERT
+        ):
+            self.prompt_repository.open_prompt(
+                book_id=book_id,
+                chapter_id=newest.chapter_id,
+                evidence=window.evidence,
+            )
         self.support_repository.save_evaluation_state(book_id, next_state)
         return ReadingAdaptationEvaluation(
             window=window,

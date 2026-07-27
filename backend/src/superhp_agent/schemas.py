@@ -11,6 +11,9 @@ from superhp_agent.contracts import (
     RecommendationAgentPhase,
     RecommendationOrigin,
 )
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPromptStatus,
+)
 
 
 class ProfileMeta(BaseModel):
@@ -87,6 +90,26 @@ class ReadingDifficultyObservationResponse(BaseModel):
     window_ready: bool
     observed_unit_ids: list[str] = Field(default_factory=list)
     evidence: ReadingDifficultyEvidenceResponse
+
+
+class ReadingDifficultyPromptEvidenceResponse(
+    ReadingDifficultyEvidenceResponse
+):
+    """Complete evidence snapshot retained with a user-facing prompt."""
+
+    actual_annotation_density: float = 0
+    annotation_target: int | None = None
+
+
+class ReadingDifficultyPromptResponse(BaseModel):
+    """Persisted prompt lifecycle exposed for recovery and diagnostics."""
+
+    book_id: str
+    chapter_id: str
+    status: ReadingDifficultyPromptStatus
+    cooldown_chapters_remaining: int
+    recommendation_session_id: str = ""
+    evidence: ReadingDifficultyPromptEvidenceResponse
 
 
 class AddVocabularyRequest(BaseModel):

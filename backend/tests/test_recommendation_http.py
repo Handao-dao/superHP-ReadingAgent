@@ -78,12 +78,35 @@ class FakeCatalog:
         raise AssertionError("HTTP projection must not search the catalog")
 
 
-def make_client():
+def make_client(difficulty_prompt_coordinator=None):
     runner = FakeRecommendationRunner()
     catalog = FakeCatalog()
     app = FastAPI()
-    app.include_router(create_recommendation_router(runner, catalog))
+    app.include_router(
+        create_recommendation_router(
+            runner,
+            catalog,
+            difficulty_prompt_coordinator,
+        )
+    )
     return TestClient(app), runner
+
+
+class FakeDifficultyPromptCoordinator:
+    def __init__(self):
+        self.required_book_ids = []
+        self.changed = []
+
+    def require_pending(self, book_id):
+        self.required_book_ids.append(book_id)
+
+    def choose_change_book(
+        self,
+        book_id,
+        *,
+        recommendation_session_id,
+    ):
+        self.changed.append((book_id, recommendation_session_id))
 
 
 def question_session() -> RecommendationAgentSession:
@@ -225,7 +248,8 @@ def test_get_session_restores_completed_public_view():
 
 
 def test_difficulty_handoff_reuses_transcript_and_passes_reading_evidence():
-    client, runner = make_client()
+    coordinator = FakeDifficultyPromptCoordinator()
+    client, runner = make_client(coordinator)
     session = replace(
         question_session(),
         request=RecommendationRequest(
@@ -264,6 +288,8 @@ def test_difficulty_handoff_reuses_transcript_and_passes_reading_evidence():
     assert request.handoff.evidence.lookup_density == 12.1
     assert request.preferred_genres == ("fantasy",)
     assert "最近 3 章" in message
+    assert coordinator.required_book_ids == ["hp01"]
+    assert coordinator.changed == [("hp01", "session-1")]
 
 
 def test_get_session_restores_failed_error_code():

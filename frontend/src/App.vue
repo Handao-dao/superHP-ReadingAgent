@@ -10,6 +10,7 @@ import ReadingSidebar from './components/reading/ReadingSidebar.vue'
 import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import RecommendationChatPage from './components/recommendation/RecommendationChatPage.vue'
+import { continueReadingAfterDifficulty } from './api/readingDifficultyPrompts'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -28,6 +29,8 @@ const paperTheme = ref(PAPER_THEMES.has(storedPaperTheme) ? storedPaperTheme : '
 const paperThemeOpen = ref(false)
 const activeView = ref('reader')
 const vocabularyRefreshKey = ref(0)
+const difficultyPromptBusy = ref(false)
+const difficultyPromptError = ref('')
 const selectedVocabularyUnitId = ref('')
 const {
   catalogErrorMessage,
@@ -335,8 +338,19 @@ function handleViewChange(view) {
   if (view !== 'reader') sidebarOpen.value = false
 }
 
-function handleContinueAfterDifficulty() {
-  clearDifficultyAlert()
+async function handleContinueAfterDifficulty() {
+  const bookId = difficultyAlert.value?.book_id
+  if (!bookId || difficultyPromptBusy.value) return
+  difficultyPromptBusy.value = true
+  difficultyPromptError.value = ''
+  try {
+    await continueReadingAfterDifficulty(bookId)
+    clearDifficultyAlert()
+  } catch (error) {
+    difficultyPromptError.value = error.message || '阅读选择保存失败'
+  } finally {
+    difficultyPromptBusy.value = false
+  }
 }
 
 async function handleChangeBookAfterDifficulty() {
@@ -347,14 +361,14 @@ async function handleChangeBookAfterDifficulty() {
   closeLookupBubble()
   paperThemeOpen.value = false
   sidebarOpen.value = false
-  await startRecommendationDifficultyHandoff({
+  const session = await startRecommendationDifficultyHandoff({
     currentBook: {
       book_id: meta.book_id,
       title: meta.book_title,
     },
     evidence,
   })
-  clearDifficultyAlert()
+  if (session) clearDifficultyAlert()
 }
 
 function selectPaperTheme(theme) {
@@ -398,6 +412,7 @@ watch(
     resetPagination()
     completeCardsRequestedFor.value = ''
     clearDifficultyAlert()
+    difficultyPromptError.value = ''
     resetLookupAnnotations()
     closeLookupBubble()
     recalculatePages()
@@ -521,8 +536,9 @@ onBeforeUnmount(() => {
           <ReadingDifficultyPrompt
             v-if="difficultyAlert"
             :alert="difficultyAlert"
-            :busy="busy || recommendationLoading"
+            :busy="busy || recommendationLoading || difficultyPromptBusy"
             :current-meta="currentMeta"
+            :error-message="difficultyPromptError"
             @change-book="handleChangeBookAfterDifficulty"
             @continue-reading="handleContinueAfterDifficulty"
           />

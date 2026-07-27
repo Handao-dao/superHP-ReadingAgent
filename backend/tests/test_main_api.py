@@ -9,6 +9,10 @@ from superhp_agent.contracts import (
     ReadingProgressSnapshot,
 )
 from superhp_agent.corpus import CorpusError, ReadingUnit, ReadingUnitDocument
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPrompt,
+    ReadingDifficultyPromptStatus,
+)
 from superhp_agent.library_catalog import CatalogBook, CatalogCollection
 
 
@@ -115,6 +119,43 @@ class FakeReadingDifficultyMonitor:
         )
 
 
+def _pending_prompt():
+    return ReadingDifficultyPrompt(
+        book_id="book-1",
+        chapter_id="book-1-ch03",
+        status=ReadingDifficultyPromptStatus.PENDING,
+        evidence=ReadingDifficultyEvidence(
+            observed_word_count=6000,
+            observed_chapter_count=3,
+            lookup_density=11,
+            annotated_lookup_density=1,
+            annotation_target=20,
+        ),
+    )
+
+
+class FakeDifficultyPromptRepository:
+    def get(self, book_id):
+        return _pending_prompt() if book_id == "book-1" else None
+
+
+class FakeDifficultyPromptCoordinator:
+    def __init__(self):
+        self.book_ids = []
+
+    def choose_continue(self, book_id):
+        self.book_ids.append(book_id)
+        prompt = _pending_prompt()
+        return ReadingDifficultyPrompt(
+            book_id=prompt.book_id,
+            chapter_id=prompt.chapter_id,
+            status=ReadingDifficultyPromptStatus.CONTINUE_READING,
+            evidence=prompt.evidence,
+            cooldown_chapters_remaining=3,
+            last_cooldown_chapter_id=prompt.chapter_id,
+        )
+
+
 def test_unit_meta_includes_sidebar_status_fields(tmp_path, monkeypatch):
     annotated_dir = tmp_path / "annotated"
     annotated_dir.mkdir()
@@ -164,6 +205,8 @@ def test_recommendation_http_routes_are_registered():
         "/api/recommendations/difficulty-handoffs",
         "/api/recommendations/sessions/{session_id}/messages",
         "/api/recommendations/sessions/{session_id}",
+        "/api/reading-difficulty-prompts/{book_id}",
+        "/api/reading-difficulty-prompts/{book_id}/continue",
     } <= paths
 
 
@@ -197,6 +240,42 @@ def test_reading_difficulty_api_exposes_read_only_observation(monkeypatch):
             "annotated_lookup_density": 1.0,
         },
     }
+    assert missing.status_code == 404
+
+
+def test_difficulty_prompt_api_restores_and_records_continue_choice(
+    monkeypatch,
+):
+    coordinator = FakeDifficultyPromptCoordinator()
+    monkeypatch.setattr(
+        main,
+        "reading_difficulty_prompt_repository",
+        FakeDifficultyPromptRepository(),
+    )
+    monkeypatch.setattr(
+        main,
+        "reading_difficulty_prompt_coordinator",
+        coordinator,
+    )
+
+    with TestClient(main.app) as client:
+        pending = client.get(
+            "/api/reading-difficulty-prompts/book-1"
+        )
+        continued = client.post(
+            "/api/reading-difficulty-prompts/book-1/continue"
+        )
+        missing = client.get(
+            "/api/reading-difficulty-prompts/missing"
+        )
+
+    assert pending.status_code == 200
+    assert pending.json()["status"] == "pending"
+    assert pending.json()["evidence"]["annotation_target"] == 20
+    assert continued.status_code == 200
+    assert continued.json()["status"] == "continue_reading"
+    assert continued.json()["cooldown_chapters_remaining"] == 3
+    assert coordinator.book_ids == ["book-1"]
     assert missing.status_code == 404
 
 

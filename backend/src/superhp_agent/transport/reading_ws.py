@@ -18,6 +18,7 @@ from superhp_agent.contracts import AgentAction, BackendEvent
 from superhp_agent.corpus import CorpusError, CorpusStore
 from superhp_agent.ports.events import EventLogger, EventSink
 from superhp_agent.ports.repositories import (
+    ReadingDifficultyPromptRepository,
     ReadingProgressRepository,
     ReadingSupportRepository,
     VocabularyRepository,
@@ -81,6 +82,9 @@ class ReadingSocketSession:
         annotator_service: AnnotationService | None = None,
         db: VocabularyRepository | None = None,
         reading_support_repository: ReadingSupportRepository | None = None,
+        reading_difficulty_prompt_repository: (
+            ReadingDifficultyPromptRepository | None
+        ) = None,
         chapter_checkpoint_recorder: ChapterCheckpointCapability | None = None,
         reading_adaptation_evaluator: (
             ReadingAdaptationEvaluationCapability | None
@@ -101,6 +105,9 @@ class ReadingSocketSession:
         self.annotator_service = annotator_service
         self.db = db
         self.reading_support_repository = reading_support_repository
+        self.reading_difficulty_prompt_repository = (
+            reading_difficulty_prompt_repository
+        )
         self.chapter_checkpoint_recorder = chapter_checkpoint_recorder
         self.reading_adaptation_evaluator = reading_adaptation_evaluator
         self.selection_policy_resolver = selection_policy_resolver
@@ -223,6 +230,9 @@ class ReadingSocketSession:
             annotator_service=self.annotator_service,
             db=self.db,
             reading_support_repository=self.reading_support_repository,
+            reading_difficulty_prompt_repository=(
+                self.reading_difficulty_prompt_repository
+            ),
             chapter_checkpoint_recorder=self.chapter_checkpoint_recorder,
             reading_adaptation_evaluator=self.reading_adaptation_evaluator,
             selection_policy_resolver=self.selection_policy_resolver,

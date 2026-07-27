@@ -16,6 +16,10 @@ from superhp_agent.contracts.annotation import (
     ServiceIssue,
 )
 from superhp_agent.corpus import CorpusStore
+from superhp_agent.domain.reading_difficulty_prompt import (
+    ReadingDifficultyPrompt,
+    ReadingDifficultyPromptStatus,
+)
 from superhp_agent.runtime.action_dispatcher import (
     ActionContext,
     ActionDispatcher,
@@ -126,6 +130,22 @@ class FakeDifficultyAlertEvaluator(FakeReadingAdaptationEvaluator):
                     annotated_lookup_density=3.2,
                     annotation_target=20,
                 )
+            ),
+        )
+
+
+class FakePendingDifficultyPromptRepository:
+    def get(self, book_id):
+        return ReadingDifficultyPrompt(
+            book_id=book_id,
+            chapter_id="hp01-ch01",
+            status=ReadingDifficultyPromptStatus.PENDING,
+            evidence=ReadingDifficultyEvidence(
+                observed_word_count=7200,
+                observed_chapter_count=3,
+                lookup_density=12.1,
+                annotated_lookup_density=3.2,
+                annotation_target=20,
             ),
         )
 
@@ -294,6 +314,41 @@ def test_dispatch_mark_read_emits_difficulty_alert_evidence(tmp_path):
         assert alert["chapter_id"] == "hp01-ch01"
         assert alert["evidence"]["lookup_density"] == 12.1
         assert alert["evidence"]["annotation_target"] == 20
+
+    asyncio.run(run_case())
+
+
+def test_dispatch_mark_read_recovers_persisted_pending_prompt(tmp_path):
+    async def run_case():
+        corpus_root = tmp_path / "corpus"
+        write_unit(corpus_root)
+        sink = RecordingEventSink()
+        memory = memory_store()
+        context = ActionContext(
+            corpus=CorpusStore(corpus_root),
+            event_sink=sink,
+            event_log_store=memory,
+            progress_repository=memory,
+            chapter_checkpoint_recorder=FakeChapterCheckpointRecorder(),
+            reading_adaptation_evaluator=FakeReadingAdaptationEvaluator(),
+            reading_difficulty_prompt_repository=(
+                FakePendingDifficultyPromptRepository()
+            ),
+            current_unit_id="hp01-ch01",
+        )
+
+        await ActionDispatcher().dispatch(
+            AgentAction(
+                id=MARK_CHAPTER_READ,
+                label="完成本章",
+                payload={},
+            ),
+            context,
+        )
+
+        alert = sink.events[0]["difficulty_alert"]
+        assert alert["chapter_id"] == "hp01-ch01"
+        assert alert["evidence"]["observed_word_count"] == 7200
 
     asyncio.run(run_case())
 

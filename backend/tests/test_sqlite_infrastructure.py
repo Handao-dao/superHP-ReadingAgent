@@ -6,6 +6,7 @@ from superhp_agent.storage.migrations import initialize_schema
 from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteChapterReadingCheckpointRepository,
+    SQLiteReadingDifficultyPromptRepository,
     SQLiteReadingSupportRepository,
     SQLiteRecommendationSessionRepository,
     SQLiteUnitRepository,
@@ -34,6 +35,10 @@ def test_app_db_composes_unit_repository(tmp_path):
         assert isinstance(
             db.chapter_checkpoint_repository,
             SQLiteChapterReadingCheckpointRepository,
+        )
+        assert isinstance(
+            db.reading_difficulty_prompt_repository,
+            SQLiteReadingDifficultyPromptRepository,
         )
         assert isinstance(
             db.recommendation_session_repository,
@@ -68,6 +73,7 @@ def test_initialize_schema_creates_current_repository_tables(tmp_path):
             "reading_lookup_events",
             "book_reading_support",
             "chapter_reading_checkpoints",
+            "reading_difficulty_prompts",
         } <= tables
         assert "vocabulary" not in tables
 

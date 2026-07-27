@@ -335,6 +335,7 @@ class RecommendationAgentSession:
     tool_call_count: int = 0
     observed_catalog_ids: tuple[str, ...] = ()
     recommended_catalog_ids: tuple[str, ...] = ()
+    selected_catalog_id: str = ""
     error_code: str = ""
 
     def __post_init__(self) -> None:
@@ -346,6 +347,13 @@ class RecommendationAgentSession:
             self.recommended_catalog_ids
         ):
             raise ValueError("recommended_catalog_ids must be unique")
+        if (
+            self.selected_catalog_id
+            and self.selected_catalog_id not in self.recommended_catalog_ids
+        ):
+            raise ValueError(
+                "selected_catalog_id must be one of recommended_catalog_ids"
+            )
 
 
 @dataclass(frozen=True)

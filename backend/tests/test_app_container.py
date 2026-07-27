@@ -94,8 +94,15 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             (
                 "search_local_book_catalog",
                 "present_book_recommendations",
+                "select_recommended_book",
             )
         )[1]["name"] == "present_book_recommendations"
+        assert (
+            container.recommendation_tool_registry.describe(
+                ("select_recommended_book",)
+            )[0]["name"]
+            == "select_recommended_book"
+        )
         assert (
             container.state_reader.progress_repository
             is container.reading_progress_repository

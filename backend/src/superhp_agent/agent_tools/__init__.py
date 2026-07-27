@@ -7,6 +7,7 @@ They do not replace Ports, contain SQL, or own recommendation policy.
 from superhp_agent.agent_tools.book_catalog import BookCatalogSearchTool
 from superhp_agent.agent_tools.recommendation_result import (
     PresentBookRecommendationsTool,
+    SelectRecommendedBookTool,
 )
 from superhp_agent.agent_tools.registry import (
     AgentTool,
@@ -20,6 +21,7 @@ __all__ = [
     "AgentToolNotAllowedError",
     "BookCatalogSearchTool",
     "PresentBookRecommendationsTool",
+    "SelectRecommendedBookTool",
     "ToolRegistry",
     "UnknownAgentToolError",
 ]

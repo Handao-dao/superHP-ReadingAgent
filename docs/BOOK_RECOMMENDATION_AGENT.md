@@ -360,9 +360,9 @@ Lexile Find a Book 可以作为用户手动查询入口和产品设计参考，�
 
 ## 7. Agent 工具
 
-当前实现一个 `ToolRegistry`、一个本地目录搜索工具和一个无副作用的终止工具。Registry 负责显式注册、向模型描述、
+当前实现一个 `ToolRegistry`、一个本地目录搜索工具、一个候选展示工具和一个明确选书工具。Registry 负责显式注册、向模型描述、
 按 Agent allowlist 授权和执行，不做插件扫描或通用工作流编排。工具已注册不代表任意 Agent
-都能调用；`BookRecommendationAgent` 当前只获得本地图书检索和无副作用的推荐提交权限。
+都能调用；`BookRecommendationAgent` 当前只获得这三项选书所需权限。
 
 ### `BookCatalogSearchTool`
 
@@ -397,9 +397,16 @@ BookCatalogSearchTool
 
 ### `PresentBookRecommendationsTool`
 
-这是一个无外部副作用的终止工具。模型只有在已经看到目录搜索结果后，才能提交 1～3 个
+这是一个无外部副作用的候选展示工具。模型只有在已经看到目录搜索结果后，才能提交 1～3 个
 `catalog_id` 和面向用户的推荐理由。Loop 再次校验这些 id 是否来自此前已完成的搜索；通过后
-返回结构化候选并结束当前推荐任务。
+保存“当前展示批次”，返回结构化候选，并暂停为 `awaiting_user`。用户可以直接在对话中表达
+“换一批”“不要校园题材”“第二本不错”等反馈。
+
+### `SelectRecommendedBookTool`
+
+只有用户明确选择一本当前展示的候选时，模型才能调用 `select_recommended_book`。Loop 会再次
+确认 `catalog_id` 属于最近展示批次；通过后保存 `selected_catalog_id` 并进入 `completed`。
+它只记录选择，不替用户下载、导入、打开图书或启动标注流程。
 
 ### 后续可选工具
 
@@ -428,8 +435,9 @@ LLMProvider(system prompt, messages, tools)
         ToolRegistry
             ↓
         Tool Result 写回 Session
-            ├── 普通结果 → 继续下一轮
-            └── terminal result → 校验候选并完成
+            ├── 搜索结果 → 继续下一轮
+            ├── 候选展示 → 保存批次并暂停为 awaiting_user
+            └── 明确选书 → 校验最近展示批次并完成
 ```
 
 Session 保存：
@@ -437,8 +445,8 @@ Session 保存：
 - 推荐来源和已知偏好；
 - 用户、助手和工具观察消息；
 - 当前 phase；
-- 已使用的工具次数；
-- 工具曾返回的目录 id。
+- 当前用户消息触发的运行已使用的工具次数；
+- 工具曾返回的目录 id、最近展示批次和最终选择 id。
 
 Session 保存的不是拼接后的摘要文本，而是真实的 user、assistant 和 tool 消息。Assistant
 Tool Call 与对应的 Tool Result 通过 `tool_call_id` 配对，因此下一次请求可以直接重建模型上下文。
@@ -452,7 +460,7 @@ start(request)
     → 创建 Session
     → 保存初始状态
     → 运行 Loop
-    → 保存暂停或终止状态
+    → 保存暂停或明确选书后的终止状态
 
 resume(session_id, user_message)
     → RecommendationSessionRepository.load
@@ -480,16 +488,18 @@ GET /api/recommendations/sessions/{session_id}
 ```
 
 HTTP Response 只投影 user / assistant 文本，不暴露内部 Tool Call、Tool Result、Prompt 或
-Provider 对象。终止工具确认的候选 id 会写入 Session，恢复时再通过本地 Catalog 解析为经过
-验证的中英文书名、蓝思区间和题材卡片。`difficulty_alert` 不复用初次创建接口，而由带
+Provider 对象。候选展示工具确认的 id 会写入 Session，恢复时再通过本地 Catalog 解析为经过
+验证的中英文书名、蓝思区间和题材卡片；明确选择另存为 `selected_catalog_id`。
+`difficulty_alert` 不复用初次创建接口，而由带
 Reading Handoff 的专用入口重激活原会话。
 
 当前守卫条件：
 
-- 每个 Session 最多执行 3 次工具调用；
+- 每次用户消息触发的 Agent 运行最多执行 3 次工具调用，下一条用户消息开始时重置；
 - 每次搜索最多请求 10 个候选；
 - 每次 `run()` 最多进行 5 次模型轮次；
-- 终止工具只能包含 1～3 个已经由目录工具返回的稳定 id；
+- 展示工具只能包含 1～3 个已经由目录工具返回的稳定 id；
+- 明确选书工具只能引用最近展示批次中的一个 id；
 - 模型因输出长度限制而截断的 Tool Call 不会执行，而是返回错误结果要求模型重试；
 - 无效搜索、超额参数和未知候选作为 Tool Result 返回，允许模型在剩余预算内修正；
 - 达到轮次上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
@@ -500,8 +510,8 @@ Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTT
 支持后仍连续困难时，`unit.marked_read` 会携带一次 `difficulty_alert`。前端把授权页插在正文
 最后一页与原章节完成卡片之间：继续尝试不启动 Agent，换书则通过
 `POST /api/recommendations/difficulty-handoffs` 只提交 `book_id`；后端以持久化提示证据为准，
-补齐当前书籍、进度与较低目标区间，再保留原对话并启动新一轮 Loop。推荐结果反馈尚未接入；
-用户收到 1～3 本候选后，仍自行进入已有阅读区和标注工作流。
+补齐当前书籍、进度与较低目标区间，再保留原对话并启动新一轮 Loop。用户收到 1～3 本候选后
+可继续自然语言交互；明确选定只结束推荐对话，仍由用户自行进入已有阅读区和标注工作流。
 
 建议的停止条件：
 
@@ -520,15 +530,17 @@ Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTT
 稍有挑战的选择
 ```
 
-用户后续可以：
+用户后续直接对话，例如：
 
 ```text
-[阅读样章] [选择这本] [不感兴趣] [换一批] [调整条件]
+“第二本不错，就选它。”
+“这些都不感兴趣，换一批更轻松的侦探小说。”
+“不要校园题材，难度可以稍高一点。”
 ```
 
 ## 9. 推荐结果与长期记忆
 
-用户点击“选择这本”只表示接受候选，不代表推荐已经成功。推荐结果需要经过实际阅读验证：
+用户在对话中明确选定只表示接受候选，不代表推荐已经成功。推荐结果需要经过实际阅读验证：
 
 ```python
 RecommendationOutcome(
@@ -564,8 +576,8 @@ Agent 每次只读取聚合后的事实和可修正判断，不依赖无限增�
 
 ## 10. 与现有后端分层的关系
 
-本节描述当前“阅读困难后主动换书”的已接入边界。Agent 在返回 1～3 本候选后仍结束本轮，用户
-自行进入已有阅读区。
+本节描述当前“阅读困难后主动换书”的已接入边界。Agent 展示 1～3 本候选后继续等待自然语言
+反馈；用户明确选定后才结束推荐，并自行进入已有阅读区。
 
 ```text
 Reading Monitor / Adaptation Policy

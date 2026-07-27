@@ -88,6 +88,7 @@ class RecommendationAgentRunner:
                 tool_call_count=0,
                 observed_catalog_ids=(),
                 recommended_catalog_ids=(),
+                selected_catalog_id="",
                 error_code="",
             )
         self.session_repository.save(session)

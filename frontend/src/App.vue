@@ -88,6 +88,7 @@ const {
   origin: recommendationOrigin,
   phase: recommendationPhase,
   recommendedBooks,
+  selectedCatalogId: recommendationSelectedCatalogId,
   restoreSession: restoreRecommendationSession,
   sendMessage: sendRecommendationMessage,
   startDifficultyHandoff: startRecommendationDifficultyHandoff,
@@ -621,6 +622,7 @@ onBeforeUnmount(() => {
             :origin="recommendationOrigin"
             :phase="recommendationPhase"
             :recommended-books="recommendedBooks"
+            :selected-catalog-id="recommendationSelectedCatalogId"
             @restore="restoreRecommendationSession"
             @send="sendRecommendationMessage"
             @start="startRecommendationSession"

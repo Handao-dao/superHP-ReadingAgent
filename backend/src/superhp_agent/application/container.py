@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from superhp_agent.agent_tools import (
     BookCatalogSearchTool,
     PresentBookRecommendationsTool,
+    SelectRecommendedBookTool,
     ToolRegistry,
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
@@ -94,6 +95,7 @@ class AppContainer:
     recommendation_candidate_service: RecommendationCandidateService
     book_catalog_search_tool: BookCatalogSearchTool
     present_book_recommendations_tool: PresentBookRecommendationsTool
+    select_recommended_book_tool: SelectRecommendedBookTool
     recommendation_tool_registry: ToolRegistry
     recommendation_context_builder: RecommendationContextBuilder
     recommendation_agent_runner: RecommendationAgentRunner
@@ -155,10 +157,12 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     )
     book_catalog_search_tool = BookCatalogSearchTool(recommendation_candidate_service)
     present_book_recommendations_tool = PresentBookRecommendationsTool()
+    select_recommended_book_tool = SelectRecommendedBookTool()
     recommendation_tool_registry = ToolRegistry(
         (
             book_catalog_search_tool,
             present_book_recommendations_tool,
+            select_recommended_book_tool,
         )
     )
     recommendation_context_builder = RecommendationContextBuilder()
@@ -246,6 +250,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         recommendation_candidate_service=recommendation_candidate_service,
         book_catalog_search_tool=book_catalog_search_tool,
         present_book_recommendations_tool=present_book_recommendations_tool,
+        select_recommended_book_tool=select_recommended_book_tool,
         recommendation_tool_registry=recommendation_tool_registry,
         recommendation_context_builder=recommendation_context_builder,
         recommendation_agent_runner=recommendation_agent_runner,

@@ -135,6 +135,7 @@ def test_sqlite_repository_upserts_and_deletes_session(tmp_path):
             phase=RecommendationAgentPhase.COMPLETED,
             tool_call_count=2,
             recommended_catalog_ids=("cam-jansen",),
+            selected_catalog_id="cam-jansen",
         )
 
         repository.save(completed)

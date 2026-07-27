@@ -200,6 +200,7 @@ async def _public_session(
         phase=session.phase,
         messages=messages,
         recommended_books=books,
+        selected_catalog_id=session.selected_catalog_id,
         error_code=error_code or session.error_code,
     )
 

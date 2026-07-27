@@ -138,14 +138,17 @@ flowchart LR
 1. `RecommendationChatPage` 发出 `start` 或 `send`。
 2. `App.vue` 把意图交给 `useRecommendationSession`。
 3. Composable 通过 `api/recommendations.js` 创建、继续或恢复 Session。
-4. 后端只返回 user / assistant 可见消息和验证后的图书卡片。
+4. 后端只返回 user / assistant 可见消息、验证后的图书卡片和最终选择 id。
 5. Composable 以 `session_id` 为唯一恢复指针，展示组件不访问 `localStorage`。
+
+候选卡片只是对话中当前批次的可信投影，不承载“选择 / 拒绝 / 换一批”按钮状态机。展示候选后
+会话保持 `awaiting_user`，用户继续用自然语言表达反馈；只有明确选定一本后才进入 `completed`。
 
 困难后的再次推荐仍复用这条数据流。用户越过正文最后一页时，`useReadingSocket` 先发送
 `mark_chapter_read`，等待 `unit.marked_read` 中的策略结果，再请求原章节完成卡片。若事件携带
 `difficulty_alert`，`App.vue` 先组合 `ReadingDifficultyPrompt`；“继续尝试”只移除这层条件页，
-“换一本”则把聚合证据交给 `useRecommendationSession`，在保留原对话记录的前提下开启新一轮
-Agent Loop。
+“换一本”则只把 `book_id` 交给 `useRecommendationSession`；后端读取持久化聚合证据，在保留
+原对话记录的前提下开启新一轮 Agent Loop。
 
 ## 分页 DOM 边界
 

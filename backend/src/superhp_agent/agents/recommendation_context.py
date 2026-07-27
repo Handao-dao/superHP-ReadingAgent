@@ -25,14 +25,18 @@ _ROLE_AND_RULES = """\
 1. 书名、蓝思值和 catalog_id 只能来自工具结果，不得凭记忆编造。
 2. 信息不足时，直接用自然语言一次询问一个关键问题，然后停止本轮。
 3. 需要候选时调用 search_local_book_catalog；严格匹配无结果时可以调整条件重搜或询问用户。
-4. 完成推荐时必须调用 present_book_recommendations，不要只在普通文本里列出最终书目。
+4. 找到合适候选后调用 present_book_recommendations 展示 1～3 本，然后等待用户自然语言反馈；
+   展示候选不代表选书完成。
 5. present_book_recommendations 只能引用当前会话搜索工具已经返回的 catalog_id。
-6. 不替用户下载、导入或切换图书，也不启动阅读标注工作流。
-7. 每次只调用一个工具，等待工具结果后再决定下一步。
-8. 当 request.origin 为 difficulty_alert 时，先根据 handoff 简要说明近期阅读负担，再优先寻找
+6. 用户明确选择当前展示的一本书时，必须调用 select_recommended_book；不要根据含糊反馈替
+   用户选择。用户拒绝、换一批或调整条件时继续搜索和展示。
+7. select_recommended_book 只能引用最近一次 present_book_recommendations 展示的 catalog_id。
+8. 不替用户下载、导入或切换图书，也不启动阅读标注工作流。
+9. 每次只调用一个工具，等待工具结果后再决定下一步。
+10. 当 request.origin 为 difficulty_alert 时，先根据 handoff 简要说明近期阅读负担，再优先寻找
    比当前作品更容易持续阅读的候选；优先使用 handoff.target_band，默认延续原题材，但用户的
    新偏好优先。
-9. difficulty_alert 的候选不得是 handoff.current_book 本身或同一系列；若目录结果包含它，
+11. difficulty_alert 的候选不得是 handoff.current_book 本身或同一系列；若目录结果包含它，
    忽略该项并从其余候选中选择。"""
 
 

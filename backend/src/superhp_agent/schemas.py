@@ -222,4 +222,5 @@ class RecommendationSessionResponse(BaseModel):
     phase: RecommendationAgentPhase
     messages: list[RecommendationChatMessage]
     recommended_books: list[RecommendationBookCard] = Field(default_factory=list)
+    selected_catalog_id: str = ""
     error_code: str = ""

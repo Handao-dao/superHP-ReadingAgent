@@ -215,6 +215,17 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
             "recommended_catalog_ids",
         ),
         (
+            lambda: RecommendationAgentSession(
+                session_id="session",
+                request=RecommendationRequest(
+                    origin=RecommendationOrigin.ONBOARDING
+                ),
+                recommended_catalog_ids=("cam-jansen",),
+                selected_catalog_id="not-presented",
+            ),
+            "selected_catalog_id",
+        ),
+        (
             lambda: RecommendationAgentObservation(
                 request=RecommendationRequest(
                     origin=RecommendationOrigin.ONBOARDING

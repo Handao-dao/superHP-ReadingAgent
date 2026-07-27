@@ -213,17 +213,21 @@ type RecommendationSessionResponse = {
     lexile_max: number
     genres: string[]
   }>
+  selected_catalog_id: string
   error_code: string
 }
 ```
 
 内部 Tool Call 和 Tool Result 不属于页面协议。前端只渲染 `messages` 和验证后的图书卡片。
+展示候选后 phase 仍为 `awaiting_user`，用户通过同一个输入框表达选定、拒绝、换一批或调整条件；
+只有 Agent 确认明确选择后才进入 `completed`，并返回 `selected_catalog_id`。
 
 顶栏“选书”入口打开独立的推荐对话视图。页面第一次只展示“开始选书”，避免仅因切换页面就产生
 模型调用；点击后才创建 Session。刷新页面时，如果本地存在 session id，Composable 使用 GET
 恢复对话。临时网络错误会保留本地 id，只有后端明确返回 404 才清除失效指针。
 
-当前完成态只提示用户从左侧本地书库进入既有阅读流程，不伪造“选择图书”写操作。
+完成态显示对话中已经确认的候选，并提示用户从左侧本地书库进入既有阅读流程；确认选择不会
+伪造打开、下载或导入图书的写操作。
 
 章节的最后一页之后是一个虚拟页面边界。进入该边界时，前端先发送已有
 `mark_chapter_read` action；后端记录章节检查点并运行三章滑动窗口：

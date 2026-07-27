@@ -39,6 +39,12 @@ class RecommendationAgentStateError(RuntimeError):
 @dataclass(frozen=True)
 class _TerminalRecommendation:
     message: str
+    selected_catalog_id: str
+
+
+@dataclass(frozen=True)
+class _PresentedRecommendations:
+    message: str
     catalog_ids: tuple[str, ...]
 
 
@@ -54,6 +60,7 @@ class BookRecommendationAgent:
         allowed_tools: tuple[str, ...] = (
             "search_local_book_catalog",
             "present_book_recommendations",
+            "select_recommended_book",
         ),
         max_tool_calls: int = 3,
         max_model_turns_per_run: int = 5,
@@ -158,7 +165,7 @@ class BookRecommendationAgent:
                         is_error=True,
                     )
                 continue
-            session, terminal = await self._execute_tool_calls(
+            session, presentation, terminal = await self._execute_tool_calls(
                 session,
                 response.tool_calls,
             )
@@ -173,12 +180,33 @@ class BookRecommendationAgent:
                 )
                 session = replace(
                     session,
-                    recommended_catalog_ids=terminal.catalog_ids,
+                    selected_catalog_id=terminal.selected_catalog_id,
                 )
                 return RecommendationAgentReply(
                     session=session,
                     message=terminal.message,
-                    recommended_catalog_ids=terminal.catalog_ids,
+                    recommended_catalog_ids=(
+                        session.recommended_catalog_ids
+                    ),
+                )
+            if presentation is not None:
+                session = self._append_message(
+                    session,
+                    RecommendationAgentMessage(
+                        role=RecommendationAgentMessageRole.ASSISTANT,
+                        content=presentation.message,
+                    ),
+                    phase=RecommendationAgentPhase.AWAITING_USER,
+                )
+                session = replace(
+                    session,
+                    recommended_catalog_ids=presentation.catalog_ids,
+                    selected_catalog_id="",
+                )
+                return RecommendationAgentReply(
+                    session=session,
+                    message=presentation.message,
+                    recommended_catalog_ids=presentation.catalog_ids,
                 )
 
         return self._failed_reply(
@@ -208,7 +236,7 @@ class BookRecommendationAgent:
             return session
         if not user_message.strip():
             raise ValueError("user_message must not be empty")
-        return self._append_message(
+        accepted = self._append_message(
             session,
             RecommendationAgentMessage(
                 role=RecommendationAgentMessageRole.USER,
@@ -216,13 +244,20 @@ class BookRecommendationAgent:
             ),
             phase=RecommendationAgentPhase.COLLECTING_PREFERENCES,
         )
+        return replace(accepted, tool_call_count=0, error_code="")
 
     async def _execute_tool_calls(
         self,
         session: RecommendationAgentSession,
         tool_calls: tuple[LLMToolCall, ...],
-    ) -> tuple[RecommendationAgentSession, _TerminalRecommendation | None]:
+    ) -> tuple[
+        RecommendationAgentSession,
+        _PresentedRecommendations | None,
+        _TerminalRecommendation | None,
+    ]:
         observed_before_turn = set(session.observed_catalog_ids)
+        presented_before_turn = set(session.recommended_catalog_ids)
+        presentation: _PresentedRecommendations | None = None
         terminal: _TerminalRecommendation | None = None
 
         for tool_call in tool_calls:
@@ -262,15 +297,18 @@ class BookRecommendationAgent:
                 ),
             )
 
-            terminal_result, terminal_error = _terminal_from_result(
-                result,
-                observed_before_turn,
+            presentation_result, terminal_result, action_error = (
+                _recommendation_action_from_result(
+                    result,
+                    observed_before_turn,
+                    presented_before_turn,
+                )
             )
-            if terminal_error is not None:
+            if action_error is not None:
                 session = self._append_tool_result(
                     session,
                     tool_call,
-                    terminal_error,
+                    action_error,
                     is_error=True,
                 )
                 continue
@@ -280,10 +318,12 @@ class BookRecommendationAgent:
                 tool_call,
                 {"ok": True, "result": result},
             )
+            if presentation_result is not None and presentation is None:
+                presentation = presentation_result
             if terminal_result is not None and terminal is None:
                 terminal = terminal_result
 
-        return session, terminal
+        return session, presentation, terminal
 
     async def _execute_one_tool(
         self,
@@ -379,35 +419,97 @@ class BookRecommendationAgent:
         )
 
 
-def _terminal_from_result(
+def _recommendation_action_from_result(
     result: dict[str, object],
     observed_catalog_ids: set[str],
-) -> tuple[_TerminalRecommendation | None, dict[str, object] | None]:
-    if result.get("terminate") is not True:
-        return None, None
+    presented_catalog_ids: set[str],
+) -> tuple[
+    _PresentedRecommendations | None,
+    _TerminalRecommendation | None,
+    dict[str, object] | None,
+]:
+    action = result.get("action")
+    if action == "present_recommendations":
+        return _presentation_from_result(result, observed_catalog_ids)
+    if action == "select_recommended_book":
+        return _selection_from_result(result, presented_catalog_ids)
+    return None, None, None
+
+
+def _presentation_from_result(
+    result: dict[str, object],
+    observed_catalog_ids: set[str],
+) -> tuple[
+    _PresentedRecommendations | None,
+    None,
+    dict[str, object] | None,
+]:
     catalog_ids = result.get("catalog_ids")
     message = result.get("message")
     if not isinstance(catalog_ids, list) or not all(
         isinstance(catalog_id, str) for catalog_id in catalog_ids
     ):
-        return None, {"ok": False, "error": "invalid_terminal_result"}
+        return None, None, {
+            "ok": False,
+            "error": "invalid_presentation_result",
+        }
     unknown_ids = [
         catalog_id
         for catalog_id in catalog_ids
         if catalog_id not in observed_catalog_ids
     ]
     if unknown_ids:
-        return None, {
+        return None, None, {
             "ok": False,
             "error": "unobserved_recommendation_ids",
             "catalog_ids": unknown_ids,
         }
     if not isinstance(message, str) or not message.strip():
-        return None, {"ok": False, "error": "invalid_terminal_result"}
+        return None, None, {
+            "ok": False,
+            "error": "invalid_presentation_result",
+        }
     return (
-        _TerminalRecommendation(
+        _PresentedRecommendations(
             message=message,
             catalog_ids=tuple(catalog_ids),
+        ),
+        None,
+        None,
+    )
+
+
+def _selection_from_result(
+    result: dict[str, object],
+    presented_catalog_ids: set[str],
+) -> tuple[
+    None,
+    _TerminalRecommendation | None,
+    dict[str, object] | None,
+]:
+    catalog_id = result.get("catalog_id")
+    message = result.get("message")
+    if not isinstance(catalog_id, str) or not catalog_id.strip():
+        return None, None, {
+            "ok": False,
+            "error": "invalid_selection_result",
+        }
+    if catalog_id not in presented_catalog_ids:
+        return None, None, {
+            "ok": False,
+            "error": "unpresented_selection_id",
+            "catalog_id": catalog_id,
+        }
+    if not isinstance(message, str) or not message.strip():
+        return None, None, {
+            "ok": False,
+            "error": "invalid_selection_result",
+        }
+    return (
+        None,
+        _TerminalRecommendation(
+            message=message,
+            selected_catalog_id=catalog_id,
         ),
         None,
     )

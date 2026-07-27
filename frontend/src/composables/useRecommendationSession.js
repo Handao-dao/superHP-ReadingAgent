@@ -23,6 +23,7 @@ export function useRecommendationSession() {
   const hasStoredSession = computed(() => Boolean(storedSessionId.value))
   const messages = computed(() => session.value?.messages || [])
   const recommendedBooks = computed(() => session.value?.recommended_books || [])
+  const selectedCatalogId = computed(() => session.value?.selected_catalog_id || '')
   const phase = computed(() => session.value?.phase || '')
   const origin = computed(() => session.value?.origin || '')
   const canSend = computed(() => phase.value === 'awaiting_user' && !loading.value)
@@ -114,6 +115,7 @@ export function useRecommendationSession() {
     origin,
     phase,
     recommendedBooks,
+    selectedCatalogId,
     restoreSession,
     sendMessage,
     session,

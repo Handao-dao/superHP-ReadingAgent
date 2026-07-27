@@ -3,7 +3,7 @@
   Session persistence and HTTP side effects are owned by useRecommendationSession.
 -->
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import RecommendationBookCard from './RecommendationBookCard.vue'
 
 const props = defineProps({
@@ -16,12 +16,17 @@ const props = defineProps({
   origin: { type: String, default: '' },
   phase: { type: String, default: '' },
   recommendedBooks: { type: Array, default: () => [] },
+  selectedCatalogId: { type: String, default: '' },
 })
 
 const emit = defineEmits(['restore', 'send', 'start'])
 const draft = ref('')
 const transcript = ref(null)
 const isDifficultyHandoff = () => props.origin === 'difficulty_alert'
+const selectedBook = computed(() => (
+  props.recommendedBooks.find((book) => book.catalog_id === props.selectedCatalogId)
+  || null
+))
 
 const phaseLabels = {
   collecting_preferences: '了解偏好',
@@ -115,7 +120,7 @@ watch(
             />
           </div>
           <p class="recommendation-next-step">
-            推荐已经完成。你可以从左侧书库选择对应图书，进入现有阅读与标注流程。
+            你可以直接告诉助手想选哪一本、不喜欢哪些候选，或者希望怎样调整下一批结果。
           </p>
         </section>
       </template>
@@ -149,7 +154,8 @@ watch(
     </form>
 
     <div v-else-if="hasSession && phase === 'completed'" class="recommendation-complete">
-      本轮选书对话已经完成。后续阅读数据达到困难触发条件时，系统会征求你的意见，再重新唤醒这段对话。
+      已确认选择{{ selectedBook ? `《${selectedBook.title_zh || selectedBook.title_en}》` : '这本书' }}。
+      你可以从左侧书库进入现有阅读与标注流程。
     </div>
   </section>
 </template>

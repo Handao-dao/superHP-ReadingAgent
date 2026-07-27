@@ -225,6 +225,7 @@ def completed_session() -> RecommendationAgentSession:
         tool_call_count=1,
         observed_catalog_ids=("cam-jansen",),
         recommended_catalog_ids=("cam-jansen",),
+        selected_catalog_id="cam-jansen",
     )
 
 
@@ -253,8 +254,9 @@ def test_create_session_returns_only_user_visible_messages():
         "messages": [
             {"role": "assistant", "content": "你喜欢哪类故事？"},
         ],
-        "recommended_books": [],
-        "error_code": "",
+            "recommended_books": [],
+            "selected_catalog_id": "",
+            "error_code": "",
     }
     assert runner.started_request.preferred_genres == ("mystery",)
     assert runner.started_request.excluded_traits == ("horror",)
@@ -307,6 +309,7 @@ def test_get_session_restores_completed_public_view():
     assert response.status_code == 200
     assert response.json()["phase"] == "completed"
     assert response.json()["recommended_books"][0]["catalog_id"] == "cam-jansen"
+    assert response.json()["selected_catalog_id"] == "cam-jansen"
 
 
 def test_difficulty_handoff_reuses_transcript_and_passes_reading_evidence():

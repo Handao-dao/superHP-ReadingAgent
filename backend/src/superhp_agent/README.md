@@ -145,7 +145,7 @@ Agent
 ```
 
 `ToolRegistry` 是显式、小型的能力表，不扫描插件，也不因为工具已注册就自动授权给所有 Agent。
-当前选书 Agent 只允许调用本地目录检索和无副作用的推荐提交工具；以后可以按 Agent 单独加入
+当前选书 Agent 只允许调用本地目录检索、候选展示和明确选书工具；以后可以按 Agent 单独加入
 合法的联网书目查询或受控文件编辑工具，不把业务规则重新复制到模型工具函数中。
 
 ### Book Recommendation Agent
@@ -167,9 +167,11 @@ RecommendationAgentSession
 
 循环可以暂停为 `awaiting_user`。Application 层的 `RecommendationAgentRunner` 把完整 Session
 交给 `RecommendationSessionRepository` 保存；收到下一条用户消息后按 `session_id` 加载相同
-状态再继续。`search_local_book_catalog` 负责检索，`present_book_recommendations` 负责提交
-1～3 本最终候选并终止 Loop。模型只能提交目录工具已经返回过的稳定 id。工具调用、单次候选数
-和每次运行的模型轮数均有硬性预算，越界、无效参数和未知候选会作为 Tool Result 返回模型修正。
+状态再继续。`search_local_book_catalog` 负责检索；`present_book_recommendations` 展示 1～3 本
+候选后回到 `awaiting_user`，用户可继续用自然语言拒绝、换一批或调整条件；只有用户明确选定后，
+`select_recommended_book` 才记录当前展示批次中的一个稳定 id 并终止 Loop。工具预算按每次用户
+消息触发的运行重置，单次候选数和模型轮数仍有硬性上限；越界、无效参数和未知候选会作为 Tool
+Result 返回模型修正。
 
 Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Model Port，也不再要求模型把普通
 对话包装成自定义 Decision JSON。专用 `RecommendationContextBuilder` 组织固定规则、运行时事实

@@ -6,6 +6,7 @@ import pytest
 
 from superhp_agent.agent_tools import (
     PresentBookRecommendationsTool,
+    SelectRecommendedBookTool,
     ToolRegistry,
 )
 from superhp_agent.agents import (
@@ -78,6 +79,22 @@ def present(
     )
 
 
+def select(
+    catalog_id: str,
+    *,
+    call_id: str = "select-1",
+    message: str = "已经为你确认这本书。",
+) -> LLMResponse:
+    return call(
+        "select_recommended_book",
+        {
+            "catalog_id": catalog_id,
+            "message": message,
+        },
+        call_id=call_id,
+    )
+
+
 class ScriptedProvider:
     """Return pre-written responses and record messages plus tool schemas."""
 
@@ -137,6 +154,7 @@ def make_agent(provider, catalog_tool=None, **kwargs):
         (
             catalog_tool,
             PresentBookRecommendationsTool(),
+            SelectRecommendedBookTool(),
         )
     )
     return (
@@ -171,11 +189,12 @@ async def test_plain_assistant_text_pauses_for_user():
     assert tool_names == [
         "search_local_book_catalog",
         "present_book_recommendations",
+        "select_recommended_book",
     ]
 
 
 @pytest.mark.asyncio
-async def test_agent_searches_then_finishes_with_verified_candidates():
+async def test_agent_presents_verified_candidates_then_finishes_on_selection():
     provider = ScriptedProvider(
         LLMResponse(content="你喜欢哪类故事？"),
         search(),
@@ -183,6 +202,10 @@ async def test_agent_searches_then_finishes_with_verified_candidates():
             "cam-jansen",
             "nate-the-great",
             message="这两套侦探故事适合作为起点。",
+        ),
+        select(
+            "cam-jansen",
+            message="已确认《Cam Jansen》，接下来可以进入书库阅读。",
         ),
     )
     agent, tool = make_agent(provider)
@@ -195,7 +218,7 @@ async def test_agent_searches_then_finishes_with_verified_candidates():
         user_message="我喜欢轻松的侦探故事。",
     )
 
-    assert answer.session.phase is RecommendationAgentPhase.COMPLETED
+    assert answer.session.phase is RecommendationAgentPhase.AWAITING_USER
     assert answer.message == "这两套侦探故事适合作为起点。"
     assert answer.recommended_catalog_ids == (
         "cam-jansen",
@@ -235,9 +258,25 @@ async def test_agent_searches_then_finishes_with_verified_candidates():
         "content": answer.session.conversation[3].content,
     }
 
+    selected = await agent.run(
+        answer.session,
+        user_message="我选第一本 Cam Jansen。",
+    )
+
+    assert selected.session.phase is RecommendationAgentPhase.COMPLETED
+    assert selected.session.selected_catalog_id == "cam-jansen"
+    assert selected.session.recommended_catalog_ids == (
+        "cam-jansen",
+        "nate-the-great",
+    )
+    assert selected.session.tool_call_count == 1
+    assert selected.message == (
+        "已确认《Cam Jansen》，接下来可以进入书库阅读。"
+    )
+
 
 @pytest.mark.asyncio
-async def test_unobserved_terminal_ids_return_tool_error_and_model_recovers():
+async def test_unobserved_presentation_ids_return_tool_error_and_model_recovers():
     provider = ScriptedProvider(
         present("invented-book", call_id="present-bad"),
         search(call_id="search-2"),
@@ -252,7 +291,7 @@ async def test_unobserved_terminal_ids_return_tool_error_and_model_recovers():
         agent.start(onboarding_request(), session_id="session")
     )
 
-    assert reply.session.phase is RecommendationAgentPhase.COMPLETED
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
     assert reply.recommended_catalog_ids == ("cam-jansen",)
     first_tool_result = reply.session.conversation[1]
     assert first_tool_result.is_error is True
@@ -284,7 +323,7 @@ async def test_search_and_present_in_same_assistant_turn_cannot_use_new_ids():
         agent.start(onboarding_request(), session_id="session")
     )
 
-    assert reply.session.phase is RecommendationAgentPhase.COMPLETED
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
     terminal_error = reply.session.conversation[2]
     assert terminal_error.is_error is True
     assert json.loads(terminal_error.content)["error"] == (
@@ -405,6 +444,7 @@ async def test_awaiting_user_requires_message_and_completed_cannot_resume():
         LLMResponse(content="请补充偏好。"),
         search(),
         present("cam-jansen"),
+        select("cam-jansen"),
     )
     agent, _ = make_agent(
         provider,
@@ -420,6 +460,26 @@ async def test_awaiting_user_requires_message_and_completed_cannot_resume():
     ):
         await agent.run(question.session)
 
-    completed = await agent.run(question.session, user_message="侦探故事")
+    presented = await agent.run(question.session, user_message="侦探故事")
+    completed = await agent.run(
+        presented.session,
+        user_message="我选 Cam Jansen。",
+    )
     with pytest.raises(RecommendationAgentStateError, match="cannot continue"):
         await agent.run(completed.session, user_message="再推荐一次")
+
+
+@pytest.mark.asyncio
+async def test_agent_rejects_selection_that_was_not_presented():
+    provider = ScriptedProvider(
+        select("invented-book", call_id="select-invalid"),
+        LLMResponse(content="请先从刚才展示的候选中选择。"),
+    )
+    agent, _ = make_agent(provider)
+    session = agent.start(onboarding_request(), session_id="session")
+
+    reply = await agent.run(session)
+
+    assert reply.session.phase is RecommendationAgentPhase.AWAITING_USER
+    payload = json.loads(reply.session.conversation[1].content)
+    assert payload["error"] == "unpresented_selection_id"

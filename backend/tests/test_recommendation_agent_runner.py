@@ -66,6 +66,7 @@ def make_runner(*responses):
                 (
                     _UnusedTool("search_local_book_catalog"),
                     _UnusedTool("present_book_recommendations"),
+                    _UnusedTool("select_recommended_book"),
                 )
             ),
         )

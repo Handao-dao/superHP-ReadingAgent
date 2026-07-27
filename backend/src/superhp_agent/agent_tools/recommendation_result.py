@@ -1,8 +1,8 @@
-"""Terminal tool for returning verified book recommendations.
+"""Tools for presenting candidates and confirming one conversational choice.
 
-The tool validates the model-facing payload only. The Agent loop still owns
+These tools validate model-facing payloads only. The Agent loop still owns
 catalog provenance checks because only the current session knows which ids
-were actually observed.
+were observed and which candidates were actually presented to the user.
 """
 
 from __future__ import annotations
@@ -11,12 +11,13 @@ from collections.abc import Iterable
 
 
 class PresentBookRecommendationsTool:
-    """Finish recommendation with one to three catalog-backed candidates."""
+    """Present one to three candidates without ending the conversation."""
 
     name = "present_book_recommendations"
     description = (
-        "Finish the recommendation task with 1 to 3 catalog ids already returned "
-        "by search_local_book_catalog and a concise user-facing explanation."
+        "Present 1 to 3 catalog ids already returned by "
+        "search_local_book_catalog, explain them concisely, and then wait for "
+        "the user's natural-language feedback."
     )
     input_schema = {
         "type": "object",
@@ -39,7 +40,7 @@ class PresentBookRecommendationsTool:
         catalog_ids: Iterable[str],
         message: str,
     ) -> dict[str, object]:
-        """Return a terminal result after validating its stable payload."""
+        """Return a pause result after validating its stable payload."""
         if isinstance(catalog_ids, str):
             raise ValueError("catalog_ids must be an array")
         normalized_ids = tuple(
@@ -54,7 +55,45 @@ class PresentBookRecommendationsTool:
         if not message.strip():
             raise ValueError("message must not be empty")
         return {
-            "terminate": True,
+            "action": "present_recommendations",
             "catalog_ids": list(normalized_ids),
+            "message": message.strip(),
+        }
+
+
+class SelectRecommendedBookTool:
+    """Confirm one previously presented candidate and finish the task."""
+
+    name = "select_recommended_book"
+    description = (
+        "Confirm one previously presented catalog id only after the user "
+        "clearly chooses it, then finish the recommendation conversation."
+    )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "catalog_id": {"type": "string", "minLength": 1},
+            "message": {"type": "string", "minLength": 1},
+        },
+        "required": ["catalog_id", "message"],
+        "additionalProperties": False,
+    }
+
+    async def run(
+        self,
+        *,
+        catalog_id: str,
+        message: str,
+    ) -> dict[str, object]:
+        """Return a terminal selection for Loop-level provenance checks."""
+        normalized_id = catalog_id.strip()
+        if not normalized_id:
+            raise ValueError("catalog_id must not be empty")
+        if not message.strip():
+            raise ValueError("message must not be empty")
+        return {
+            "action": "select_recommended_book",
+            "terminate": True,
+            "catalog_id": normalized_id,
             "message": message.strip(),
         }

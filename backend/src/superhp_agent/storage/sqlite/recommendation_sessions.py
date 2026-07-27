@@ -129,6 +129,10 @@ def _session_from_dict(data: dict[str, Any]) -> RecommendationAgentSession:
         ),
         tool_call_count=int(data.get("tool_call_count", 0)),
         observed_catalog_ids=_string_tuple(data.get("observed_catalog_ids", ())),
+        recommended_catalog_ids=_string_tuple(
+            data.get("recommended_catalog_ids", ())
+        ),
+        error_code=str(data.get("error_code", "")),
     )
 
 

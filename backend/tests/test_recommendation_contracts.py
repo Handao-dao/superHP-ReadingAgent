@@ -205,6 +205,16 @@ def test_recommendation_agent_contracts_preserve_resumable_state():
             "session_id",
         ),
         (
+            lambda: RecommendationAgentSession(
+                session_id="session",
+                request=RecommendationRequest(
+                    origin=RecommendationOrigin.ONBOARDING
+                ),
+                recommended_catalog_ids=("duplicate", "duplicate"),
+            ),
+            "recommended_catalog_ids",
+        ),
+        (
             lambda: RecommendationAgentObservation(
                 request=RecommendationRequest(
                     origin=RecommendationOrigin.ONBOARDING

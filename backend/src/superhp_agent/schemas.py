@@ -1,6 +1,15 @@
 """HTTP request and response schemas owned by the API adapter."""
 
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+from superhp_agent.contracts import (
+    BookEntryKind,
+    ReadingPreference,
+    RecommendationAgentPhase,
+    RecommendationOrigin,
+)
 
 
 class ProfileMeta(BaseModel):
@@ -112,3 +121,49 @@ class AddBookmarkRequest(BaseModel):
 
 class MutationResponse(BaseModel):
     ok: bool = True
+
+
+class CreateRecommendationSessionRequest(BaseModel):
+    """Known preferences available before the first recommendation turn."""
+
+    origin: RecommendationOrigin = RecommendationOrigin.ONBOARDING
+    preferred_genres: list[str] = Field(default_factory=list, max_length=10)
+    excluded_traits: list[str] = Field(default_factory=list, max_length=10)
+    reading_preference: ReadingPreference = ReadingPreference.BALANCED
+    user_notes: str = Field(default="", max_length=2000)
+
+
+class ContinueRecommendationSessionRequest(BaseModel):
+    """One visible user message sent to a paused recommendation session."""
+
+    message: str = Field(min_length=1, max_length=4000)
+
+
+class RecommendationChatMessage(BaseModel):
+    """A user-visible message; internal Tool messages are never exposed."""
+
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class RecommendationBookCard(BaseModel):
+    """Verified local-catalog metadata rendered by the chat page."""
+
+    catalog_id: str
+    title_en: str
+    title_zh: str = ""
+    author: str = ""
+    entry_kind: BookEntryKind = BookEntryKind.UNKNOWN
+    lexile_min: int
+    lexile_max: int
+    genres: list[str] = Field(default_factory=list)
+
+
+class RecommendationSessionResponse(BaseModel):
+    """Restorable public view of one recommendation conversation."""
+
+    session_id: str
+    phase: RecommendationAgentPhase
+    messages: list[RecommendationChatMessage]
+    recommended_books: list[RecommendationBookCard] = Field(default_factory=list)
+    error_code: str = ""

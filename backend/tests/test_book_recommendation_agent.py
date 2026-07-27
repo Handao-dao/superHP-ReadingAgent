@@ -201,6 +201,10 @@ async def test_agent_searches_then_finishes_with_verified_candidates():
         "cam-jansen",
         "nate-the-great",
     )
+    assert answer.session.recommended_catalog_ids == (
+        "cam-jansen",
+        "nate-the-great",
+    )
     assert answer.session.observed_catalog_ids == (
         "cam-jansen",
         "nate-the-great",
@@ -213,9 +217,13 @@ async def test_agent_searches_then_finishes_with_verified_candidates():
         RecommendationAgentMessageRole.TOOL,
         RecommendationAgentMessageRole.ASSISTANT,
         RecommendationAgentMessageRole.TOOL,
+        RecommendationAgentMessageRole.ASSISTANT,
     ]
     assert answer.session.conversation[2].tool_calls[0].id == "search-1"
     assert answer.session.conversation[3].tool_call_id == "search-1"
+    assert answer.session.conversation[-1].content == (
+        "这两套侦探故事适合作为起点。"
+    )
     assert tool.calls[0]["genres"] == ["mystery"]
 
     final_provider_messages = provider.calls[-1]["messages"]
@@ -381,6 +389,7 @@ async def test_agent_normalizes_provider_and_empty_response_failures():
     )
 
     assert failed.error_code == "model_error"
+    assert failed.session.error_code == "model_error"
 
     empty_provider = ScriptedProvider(LLMResponse(content=None))
     empty_agent, _ = make_agent(empty_provider)

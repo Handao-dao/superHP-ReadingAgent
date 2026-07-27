@@ -107,6 +107,16 @@ def test_profile_api_lists_builtin_profiles():
     assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
 
 
+def test_recommendation_http_routes_are_registered():
+    paths = {route.path for route in main.app.routes}
+
+    assert {
+        "/api/recommendations/sessions",
+        "/api/recommendations/sessions/{session_id}/messages",
+        "/api/recommendations/sessions/{session_id}",
+    } <= paths
+
+
 def test_profile_filtered_api_rejects_unknown_profile():
     with TestClient(main.app) as client:
         response = client.get("/api/units", params={"profile_id": "missing"})

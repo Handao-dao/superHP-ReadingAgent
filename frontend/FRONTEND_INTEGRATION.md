@@ -135,6 +135,68 @@ Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units
 
 阅读内容只通过 `/api/units` 访问，不再提供旧 `/api/chapters` 别名。
 
+### 推荐对话
+
+推荐 Agent 使用普通 HTTP request/response；模型与工具之间的多轮 Loop 由后端内部完成。
+
+#### `POST /api/recommendations/sessions`
+
+创建初次选书会话。请求中的字段均可省略：
+
+```json
+{
+  "origin": "onboarding",
+  "preferred_genres": ["mystery"],
+  "excluded_traits": ["horror"],
+  "reading_preference": "balanced",
+  "user_notes": ""
+}
+```
+
+`origin` 当前支持 `onboarding` 和 `user_request`。阅读困难后的 `difficulty_alert` 需要结构化
+Reading Handoff，将由后续专用入口触发，不能从这个初次创建接口伪造。
+
+#### `POST /api/recommendations/sessions/{session_id}/messages`
+
+只在会话处于 `awaiting_user` 时发送下一条用户消息：
+
+```json
+{ "message": "我喜欢轻松一点的侦探故事。" }
+```
+
+#### `GET /api/recommendations/sessions/{session_id}`
+
+页面刷新后恢复相同会话。三个接口统一返回：
+
+```ts
+type RecommendationSessionResponse = {
+  session_id: string
+  phase:
+    | 'collecting_preferences'
+    | 'searching'
+    | 'awaiting_user'
+    | 'completed'
+    | 'failed'
+  messages: Array<{
+    role: 'user' | 'assistant'
+    content: string
+  }>
+  recommended_books: Array<{
+    catalog_id: string
+    title_en: string
+    title_zh: string
+    author: string
+    entry_kind: 'book' | 'series' | 'collection' | 'unknown'
+    lexile_min: number
+    lexile_max: number
+    genres: string[]
+  }>
+  error_code: string
+}
+```
+
+内部 Tool Call 和 Tool Result 不属于页面协议。前端只渲染 `messages` 和验证后的图书卡片。
+
 ### 查词与词表
 
 #### `POST /api/word-lookup`

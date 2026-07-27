@@ -410,6 +410,24 @@ resume(session_id, user_message)
 SQLite 的 `recommendation_sessions` 表以 `session_id` 为主键，保存可查询的 `phase` 和带版本号的
 完整 Session JSON。它不把消息拆成事件日志，也不引入分支、压缩或长期自由记忆。
 
+正式 HTTP 边界由 `transport/recommendation_http.py` 提供：
+
+```text
+POST /api/recommendations/sessions
+    创建初次推荐会话
+
+POST /api/recommendations/sessions/{session_id}/messages
+    向 awaiting_user 会话发送下一条用户消息
+
+GET /api/recommendations/sessions/{session_id}
+    恢复用户可见对话和最终推荐卡片
+```
+
+HTTP Response 只投影 user / assistant 文本，不暴露内部 Tool Call、Tool Result、Prompt 或
+Provider 对象。终止工具确认的候选 id 会写入 Session，恢复时再通过本地 Catalog 解析为经过
+验证的中英文书名、蓝思区间和题材卡片。`difficulty_alert` 暂不复用初次创建接口；后续由带
+Reading Handoff 的专用重激活入口接入。
+
 当前守卫条件：
 
 - 每个 Session 最多执行 3 次工具调用；
@@ -421,8 +439,9 @@ SQLite 的 `recommendation_sessions` 表以 `session_id` 为主键，保存可�
 - 达到轮次上限或模型调用失败时进入 `failed`，保留完整 Session 供上层诊断或重新开始。
 
 当前实现已经把 Loop 通过原生 Tool Call 连接到现有 OpenAI-compatible Provider，并用假的
-Provider 完成确定性测试；会话可通过统一 SQLite Repository 跨请求恢复。阅读监控、推荐反馈
-和前端自动衔接仍不属于当前最小 Agent；用户收到 1～3 本候选后，自行进入已有阅读区和标注工作流。
+Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTTP API 跨请求恢复。阅读监控、
+推荐反馈和前端自动衔接仍不属于当前最小 Agent；用户收到 1～3 本候选后，自行进入已有阅读区和
+标注工作流。
 
 建议的停止条件：
 

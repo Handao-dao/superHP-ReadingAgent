@@ -35,17 +35,12 @@
 
 ### `src/superhp_agent/main.py`
 
-FastAPI 应用入口，也是后端的组合根。它负责创建并连接这些长期对象：
+FastAPI 应用入口。长期对象由 `application/container.py` 中的 Composition Root 创建，
+`main.py` 负责挂载 HTTP Router、旧路由和阅读 WebSocket。
 
-- `Settings`
-- `CorpusStore`
-- `EventLogStore`
-- `AppDB`
-- `LazyAnnotatorService`
-- `ReadingStateReader`
-- `ReadingFlowRouter`
-
-HTTP 接口主要提供列表、详情、词汇和卡片读取；WebSocket 接口把实时阅读会话交给 `ReadingSocketSession`。
+HTTP 接口提供列表、详情、词汇、卡片和可恢复的推荐 Agent 对话；推荐对话路由位于
+`transport/recommendation_http.py`，显式依赖 `RecommendationAgentRunner` 和
+`BookDifficultyCatalog`。WebSocket 接口把实时阅读会话交给 `ReadingSocketSession`。
 
 ### `src/superhp_agent/config.py`
 

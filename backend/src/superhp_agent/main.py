@@ -33,6 +33,9 @@ from superhp_agent.schemas import (
     WordLookupResult,
 )
 from superhp_agent.transport.reading_ws import ReadingSocketSession
+from superhp_agent.transport.recommendation_http import (
+    create_recommendation_router,
+)
 
 # These singletons are intentionally created at import time: they are cheap,
 # stateless or locally stateful, and FastAPI can reuse them across requests.
@@ -49,6 +52,8 @@ reading_progress_repository = container.reading_progress_repository
 db = container.db
 vocabulary_repository = container.vocabulary_repository
 bookmark_repository = container.bookmark_repository
+book_difficulty_catalog = container.book_difficulty_catalog
+recommendation_agent_runner = container.recommendation_agent_runner
 annotated_copies = container.annotated_copies
 annotator_service = container.annotator_service
 lookup_service = container.lookup_service
@@ -63,6 +68,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.include_router(
+    create_recommendation_router(
+        recommendation_agent_runner,
+        book_difficulty_catalog,
+    )
 )
 
 

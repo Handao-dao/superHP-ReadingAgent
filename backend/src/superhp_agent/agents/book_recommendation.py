@@ -163,9 +163,17 @@ class BookRecommendationAgent:
                 response.tool_calls,
             )
             if terminal is not None:
+                session = self._append_message(
+                    session,
+                    RecommendationAgentMessage(
+                        role=RecommendationAgentMessageRole.ASSISTANT,
+                        content=terminal.message,
+                    ),
+                    phase=RecommendationAgentPhase.COMPLETED,
+                )
                 session = replace(
                     session,
-                    phase=RecommendationAgentPhase.COMPLETED,
+                    recommended_catalog_ids=terminal.catalog_ids,
                 )
                 return RecommendationAgentReply(
                     session=session,
@@ -363,6 +371,7 @@ class BookRecommendationAgent:
             ),
             phase=RecommendationAgentPhase.FAILED,
         )
+        session = replace(session, error_code=error_code)
         return RecommendationAgentReply(
             session=session,
             message=message,

@@ -282,12 +282,18 @@ class RecommendationAgentSession:
     conversation: tuple[RecommendationAgentMessage, ...] = ()
     tool_call_count: int = 0
     observed_catalog_ids: tuple[str, ...] = ()
+    recommended_catalog_ids: tuple[str, ...] = ()
+    error_code: str = ""
 
     def __post_init__(self) -> None:
         if not self.session_id.strip():
             raise ValueError("session_id must not be empty")
         if self.tool_call_count < 0:
             raise ValueError("tool_call_count must not be negative")
+        if len(set(self.recommended_catalog_ids)) != len(
+            self.recommended_catalog_ids
+        ):
+            raise ValueError("recommended_catalog_ids must be unique")
 
 
 @dataclass(frozen=True)

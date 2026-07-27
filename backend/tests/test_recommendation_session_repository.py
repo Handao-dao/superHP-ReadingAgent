@@ -134,6 +134,7 @@ def test_sqlite_repository_upserts_and_deletes_session(tmp_path):
             session,
             phase=RecommendationAgentPhase.COMPLETED,
             tool_call_count=2,
+            recommended_catalog_ids=("cam-jansen",),
         )
 
         repository.save(completed)
@@ -159,4 +160,3 @@ def test_app_db_exposes_recommendation_session_repository_port(tmp_path):
         )
     finally:
         db.close()
-

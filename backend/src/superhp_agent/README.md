@@ -177,7 +177,7 @@ Loop 直接复用已有 `LLMProvider`，没有再增加一层功能重复的 Mod
 retry。
 
 ```text
-Transport（未来 HTTP / WebSocket）
+Recommendation HTTP Router
     → RecommendationAgentRunner
         → RecommendationSessionRepository
         → BookRecommendationAgent
@@ -377,9 +377,10 @@ Contract 回答“模块之间交换什么数据”；Repository 回答“数据
 - 将具体实现注入 Transport。
 - 管理共享数据库资源的关闭入口。
 
-`main.py` 当前从 Container 取得一组兼容别名，供尚未拆出的 HTTP routes 使用；后续 Router
-应显式接收 Container 或所需能力。其他模块不应反向导入 Composition Root 或依赖
-`main.py` 中的全局单例。
+`main.py` 当前从 Container 取得一组兼容别名，供尚未拆出的 HTTP routes 使用。新增的
+`transport/recommendation_http.py` 已采用 Router factory，显式接收 Runner 与 Catalog；
+后续只有在其他路由产生实际变化压力时才继续迁移。其他模块不应反向导入 Composition Root
+或依赖 `main.py` 中的全局单例。
 
 ## 当前消息流
 
@@ -459,7 +460,7 @@ Transport
 以下两个大文件继续以实际变化压力为准，不为了缩短行数而拆分：
 
 1. `action_dispatcher.py` 仍同时负责分发、Handlers 和 API DTO 组装，职责偏多。
-2. `main.py` 仍同时承担全部 HTTP routes 和 DTO mapper。
+2. `main.py` 仍承担大多数旧 HTTP routes 和 DTO mapper；推荐对话路由已经独立。
 
 ## 渐进重构路线
 
@@ -511,8 +512,9 @@ Transport
 - 已将 `LazyLookupService` 移到独立 Service，并通过 provider factory 注入。
 - `main.py` 暂时保留 Container capability aliases，维持现有 routes 和测试兼容。
 
-当前不继续拆 HTTP routers，也不实例化 Bus 或 Planner。选书 Agent 只使用显式注册和
-allowlist 的轻量 ToolRegistry；插件扫描、自动发现和通用工具生态仍等到真实需求增长后再评估。
+当前只为新增的推荐对话建立独立 HTTP Router，不为了结构统一批量搬迁稳定的旧路由，也不实例化
+Bus 或 Planner。选书 Agent 只使用显式注册和 allowlist 的轻量 ToolRegistry；插件扫描、自动
+发现和通用工具生态仍等到真实需求增长后再评估。
 
 ## 每一步的完成标准
 

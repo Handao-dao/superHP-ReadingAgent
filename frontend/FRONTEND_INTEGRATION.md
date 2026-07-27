@@ -160,27 +160,22 @@ Catalog 只提供层级和顺序；书名、章节和阅读状态由 `/api/units
 #### `POST /api/recommendations/difficulty-handoffs`
 
 用户在章节结束困难提示中明确选择“换一本”后调用。它会复用已有 `session_id` 的可见对话历史；
-若历史会话不存在，则创建新的推荐会话。请求携带阅读策略刚刚产生的三章聚合数据：
+若历史会话不存在，则创建新的推荐会话。前端只提交本地 `book_id`，不重复拼装书籍信息或回传
+三章统计：
 
 ```json
 {
   "session_id": "existing-session-id",
-  "current_book": {
-    "book_id": "hp01",
-    "title": "Harry Potter and the Philosopher's Stone"
-  },
-  "evidence": {
-    "observed_word_count": 7200,
-    "observed_chapter_count": 3,
-    "lookup_density": 12.1,
-    "annotated_lookup_density": 3.2,
-    "annotation_target": 20
-  }
+  "book_id": "hp01"
 }
 ```
 
-后端会重置新一轮 Agent 工具预算，将用户的换书选择和聚合事实追加为可见消息，再由同一个 Loop
-先分析阅读负担、后搜索新候选。该动作只启动推荐，不自动切换、下载或导入图书。
+后端只接受处于 `pending` 的困难提示，并以其中持久化的三章证据为准；
+`DifficultyRecommendationHandoffBuilder` 再从 Corpus、Library Catalog、本地难度目录和
+`ReadingProgressRepository` 补齐当前书名、作者、题材、难度与阅读进度。如果难度数据存在，
+目标区间默认取当前作品低约 100～200L。随后系统重置新一轮 Agent 工具预算，将用户的换书选择
+和聚合事实追加为可见消息，再由同一个 Loop 先分析阅读负担、后搜索新候选。该动作只启动推荐，
+不自动切换、下载或导入图书。
 
 #### `POST /api/recommendations/sessions/{session_id}/messages`
 

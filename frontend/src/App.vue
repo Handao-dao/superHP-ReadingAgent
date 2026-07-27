@@ -355,18 +355,13 @@ async function handleContinueAfterDifficulty() {
 
 async function handleChangeBookAfterDifficulty() {
   const meta = currentMeta.value
-  const evidence = difficultyAlert.value?.evidence
-  if (!meta || !evidence) return
+  if (!meta) return
   activeView.value = 'recommendation'
   closeLookupBubble()
   paperThemeOpen.value = false
   sidebarOpen.value = false
   const session = await startRecommendationDifficultyHandoff({
-    currentBook: {
-      book_id: meta.book_id,
-      title: meta.book_title,
-    },
-    evidence,
+    bookId: meta.book_id,
   })
   if (session) clearDifficultyAlert()
 }

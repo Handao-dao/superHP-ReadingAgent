@@ -69,6 +69,19 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.recommendation_session_repository
         )
         assert container.book_difficulty_catalog is container.db.book_difficulty_catalog
+        assert container.difficulty_handoff_builder.corpus is container.corpus
+        assert (
+            container.difficulty_handoff_builder.library_catalog
+            is container.library_catalog
+        )
+        assert (
+            container.difficulty_handoff_builder.difficulty_catalog
+            is container.book_difficulty_catalog
+        )
+        assert (
+            container.difficulty_handoff_builder.progress_repository
+            is container.reading_progress_repository
+        )
         assert (
             container.recommendation_candidate_service.catalog
             is container.book_difficulty_catalog

@@ -278,6 +278,9 @@ contracts/
 - `ReadingDifficultyMonitor` 只读聚合已完成英文单元与主动查词事实，输出长期观察状态。
 - `ReadingAdaptationPolicy` 根据成熟窗口的未覆盖查词密度输出保持、升高、降低或难度告警决策；
   `ReadingAdaptationEvaluator` 按书聚合最近三个章节，并自动写回升高或降低后的目标。
+- `DifficultyRecommendationHandoffBuilder` 在用户确认换书后，以持久化困难证据为准，聚合
+  Corpus 书籍身份、Library Catalog 分组、本地难度资料和阅读进度，并在可用时生成低约
+  100～200L 的推荐目标区间。
 - DB 中的词汇统计。
 - Annotated artifact 是否存在。
 

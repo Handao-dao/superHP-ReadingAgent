@@ -258,35 +258,36 @@ class RecommendationOrigin(StrEnum):
 
 ### 5.2 阅读困难后的重新选书
 
-用户确认换书后，Context Builder 构造结构化交接包，而不是把原始点击日志、整本正文和全部历史对话塞给 Agent：
+用户确认换书后，前端只提交本地 `book_id`。Application 层的
+`DifficultyRecommendationHandoffBuilder` 从待处理提示、Corpus、Library Catalog、本地难度
+目录和阅读进度构造结构化交接包，而不是信任前端重复提交的书籍资料，也不把原始点击日志、整本
+正文和全部历史对话塞给 Agent：
 
 ```python
 BookRecommendationHandoff(
-    origin="difficulty_alert",
     current_book={
         "book_id": "...",
         "title": "...",
         "author": "...",
-        "lexile_min": 900,
-        "lexile_max": 900,
+        "difficulty": {"minimum_lexile": 880, "maximum_lexile": 940},
         "genres": ["mystery", "detective"],
         "progress": 0.23,
     },
-    reading_evidence={
+    evidence={
         "observed_word_count": 7200,
         "lookup_density": 12.1,
         "unique_lookup_density": 9.8,
         "repeated_lookup_density": 2.3,
         "actual_annotation_density": 16.0,
     },
-    recommendation_goal={
-        "difficulty": "lower_than_current",
-        "preserve_genre_by_default": True,
-    },
+    target_band={"minimum_lexile": 680, "maximum_lexile": 840},
+    preserve_genre_by_default=True,
 )
 ```
 
-Agent 首先用简短、非评判性的语言汇报依据，然后默认保留当前题材、降低语言难度。用户可以在对话中继续修改年代、篇幅、内容尺度或子类型。
+目标区间是行为驱动的内部搜索带：当当前书存在难度资料时，默认比当前范围低约 100～200L，
+不冒充正式 Reader Measure。Agent 首先用简短、非评判性的语言汇报依据，然后默认保留当前题材、
+降低语言难度。用户可以在对话中继续修改年代、篇幅、内容尺度或子类型。
 
 ## 6. Lexile 的使用边界
 
@@ -472,7 +473,7 @@ POST /api/recommendations/sessions/{session_id}/messages
     向 awaiting_user 会话发送下一条用户消息
 
 POST /api/recommendations/difficulty-handoffs
-    用户确认换书后，携带三章聚合证据并复用原会话
+    用户确认换书后，凭 book_id 读取持久化证据并复用原会话
 
 GET /api/recommendations/sessions/{session_id}
     恢复用户可见对话和最终推荐卡片
@@ -498,8 +499,9 @@ Provider 完成确定性测试；会话可通过统一 SQLite Repository 和 HTT
 提供可恢复的独立选书对话页。动态译注目标会在章节完成检查点按最近三章滑动窗口调整；达到最高
 支持后仍连续困难时，`unit.marked_read` 会携带一次 `difficulty_alert`。前端把授权页插在正文
 最后一页与原章节完成卡片之间：继续尝试不启动 Agent，换书则通过
-`POST /api/recommendations/difficulty-handoffs` 保留原对话并启动新一轮 Loop。推荐结果反馈尚未
-接入；用户收到 1～3 本候选后，仍自行进入已有阅读区和标注工作流。
+`POST /api/recommendations/difficulty-handoffs` 只提交 `book_id`；后端以持久化提示证据为准，
+补齐当前书籍、进度与较低目标区间，再保留原对话并启动新一轮 Loop。推荐结果反馈尚未接入；
+用户收到 1～3 本候选后，仍自行进入已有阅读区和标注工作流。
 
 建议的停止条件：
 

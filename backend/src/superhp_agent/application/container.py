@@ -16,6 +16,9 @@ from superhp_agent.agent_tools import (
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
 from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
+from superhp_agent.application.difficulty_handoff import (
+    DifficultyRecommendationHandoffBuilder,
+)
 from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
 )
@@ -85,6 +88,7 @@ class AppContainer:
         ReadingDifficultyPromptCoordinator
     )
     reading_difficulty_monitor: ReadingDifficultyMonitor
+    difficulty_handoff_builder: DifficultyRecommendationHandoffBuilder
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
     recommendation_candidate_service: RecommendationCandidateService
@@ -139,6 +143,12 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         reading_lookup_repository,
     )
     book_difficulty_catalog = db.book_difficulty_catalog
+    difficulty_handoff_builder = DifficultyRecommendationHandoffBuilder(
+        corpus,
+        library_catalog,
+        book_difficulty_catalog,
+        reading_progress_repository,
+    )
     recommendation_session_repository = db.recommendation_session_repository
     recommendation_candidate_service = RecommendationCandidateService(
         book_difficulty_catalog
@@ -230,6 +240,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             reading_difficulty_prompt_coordinator
         ),
         reading_difficulty_monitor=reading_difficulty_monitor,
+        difficulty_handoff_builder=difficulty_handoff_builder,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,
         recommendation_candidate_service=recommendation_candidate_service,

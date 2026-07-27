@@ -41,6 +41,8 @@ collections:
     assert catalog.selection_policy_id_for_book("book-a") == "harry_potter"
     assert catalog.selection_policy_id_for_book("book-a", profile_id="classical_chinese") is None
     assert catalog.selection_policy_id_for_book("missing") is None
+    assert catalog.collection_for_book("book-a").id == "second"
+    assert catalog.collection_for_book("missing") is None
 
 
 def test_catalog_rejects_book_assigned_twice_in_one_profile(tmp_path: Path):

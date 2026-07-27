@@ -11,13 +11,13 @@ from fastapi import APIRouter, HTTPException, status
 
 from superhp_agent.agents.book_recommendation import RecommendationAgentStateError
 from superhp_agent.application import (
+    DifficultyHandoffBookNotFoundError,
+    DifficultyRecommendationHandoffBuilder,
     ReadingDifficultyPromptCoordinator,
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
 )
 from superhp_agent.contracts import (
-    BookRecommendationHandoff,
-    BookSnapshot,
     ReadingDifficultyEvidence,
     RecommendationAgentMessageRole,
     RecommendationAgentSession,
@@ -38,9 +38,8 @@ from superhp_agent.schemas import (
 def create_recommendation_router(
     runner: RecommendationAgentRunner,
     catalog: BookDifficultyCatalog,
-    difficulty_prompt_coordinator: (
-        ReadingDifficultyPromptCoordinator | None
-    ) = None,
+    difficulty_handoff_builder: DifficultyRecommendationHandoffBuilder,
+    difficulty_prompt_coordinator: ReadingDifficultyPromptCoordinator,
 ) -> APIRouter:
     """Create a router bound to explicit Application capabilities."""
     router = APIRouter(
@@ -87,48 +86,30 @@ def create_recommendation_router(
         payload: CreateDifficultyHandoffRequest,
     ) -> RecommendationSessionResponse:
         """Continue the recommendation transcript after explicit consent."""
-        evidence = ReadingDifficultyEvidence(
-            **payload.evidence.model_dump()
-        )
-        current_book = BookSnapshot(
-            book_id=payload.current_book.book_id.strip(),
-            title=payload.current_book.title.strip(),
-            title_zh=payload.current_book.title_zh.strip(),
-            author=payload.current_book.author.strip(),
-            genres=_clean_values(payload.current_book.genres),
-        )
-        request = RecommendationRequest(
-            origin=RecommendationOrigin.DIFFICULTY_ALERT,
-            preferred_genres=(
-                current_book.genres
-                if payload.preserve_genre_by_default
-                else ()
-            ),
-            handoff=BookRecommendationHandoff(
-                current_book=current_book,
-                evidence=evidence,
+        book_id = payload.book_id.strip()
+        try:
+            prompt = difficulty_prompt_coordinator.require_pending(book_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        try:
+            request = await difficulty_handoff_builder.build(
+                book_id,
+                evidence=prompt.evidence,
                 preserve_genre_by_default=(
                     payload.preserve_genre_by_default
                 ),
-            ),
-        )
-        if difficulty_prompt_coordinator is not None:
-            try:
-                difficulty_prompt_coordinator.require_pending(
-                    current_book.book_id
-                )
-            except ValueError as exc:
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            )
+        except DifficultyHandoffBookNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         reply = await runner.handoff(
             request,
             session_id=payload.session_id.strip() or None,
-            user_message=_difficulty_handoff_message(evidence),
+            user_message=_difficulty_handoff_message(prompt.evidence),
         )
-        if difficulty_prompt_coordinator is not None:
-            difficulty_prompt_coordinator.choose_change_book(
-                current_book.book_id,
-                recommendation_session_id=reply.session.session_id,
-            )
+        difficulty_prompt_coordinator.choose_change_book(
+            book_id,
+            recommendation_session_id=reply.session.session_id,
+        )
         return await _public_session(
             reply.session,
             catalog,

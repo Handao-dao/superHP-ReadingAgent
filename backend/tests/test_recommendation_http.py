@@ -1,6 +1,7 @@
 """HTTP contract tests for recommendation conversations."""
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -9,7 +10,11 @@ from superhp_agent.contracts import (
     BookCandidate,
     BookDifficulty,
     BookEntryKind,
+    BookRecommendationHandoff,
+    BookSnapshot,
     LLMToolCall,
+    OperationalReadingBand,
+    ReadingDifficultyEvidence,
     RecommendationAgentMessage,
     RecommendationAgentMessageRole,
     RecommendationAgentPhase,
@@ -78,15 +83,64 @@ class FakeCatalog:
         raise AssertionError("HTTP projection must not search the catalog")
 
 
+class FakeDifficultyHandoffBuilder:
+    def __init__(self):
+        self.calls = []
+
+    async def build(
+        self,
+        book_id,
+        *,
+        evidence,
+        preserve_genre_by_default=True,
+    ):
+        self.calls.append(
+            (
+                book_id,
+                evidence,
+                preserve_genre_by_default,
+            )
+        )
+        current_book = BookSnapshot(
+            book_id=book_id,
+            title="Harry Potter and the Philosopher's Stone",
+            author="J. K. Rowling",
+            difficulty=BookDifficulty(880, 940),
+            genres=("fantasy",),
+            progress=0.25,
+        )
+        target_band = OperationalReadingBand(680, 840)
+        return RecommendationRequest(
+            origin=RecommendationOrigin.DIFFICULTY_ALERT,
+            preferred_genres=(
+                current_book.genres if preserve_genre_by_default else ()
+            ),
+            operational_band=target_band,
+            reference_books=(current_book,),
+            handoff=BookRecommendationHandoff(
+                current_book=current_book,
+                evidence=evidence,
+                target_band=target_band,
+                preserve_genre_by_default=preserve_genre_by_default,
+            ),
+        )
+
+
 def make_client(difficulty_prompt_coordinator=None):
     runner = FakeRecommendationRunner()
     catalog = FakeCatalog()
+    handoff_builder = FakeDifficultyHandoffBuilder()
+    coordinator = (
+        difficulty_prompt_coordinator
+        or FakeDifficultyPromptCoordinator()
+    )
     app = FastAPI()
     app.include_router(
         create_recommendation_router(
             runner,
             catalog,
-            difficulty_prompt_coordinator,
+            handoff_builder,
+            coordinator,
         )
     )
     return TestClient(app), runner
@@ -96,9 +150,17 @@ class FakeDifficultyPromptCoordinator:
     def __init__(self):
         self.required_book_ids = []
         self.changed = []
+        self.evidence = ReadingDifficultyEvidence(
+            observed_word_count=7200,
+            observed_chapter_count=3,
+            lookup_density=12.1,
+            annotated_lookup_density=3.2,
+            annotation_target=20,
+        )
 
     def require_pending(self, book_id):
         self.required_book_ids.append(book_id)
+        return SimpleNamespace(evidence=self.evidence)
 
     def choose_change_book(
         self,
@@ -265,18 +327,7 @@ def test_difficulty_handoff_reuses_transcript_and_passes_reading_evidence():
         "/api/recommendations/difficulty-handoffs",
         json={
             "session_id": "session-1",
-            "current_book": {
-                "book_id": "hp01",
-                "title": "Harry Potter and the Philosopher's Stone",
-                "genres": ["fantasy"],
-            },
-            "evidence": {
-                "observed_word_count": 7200,
-                "observed_chapter_count": 3,
-                "lookup_density": 12.1,
-                "annotated_lookup_density": 3.2,
-                "annotation_target": 20,
-            },
+            "book_id": "hp01",
         },
     )
 

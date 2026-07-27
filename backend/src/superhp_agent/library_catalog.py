@@ -135,6 +135,20 @@ class LibraryCatalogStore:
                 return collection.selection_policy_id
         return None
 
+    def collection_for_book(
+        self,
+        book_id: str,
+        *,
+        profile_id: str | None = None,
+    ) -> CatalogCollection | None:
+        """Return the local collection that owns a Corpus book."""
+        for collection in self.list_collections():
+            if profile_id is not None and collection.profile_id != profile_id:
+                continue
+            if any(book.id == book_id for book in collection.books):
+                return collection
+        return None
+
 
 def _required_text(item: dict, key: str) -> str:
     value = str(item.get(key) or "").strip()

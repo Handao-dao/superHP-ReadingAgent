@@ -2,6 +2,10 @@
 
 from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
 from superhp_agent.application.container import AppContainer, build_container
+from superhp_agent.application.difficulty_handoff import (
+    DifficultyHandoffBookNotFoundError,
+    DifficultyRecommendationHandoffBuilder,
+)
 from superhp_agent.application.reading_adaptation import (
     ReadingAdaptationAction,
     ReadingAdaptationDecision,
@@ -28,6 +32,8 @@ from superhp_agent.application.recommendation_runner import (
 __all__ = [
     "AppContainer",
     "ChapterCheckpointRecorder",
+    "DifficultyHandoffBookNotFoundError",
+    "DifficultyRecommendationHandoffBuilder",
     "ReadingAdaptationAction",
     "ReadingAdaptationDecision",
     "ReadingAdaptationEvaluation",

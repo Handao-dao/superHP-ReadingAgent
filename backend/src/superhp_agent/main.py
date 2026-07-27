@@ -92,6 +92,7 @@ app.include_router(
     create_recommendation_router(
         recommendation_agent_runner,
         book_difficulty_catalog,
+        container.difficulty_handoff_builder,
         reading_difficulty_prompt_coordinator,
     )
 )

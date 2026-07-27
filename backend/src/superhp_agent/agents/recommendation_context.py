@@ -30,7 +30,10 @@ _ROLE_AND_RULES = """\
 6. 不替用户下载、导入或切换图书，也不启动阅读标注工作流。
 7. 每次只调用一个工具，等待工具结果后再决定下一步。
 8. 当 request.origin 为 difficulty_alert 时，先根据 handoff 简要说明近期阅读负担，再优先寻找
-   比当前作品更容易持续阅读的候选；默认延续原题材，但用户的新偏好优先。"""
+   比当前作品更容易持续阅读的候选；优先使用 handoff.target_band，默认延续原题材，但用户的
+   新偏好优先。
+9. difficulty_alert 的候选不得是 handoff.current_book 本身或同一系列；若目录结果包含它，
+   忽略该项并从其余候选中选择。"""
 
 
 class RecommendationContextBuilder:

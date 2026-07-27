@@ -65,15 +65,14 @@ export function useRecommendationSession() {
     }
   }
 
-  async function startDifficultyHandoff({ currentBook, evidence }) {
+  async function startDifficultyHandoff({ bookId }) {
     if (loading.value) return null
     loading.value = true
     errorMessage.value = ''
     try {
       session.value = await createDifficultyRecommendationHandoff({
         session_id: storedSessionId.value,
-        current_book: currentBook,
-        evidence,
+        book_id: bookId,
       })
       storedSessionId.value = session.value.session_id
       localStorage.setItem(SESSION_STORAGE_KEY, session.value.session_id)

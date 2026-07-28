@@ -29,6 +29,11 @@ from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
     ReadingAdaptationWindow,
 )
+from superhp_agent.application.reading_companion_sessions import (
+    InMemoryReadingCompanionSessionCoordinator,
+    ReadingCompanionSessionConflictError,
+    ReadingCompanionSessionNotFoundError,
+)
 from superhp_agent.application.reading_difficulty_prompts import (
     ReadingDifficultyPromptCoordinator,
 )
@@ -59,6 +64,7 @@ __all__ = [
     "DifficultyRecommendationHandoffBuilder",
     "ManualReadingCompanionError",
     "ManualReadingCompanionRunner",
+    "InMemoryReadingCompanionSessionCoordinator",
     "PreviousChapterSearchError",
     "PreviousChapterSearchPolicy",
     "PreviousChapterSearchService",
@@ -73,6 +79,8 @@ __all__ = [
     "ReadingDifficultyMonitor",
     "ReadingDifficultyPolicy",
     "ReadingDifficultyPromptCoordinator",
+    "ReadingCompanionSessionConflictError",
+    "ReadingCompanionSessionNotFoundError",
     "RecommendationAgentRunner",
     "RecommendationCompanionProjection",
     "RecommendationCompanionProjectionError",

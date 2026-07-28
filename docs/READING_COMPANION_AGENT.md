@@ -1,7 +1,7 @@
 # 阅读伴侣 Agent：长期会话、情景记忆与阅读检索设计
 
-> 状态：手动阅读场景的后端 Loop、ContextBuilder 和两类检索工具已经可运行；长期消息持久化、
-> HTTP 与前端入口尚未接入，当前选书会话仍使用 `RecommendationAgentSession`。
+> 状态：手动阅读场景的后端 Loop、ContextBuilder、两类检索工具和最小 HTTP 接口已经可运行；
+> 长期消息持久化与前端入口尚未接入，当前选书会话仍使用 `RecommendationAgentSession`。
 >
 > 本文定义后续演进方向。第一阶段只稳定边界和 Contract，不立即扩大工具权限，也不改变现有
 > 译注、查词和阅读监控主链路。
@@ -203,9 +203,10 @@ ReadingCompanionRunState(
 - 结构化选择、书籍 id 和阅读证据继续保存在 Contract 中，不能只存在于自由文本摘要。
 
 当前 `ReadingCompanionRunState` 是手动入口的内存态运行边界，消息已经包含未来持久化所需的
-`message_id/session_id/episode_id`，但本批次不创建 SQLite 表。`ManualReadingCompanionRunner`
+`message_id/session_id/episode_id`，但尚未创建 SQLite 表。`ManualReadingCompanionRunner`
 冻结当前 unit，每次模型运行前重新构建可信 Scope；`ReadingCompanionAgent` 只负责原生
-user/assistant/tool 消息与有限 Observe → Tool → Observe 循环。
+user/assistant/tool 消息与有限 Observe → Tool → Observe 循环。HTTP 通过
+`InMemoryReadingCompanionSessionCoordinator` 暂存状态，后端进程重启后会话即丢失。
 
 ## 6. 两种压缩机制
 
@@ -416,8 +417,9 @@ conversation_memories
 5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
 6. 已完成：两个阅读历史 Tool Adapter、共享 Registry 注册与可信 Context 注入；
 7. 已完成：手动阅读场景的 ContextBuilder、有限工具 Loop、内存态 Episode 入口和真实工具回合；
-8. 暂不接入摘要模型调用、SQLite migration、HTTP 和前端按钮。
+8. 已完成：最小 HTTP 接口、内存态会话协调、公开消息投影与失败重试；
+9. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-手动阅读场景现在已经可以在后端完成一次直接回答或真实工具回合。下一批适合先建立最小 HTTP
-接口和内存态会话协调，让前端对话页面能够验证交互；长期消息表、Episode 结束摘要与自动压缩
-仍留在之后独立实施。
+手动阅读场景现在可以通过 HTTP 创建、继续、重试和恢复进程内会话。下一批适合接入前端阅读
+助手入口与对话抽屉，先验证真实交互；长期消息表、Episode 结束摘要与自动压缩仍留在之后独立
+实施。

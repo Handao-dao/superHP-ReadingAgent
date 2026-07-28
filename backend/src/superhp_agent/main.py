@@ -39,6 +39,9 @@ from superhp_agent.schemas import (
     WordLookupRequest,
     WordLookupResult,
 )
+from superhp_agent.transport.reading_companion_http import (
+    create_reading_companion_router,
+)
 from superhp_agent.transport.reading_ws import ReadingSocketSession
 from superhp_agent.transport.recommendation_http import (
     create_recommendation_router,
@@ -94,6 +97,11 @@ app.include_router(
         book_difficulty_catalog,
         container.difficulty_handoff_builder,
         reading_difficulty_prompt_coordinator,
+    )
+)
+app.include_router(
+    create_reading_companion_router(
+        container.reading_companion_session_coordinator
     )
 )
 

@@ -197,7 +197,7 @@ def test_profile_api_lists_builtin_profiles():
     assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
 
 
-def test_recommendation_http_routes_are_registered():
+def test_agent_http_routes_are_registered():
     paths = {route.path for route in main.app.routes}
 
     assert {
@@ -205,6 +205,10 @@ def test_recommendation_http_routes_are_registered():
         "/api/recommendations/difficulty-handoffs",
         "/api/recommendations/sessions/{session_id}/messages",
         "/api/recommendations/sessions/{session_id}",
+        "/api/reading-companion/sessions",
+        "/api/reading-companion/sessions/{session_id}/messages",
+        "/api/reading-companion/sessions/{session_id}/retry",
+        "/api/reading-companion/sessions/{session_id}",
         "/api/reading-difficulty-prompts/{book_id}",
         "/api/reading-difficulty-prompts/{book_id}/continue",
     } <= paths

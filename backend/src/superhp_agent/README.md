@@ -207,18 +207,20 @@ Loop 不依赖 Storage，Repository 也不调用模型；Runner 只是围绕一�
 `ReadingCompanionMessage` 与 `ReadingCompanionRunState`，不反向复用选书任务消息。
 
 ```text
-ManualReadingCompanionRunner
-    → 冻结当前 book / chapter / unit / selected_text
-    → PreviousReadingScopeBuilder
-    → AgentToolExecutionContext
-    → ReadingCompanionAgent
-        → ReadingCompanionContextBuilder
-        → LLMProvider
-        ├── 直接回答
-        └── 受限 Tool Call
-            → search_previous_chapters / search_vocabulary_history
-            → Tool Result
-            → 下一轮 LLMProvider
+Reading Companion HTTP Router
+    → InMemoryReadingCompanionSessionCoordinator
+        → ManualReadingCompanionRunner
+            → 冻结当前 book / chapter / unit / selected_text
+            → PreviousReadingScopeBuilder
+            → AgentToolExecutionContext
+            → ReadingCompanionAgent
+                → ReadingCompanionContextBuilder
+                → LLMProvider
+                ├── 直接回答
+                └── 受限 Tool Call
+                    → search_previous_chapters / search_vocabulary_history
+                    → Tool Result
+                    → 下一轮 LLMProvider
 ```
 
 固定提示词要求模型在“直接回答、此前章节检索、生词语境检索”中选择最简单的方式，并明确禁止
@@ -226,9 +228,18 @@ ManualReadingCompanionRunner
 而非 system 规则中。Loop 还会再次校验执行 Context 的 Session、Episode、Book 与当前 Chapter，
 防止调用方错配可信范围。
 
-当前消息和 Episode 只保存在调用方持有的内存态 `ReadingCompanionRunState` 中；尚无 HTTP
-入口、SQLite 消息表、Episode 结束摘要和自动压缩。这个限制是显式的，不用临时 JSON 冒充已经
-完成的长期记忆。
+`InMemoryReadingCompanionSessionCoordinator` 在后端进程内保存当前
+`ReadingCompanionRunState`，HTTP 提供创建、继续、重试和读取会话四个动作。公开响应只投影
+user/assistant 消息，不暴露 Prompt、Tool Call 或 Tool Result。当前仍无 SQLite 消息表、
+Episode 结束摘要和自动压缩，后端重启会清空这些对话；这个限制是显式的，不用临时 JSON 冒充
+已经完成的长期记忆。
+
+```text
+POST /api/reading-companion/sessions
+POST /api/reading-companion/sessions/{session_id}/messages
+POST /api/reading-companion/sessions/{session_id}/retry
+GET  /api/reading-companion/sessions/{session_id}
+```
 
 ### Context Builder
 

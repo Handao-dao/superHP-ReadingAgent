@@ -119,6 +119,10 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.previous_reading_scope_builder
         )
         assert (
+            container.reading_companion_session_coordinator.runner
+            is container.manual_reading_companion_runner
+        )
+        assert (
             container.manual_reading_companion_runner.corpus
             is container.corpus
         )

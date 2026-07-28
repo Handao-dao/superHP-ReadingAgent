@@ -40,6 +40,9 @@ from superhp_agent.application.previous_reading_scope import (
 from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
 )
+from superhp_agent.application.reading_companion_sessions import (
+    InMemoryReadingCompanionSessionCoordinator,
+)
 from superhp_agent.application.reading_difficulty_prompts import (
     ReadingDifficultyPromptCoordinator,
 )
@@ -134,6 +137,9 @@ class AppContainer:
     recommendation_agent_runner: RecommendationAgentRunner
     reading_companion_context_builder: ReadingCompanionContextBuilder
     manual_reading_companion_runner: ManualReadingCompanionRunner
+    reading_companion_session_coordinator: (
+        InMemoryReadingCompanionSessionCoordinator
+    )
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -269,6 +275,11 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             agent_tool_registry,
         ),
     )
+    reading_companion_session_coordinator = (
+        InMemoryReadingCompanionSessionCoordinator(
+            manual_reading_companion_runner
+        )
+    )
     annotator_service = LazyAnnotatorService(
         provider_factory,
         profile=default_profile,
@@ -336,6 +347,9 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             reading_companion_context_builder
         ),
         manual_reading_companion_runner=manual_reading_companion_runner,
+        reading_companion_session_coordinator=(
+            reading_companion_session_coordinator
+        ),
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

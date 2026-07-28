@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from superhp_agent.contracts import (
     BookEntryKind,
+    ReadingCompanionEpisodeTrigger,
     ReadingDifficultyState,
     ReadingPreference,
     RecommendationAgentPhase,
@@ -223,4 +224,40 @@ class RecommendationSessionResponse(BaseModel):
     messages: list[RecommendationChatMessage]
     recommended_books: list[RecommendationBookCard] = Field(default_factory=list)
     selected_catalog_id: str = ""
+    error_code: str = ""
+
+
+class CreateReadingCompanionSessionRequest(BaseModel):
+    """Open one manual reading Episode at a trusted local reading unit."""
+
+    session_id: str = Field(default="", max_length=200)
+    current_unit_id: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=4000)
+    selected_text: str = Field(default="", max_length=12000)
+
+
+class ContinueReadingCompanionSessionRequest(BaseModel):
+    """One visible user message appended to an active manual Episode."""
+
+    message: str = Field(min_length=1, max_length=4000)
+
+
+class ReadingCompanionChatMessage(BaseModel):
+    """A public transcript item; tool traffic remains backend-internal."""
+
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ReadingCompanionSessionResponse(BaseModel):
+    """Restorable public view of one in-memory reading conversation."""
+
+    session_id: str
+    episode_id: str
+    trigger: ReadingCompanionEpisodeTrigger
+    book_id: str
+    chapter_id: str
+    unit_id: str
+    selected_text: str = ""
+    messages: list[ReadingCompanionChatMessage]
     error_code: str = ""

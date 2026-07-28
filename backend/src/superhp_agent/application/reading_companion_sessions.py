@@ -8,17 +8,27 @@ bounded Agent run, so a backend restart does not erase the conversation.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
+from datetime import datetime
 from uuid import uuid4
 
 from superhp_agent.application.manual_reading_companion import (
     ManualReadingCompanionRunner,
 )
 from superhp_agent.contracts import (
+    ConversationMemory,
+    ConversationMemoryKind,
+    ReadingCompanionEpisodeEndReason,
+    ReadingCompanionEpisodeState,
     ReadingCompanionReply,
     ReadingCompanionRunState,
     ReadingCompanionSession,
 )
 from superhp_agent.ports.repositories import ReadingCompanionRepository
+from superhp_agent.services.conversation_memory import (
+    ConversationCompactionPolicy,
+    ConversationMemoryGenerator,
+)
 
 
 class ReadingCompanionSessionNotFoundError(LookupError):
@@ -36,9 +46,15 @@ class ReadingCompanionSessionCoordinator:
         self,
         runner: ManualReadingCompanionRunner,
         repository: ReadingCompanionRepository,
+        memory_generator: ConversationMemoryGenerator,
+        compaction_policy: ConversationCompactionPolicy | None = None,
     ):
         self.runner = runner
         self.repository = repository
+        self.memory_generator = memory_generator
+        self.compaction_policy = (
+            compaction_policy or ConversationCompactionPolicy()
+        )
         # The current product is single-user. One lock makes state replacement
         # atomic inside this process without premature lock management.
         self._lock = asyncio.Lock()
@@ -57,9 +73,15 @@ class ReadingCompanionSessionCoordinator:
             raise ValueError("session_id must not be empty")
 
         async with self._lock:
-            if self.repository.load_session(resolved_session_id) is not None:
+            existing_session = self.repository.load_session(
+                resolved_session_id
+            )
+            if (
+                existing_session is not None
+                and existing_session.active_episode_id
+            ):
                 raise ReadingCompanionSessionConflictError(
-                    "reading companion session already exists: "
+                    "reading companion session already has an active episode: "
                     f"{resolved_session_id}"
                 )
             state = self.runner.start(
@@ -68,12 +90,13 @@ class ReadingCompanionSessionCoordinator:
                 user_message=user_message,
                 selected_text=selected_text,
             )
-            self.repository.create_session(
-                ReadingCompanionSession(
-                    session_id=resolved_session_id,
-                    active_episode_id=state.episode.episode_id,
+            if existing_session is None:
+                self.repository.create_session(
+                    ReadingCompanionSession(
+                        session_id=resolved_session_id,
+                        active_episode_id=state.episode.episode_id,
+                    )
                 )
-            )
             # Preserve the user request even if the process stops during the
             # first provider call.
             self.repository.save_run_state(state)
@@ -85,9 +108,17 @@ class ReadingCompanionSessionCoordinator:
                     "failed to restore the newly persisted companion run"
                 )
             state = persisted_state
-            reply = await self.runner.run(state)
+            reply = await self.runner.run(
+                state,
+                conversation_memory=(
+                    self.memory_generator.context_for_session(
+                        resolved_session_id,
+                        episode_id=state.episode.episode_id,
+                    )
+                ),
+            )
             self.repository.save_run_state(reply.state)
-            return reply
+            return await self._compact_reply(reply)
 
     async def resume(
         self,
@@ -101,17 +132,66 @@ class ReadingCompanionSessionCoordinator:
             reply = await self.runner.run(
                 state,
                 user_message=user_message,
+                conversation_memory=(
+                    self.memory_generator.context_for_session(
+                        state.episode.session_id,
+                        episode_id=state.episode.episode_id,
+                    )
+                ),
             )
             self.repository.save_run_state(reply.state)
-            return reply
+            return await self._compact_reply(reply)
 
     async def retry(self, session_id: str) -> ReadingCompanionReply:
         """Retry a recoverable pending model turn without adding a message."""
         async with self._lock:
             state = self._require_state(session_id)
-            reply = await self.runner.run(state)
+            reply = await self.runner.run(
+                state,
+                conversation_memory=(
+                    self.memory_generator.context_for_session(
+                        state.episode.session_id,
+                        episode_id=state.episode.episode_id,
+                    )
+                ),
+            )
             self.repository.save_run_state(reply.state)
-            return reply
+            return await self._compact_reply(reply)
+
+    async def end(
+        self,
+        session_id: str,
+        *,
+        reason: ReadingCompanionEpisodeEndReason = (
+            ReadingCompanionEpisodeEndReason.USER_ENDED
+        ),
+    ) -> ConversationMemory:
+        """Close one Episode, then generate its passive durable summary."""
+        async with self._lock:
+            state = self._require_state(session_id)
+            final_state = (
+                ReadingCompanionEpisodeState.ABANDONED
+                if reason
+                in {
+                    ReadingCompanionEpisodeEndReason.USER_ABANDONED,
+                    ReadingCompanionEpisodeEndReason.UNRECOVERABLE_ERROR,
+                }
+                else ReadingCompanionEpisodeState.COMPLETED
+            )
+            episode = replace(
+                state.episode,
+                state=final_state,
+                end_message_id=state.conversation[-1].message_id,
+                end_reason=reason,
+                ended_at=datetime.now().astimezone().isoformat(
+                    timespec="seconds"
+                ),
+            )
+            self.repository.close_active_episode(episode)
+            return await self.memory_generator.generate(
+                state,
+                kind=ConversationMemoryKind.EPISODE_SUMMARY,
+            )
 
     def load(self, session_id: str) -> ReadingCompanionRunState | None:
         """Restore immutable active state for a public read projection."""
@@ -119,6 +199,13 @@ class ReadingCompanionSessionCoordinator:
         if not normalized:
             return None
         return self.repository.load_active_run(normalized)
+
+    def session_exists(self, session_id: str) -> bool:
+        """Distinguish an idle long-lived Session from an unknown id."""
+        normalized = str(session_id or "").strip()
+        return bool(
+            normalized and self.repository.load_session(normalized) is not None
+        )
 
     def _require_state(self, session_id: str) -> ReadingCompanionRunState:
         normalized = str(session_id or "").strip()
@@ -132,3 +219,16 @@ class ReadingCompanionSessionCoordinator:
                 f"reading companion session not found: {normalized}"
             )
         return state
+
+    async def _compact_reply(
+        self,
+        reply: ReadingCompanionReply,
+    ) -> ReadingCompanionReply:
+        compacted = await self.memory_generator.compact_if_needed(
+            reply.state,
+            policy=self.compaction_policy,
+        )
+        if compacted == reply.state:
+            return reply
+        self.repository.save_run_state(compacted)
+        return replace(reply, state=compacted)

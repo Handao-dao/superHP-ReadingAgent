@@ -135,6 +135,14 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             is container.reading_companion_repository
         )
         assert (
+            container.conversation_memory_generator.repository
+            is container.conversation_memory_repository
+        )
+        assert (
+            container.reading_companion_session_coordinator.memory_generator
+            is container.conversation_memory_generator
+        )
+        assert (
             container.manual_reading_companion_runner.corpus
             is container.corpus
         )

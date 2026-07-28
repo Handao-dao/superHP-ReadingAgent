@@ -209,6 +209,7 @@ class ReadingCompanionRunState:
     conversation: tuple[ReadingCompanionMessage, ...]
     tool_call_count: int = 0
     error_code: str = ""
+    context_start_index: int = 0
 
     def __post_init__(self) -> None:
         if self.episode.state is not ReadingCompanionEpisodeState.ACTIVE:
@@ -236,6 +237,13 @@ class ReadingCompanionRunState:
             raise ValueError("companion message ids must be unique")
         if self.tool_call_count < 0:
             raise ValueError("tool_call_count must not be negative")
+        if not 0 <= self.context_start_index < len(self.conversation):
+            raise ValueError("invalid companion context_start_index")
+        if (
+            self.conversation[self.context_start_index].role
+            is not ReadingCompanionMessageRole.USER
+        ):
+            raise ValueError("companion context must start with a user message")
 
 
 @dataclass(frozen=True)
@@ -247,6 +255,7 @@ class ReadingCompanionObservation:
     chapter_title: str
     chapter_no: int
     remaining_tool_calls: int
+    conversation_memory: str = ""
 
     def __post_init__(self) -> None:
         if not self.book_title.strip() or not self.chapter_title.strip():

@@ -95,6 +95,7 @@ class ManualReadingCompanionRunner:
         state: ReadingCompanionRunState,
         *,
         user_message: str | None = None,
+        conversation_memory: str = "",
     ) -> ReadingCompanionReply:
         """Rebuild trusted scope, then advance the companion Loop."""
         episode = state.episode
@@ -133,6 +134,7 @@ class ManualReadingCompanionRunner:
             chapter_title=unit.chapter_title,
             chapter_no=unit.chapter_no,
             user_message=user_message,
+            conversation_memory=conversation_memory,
         )
 
     def _find_unit(self, unit_id: str) -> ReadingUnit:

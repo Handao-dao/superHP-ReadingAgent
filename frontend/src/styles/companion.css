@@ -345,6 +345,17 @@
   cursor: pointer;
 }
 
+.companion-composer > div .companion-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.companion-composer > div button.is-secondary {
+  background: transparent;
+  color: #765027;
+}
+
 .companion-composer button:disabled,
 .companion-context-notice button:disabled,
 .companion-retry button:disabled {

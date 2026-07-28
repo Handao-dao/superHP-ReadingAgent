@@ -164,6 +164,8 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             tool_call_count INTEGER NOT NULL DEFAULT 0
                 CHECK (tool_call_count >= 0),
             error_code TEXT NOT NULL DEFAULT '',
+            context_start_index INTEGER NOT NULL DEFAULT 0
+                CHECK (context_start_index >= 0),
             created_at TEXT NOT NULL,
             ended_at TEXT NOT NULL DEFAULT '',
             FOREIGN KEY (session_id)
@@ -330,6 +332,12 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_unit
             ON reading_lookup_events(unit_id);
         """
+    )
+    _ensure_column(
+        connection,
+        "reading_companion_episodes",
+        "context_start_index",
+        "INTEGER NOT NULL DEFAULT 0 CHECK (context_start_index >= 0)",
     )
     _ensure_column(
         connection,

@@ -105,11 +105,12 @@ const {
 const {
   canRetry: companionCanRetry,
   canSend: companionCanSend,
-  clearSession: clearCompanionSession,
   errorCode: companionErrorCode,
   errorMessage: companionError,
+  endSession: endCompanionSession,
   hasSession: hasCompanionSession,
   loading: companionLoading,
+  lastSummary: companionLastSummary,
   messages: companionMessages,
   restoreSession: restoreCompanionSession,
   retrySession: retryCompanionSession,
@@ -396,8 +397,10 @@ function handleReadingSelection(text) {
   companionSelectedText.value = String(text || '').trim()
 }
 
-function handleNewCompanionSession() {
-  clearCompanionSession()
+async function handleNewCompanionSession() {
+  if (hasCompanionSession.value) {
+    await endCompanionSession('user_abandoned')
+  }
 }
 
 async function handleCompanionSend(message) {
@@ -729,12 +732,14 @@ onBeforeUnmount(() => {
       :error-message="companionError"
       :has-session="hasCompanionSession"
       :loading="companionLoading"
+      :last-summary="companionLastSummary"
       :messages="companionMessages"
       :open="companionOpen"
       :selected-text="companionSelectedText"
       :session="companionSession"
       @clear-selection="clearCompanionSelection"
       @close="companionOpen = false"
+      @end="endCompanionSession('user_ended')"
       @new-session="handleNewCompanionSession"
       @retry="retryCompanionSession"
       @send="handleCompanionSend"

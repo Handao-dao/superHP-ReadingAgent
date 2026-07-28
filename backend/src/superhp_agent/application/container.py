@@ -70,6 +70,9 @@ from superhp_agent.runtime import (
     ReadingStateReader,
 )
 from superhp_agent.services.annotator import LazyAnnotatorService
+from superhp_agent.services.conversation_memory import (
+    ConversationMemoryGenerator,
+)
 from superhp_agent.services.lazy_lookup import LazyLookupService
 from superhp_agent.services.recommendation import RecommendationCandidateService
 from superhp_agent.storage import AppDB
@@ -141,6 +144,7 @@ class AppContainer:
     recommendation_agent_runner: RecommendationAgentRunner
     reading_companion_context_builder: ReadingCompanionContextBuilder
     manual_reading_companion_runner: ManualReadingCompanionRunner
+    conversation_memory_generator: ConversationMemoryGenerator
     reading_companion_session_coordinator: (
         ReadingCompanionSessionCoordinator
     )
@@ -281,10 +285,15 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             agent_tool_registry,
         ),
     )
+    conversation_memory_generator = ConversationMemoryGenerator(
+        provider_factory,
+        conversation_memory_repository,
+    )
     reading_companion_session_coordinator = (
         ReadingCompanionSessionCoordinator(
             manual_reading_companion_runner,
             reading_companion_repository,
+            conversation_memory_generator,
         )
     )
     annotator_service = LazyAnnotatorService(
@@ -356,6 +365,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             reading_companion_context_builder
         ),
         manual_reading_companion_runner=manual_reading_companion_runner,
+        conversation_memory_generator=conversation_memory_generator,
         reading_companion_session_coordinator=(
             reading_companion_session_coordinator
         ),

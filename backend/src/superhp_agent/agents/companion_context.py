@@ -64,6 +64,18 @@ class ReadingCompanionContextBuilder:
                 ),
             ),
             user_blocks=(
+                *(
+                    (
+                        ContextBlock(
+                            name="conversation_memory",
+                            content=observation.conversation_memory,
+                            role="metadata",
+                            trusted=True,
+                        ),
+                    )
+                    if observation.conversation_memory.strip()
+                    else ()
+                ),
                 ContextBlock(
                     name="reading_invocation",
                     content=json.dumps(
@@ -79,7 +91,9 @@ class ReadingCompanionContextBuilder:
         messages: list[dict[str, Any]] = bundle.to_messages()
         messages.extend(
             _message_to_provider(message)
-            for message in observation.state.conversation
+            for message in observation.state.conversation[
+                observation.state.context_start_index :
+            ]
         )
         return messages
 

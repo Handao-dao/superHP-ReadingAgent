@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 
 from superhp_agent.contracts import (
     BookEntryKind,
+    ConversationMemoryKind,
+    ConversationMemoryStatus,
+    ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeTrigger,
     ReadingDifficultyState,
     ReadingPreference,
@@ -242,6 +245,14 @@ class ContinueReadingCompanionSessionRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
 
 
+class EndReadingCompanionEpisodeRequest(BaseModel):
+    """Explicitly close the current Episode and request passive summary."""
+
+    reason: ReadingCompanionEpisodeEndReason = (
+        ReadingCompanionEpisodeEndReason.USER_ENDED
+    )
+
+
 class ReadingCompanionChatMessage(BaseModel):
     """A public transcript item; tool traffic remains backend-internal."""
 
@@ -250,7 +261,7 @@ class ReadingCompanionChatMessage(BaseModel):
 
 
 class ReadingCompanionSessionResponse(BaseModel):
-    """Restorable public view of one in-memory reading conversation."""
+    """Restorable public view of one durable reading conversation."""
 
     session_id: str
     episode_id: str
@@ -260,4 +271,16 @@ class ReadingCompanionSessionResponse(BaseModel):
     unit_id: str
     selected_text: str = ""
     messages: list[ReadingCompanionChatMessage]
+    error_code: str = ""
+
+
+class ReadingCompanionMemoryResponse(BaseModel):
+    """Public result of one passive Episode-summary attempt."""
+
+    session_id: str
+    episode_id: str
+    kind: ConversationMemoryKind
+    revision: int
+    status: ConversationMemoryStatus
+    summary: str = ""
     error_code: str = ""

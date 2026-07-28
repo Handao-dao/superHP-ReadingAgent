@@ -1,6 +1,6 @@
 <!--
-  Presents one manual reading conversation without owning HTTP or reader state.
-  Opening and closing this drawer are local UI actions and never call the model.
+  Presents one manual reading Episode without owning HTTP or reader state.
+  Closing the drawer is local; “结束本轮” closes and summarizes the Episode.
 -->
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
@@ -14,13 +14,14 @@ const props = defineProps({
   errorMessage: { type: String, default: '' },
   hasSession: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
+  lastSummary: { type: String, default: '' },
   messages: { type: Array, default: () => [] },
   open: { type: Boolean, default: false },
   selectedText: { type: String, default: '' },
   session: { type: Object, default: null },
 })
 
-const emit = defineEmits(['clear-selection', 'close', 'new-session', 'retry', 'send'])
+const emit = defineEmits(['clear-selection', 'close', 'end', 'new-session', 'retry', 'send'])
 const draft = ref('')
 const transcript = ref(null)
 const composer = ref(null)
@@ -172,6 +173,11 @@ watch(
 
     <p v-if="errorMessage" class="companion-error" role="alert">{{ errorMessage }}</p>
 
+    <div v-if="!hasSession && lastSummary" class="companion-context-notice" role="status">
+      <strong>上一轮已整理为长期记忆</strong>
+      <span>{{ lastSummary }}</span>
+    </div>
+
     <div v-if="hasSession && canRetry" class="companion-retry" role="status">
       <span>
         {{ errorCode === 'invalid_model_response'
@@ -203,7 +209,16 @@ watch(
       ></textarea>
       <div>
         <span>Ctrl + Enter 发送</span>
-        <button type="submit" :disabled="!canSubmit || !draft.trim()">发送</button>
+        <span class="companion-composer-actions">
+          <button
+            v-if="hasSession"
+            type="button"
+            class="is-secondary"
+            :disabled="loading"
+            @click="$emit('end')"
+          >结束本轮</button>
+          <button type="submit" :disabled="!canSubmit || !draft.trim()">发送</button>
+        </span>
       </div>
     </form>
   </aside>

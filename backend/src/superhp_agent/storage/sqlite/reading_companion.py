@@ -165,7 +165,74 @@ class SQLiteReadingCompanionRepository:
             ),
             tool_call_count=int(episode_row["tool_call_count"]),
             error_code=str(episode_row["error_code"]),
+            context_start_index=int(episode_row["context_start_index"]),
         )
+
+    def close_active_episode(
+        self,
+        episode: ReadingCompanionEpisode,
+    ) -> None:
+        """Close the current Episode and clear the Session's active pointer."""
+        if episode.state is ReadingCompanionEpisodeState.ACTIVE:
+            raise ValueError("closed companion episode must not be active")
+        with self.database.lock, self.database.connection:
+            session_row = self.database.connection.execute(
+                """
+                SELECT active_episode_id
+                FROM reading_companion_sessions
+                WHERE session_id = ?
+                """,
+                (episode.session_id,),
+            ).fetchone()
+            if session_row is None:
+                raise ValueError("companion session does not exist")
+            if str(session_row["active_episode_id"]) != episode.episode_id:
+                raise ValueError(
+                    "companion episode is not active for this session"
+                )
+            cursor = self.database.connection.execute(
+                """
+                UPDATE reading_companion_episodes
+                SET
+                    state = ?,
+                    end_message_id = ?,
+                    end_reason = ?,
+                    ended_at = COALESCE(
+                        NULLIF(?, ''),
+                        datetime('now','localtime')
+                    )
+                WHERE
+                    episode_id = ?
+                    AND session_id = ?
+                    AND state = 'active'
+                    AND start_message_id = ?
+                """,
+                (
+                    episode.state.value,
+                    episode.end_message_id,
+                    (
+                        episode.end_reason.value
+                        if episode.end_reason is not None
+                        else None
+                    ),
+                    episode.ended_at,
+                    episode.episode_id,
+                    episode.session_id,
+                    episode.start_message_id,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError("active companion episode could not be closed")
+            self.database.connection.execute(
+                """
+                UPDATE reading_companion_sessions
+                SET
+                    active_episode_id = '',
+                    updated_at = datetime('now','localtime')
+                WHERE session_id = ?
+                """,
+                (episode.session_id,),
+            )
 
     def _upsert_episode(self, state: ReadingCompanionRunState) -> None:
         episode = state.episode
@@ -185,11 +252,12 @@ class SQLiteReadingCompanionRepository:
                 end_reason,
                 tool_call_count,
                 error_code,
+                context_start_index,
                 created_at,
                 ended_at
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 COALESCE(NULLIF(?, ''), datetime('now','localtime')),
                 ?
             )
@@ -199,6 +267,7 @@ class SQLiteReadingCompanionRepository:
                 end_reason=excluded.end_reason,
                 tool_call_count=excluded.tool_call_count,
                 error_code=excluded.error_code,
+                context_start_index=excluded.context_start_index,
                 ended_at=excluded.ended_at
             """,
             (
@@ -215,6 +284,7 @@ class SQLiteReadingCompanionRepository:
                 episode.end_reason.value if episode.end_reason else None,
                 state.tool_call_count,
                 state.error_code,
+                state.context_start_index,
                 episode.created_at,
                 episode.ended_at,
             ),
@@ -391,4 +461,3 @@ def _require_id(value: str, field_name: str) -> str:
     if not normalized:
         raise ValueError(f"{field_name} is required")
     return normalized
-

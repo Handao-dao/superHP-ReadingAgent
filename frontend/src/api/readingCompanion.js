@@ -1,4 +1,4 @@
-/** Call the temporary reading-companion HTTP API without owning Vue state. */
+/** Call the durable reading-companion HTTP API without owning Vue state. */
 
 const BASE = '/api/reading-companion/sessions'
 
@@ -33,6 +33,14 @@ export function getReadingCompanionSession(sessionId) {
 export function retryReadingCompanionSession(sessionId) {
   return requestJson(`${BASE}/${encodeURIComponent(sessionId)}/retry`, {
     method: 'POST',
+  })
+}
+
+export function endReadingCompanionEpisode(sessionId, reason = 'user_ended') {
+  return requestJson(`${BASE}/${encodeURIComponent(sessionId)}/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
   })
 }
 

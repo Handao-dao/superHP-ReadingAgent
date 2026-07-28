@@ -10,6 +10,8 @@ from superhp_agent.contracts import (
     ConversationMemoryStatus,
     LLMToolCall,
     ReadingCompanionEpisode,
+    ReadingCompanionEpisodeEndReason,
+    ReadingCompanionEpisodeState,
     ReadingCompanionEpisodeTrigger,
     ReadingCompanionMessage,
     ReadingCompanionMessageRole,
@@ -149,6 +151,48 @@ def test_old_messages_cannot_be_rewritten(tmp_path):
                     conversation=(changed_first, *state.conversation[1:]),
                 )
             )
+    finally:
+        db.close()
+
+
+def test_closing_episode_clears_only_the_active_pointer(tmp_path):
+    db = AppDB(tmp_path / "app.db")
+    try:
+        repository = db.reading_companion_repository
+        repository.create_session(
+            ReadingCompanionSession(
+                session_id="session-1",
+                active_episode_id="episode-1",
+            )
+        )
+        state = _state()
+        repository.save_run_state(state)
+        repository.close_active_episode(
+            replace(
+                state.episode,
+                state=ReadingCompanionEpisodeState.COMPLETED,
+                end_message_id="message-4",
+                end_reason=ReadingCompanionEpisodeEndReason.USER_ENDED,
+                ended_at="2026-07-28T16:00:00+08:00",
+            )
+        )
+
+        assert repository.load_active_run("session-1") is None
+        assert repository.load_session("session-1").active_episode_id == ""
+        row = db.database.connection.execute(
+            """
+            SELECT state, end_reason, end_message_id
+            FROM reading_companion_episodes
+            WHERE episode_id = 'episode-1'
+            """
+        ).fetchone()
+        assert tuple(row) == ("completed", "user_ended", "message-4")
+        assert (
+            db.database.connection.execute(
+                "SELECT COUNT(*) FROM reading_companion_messages"
+            ).fetchone()[0]
+            == 4
+        )
     finally:
         db.close()
 

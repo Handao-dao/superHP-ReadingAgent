@@ -8,6 +8,7 @@ or generate compressed memory.
 from typing import Protocol, runtime_checkable
 
 from superhp_agent.contracts import (
+    ReadingCompanionEpisode,
     ReadingCompanionRunState,
     ReadingCompanionSession,
 )
@@ -31,3 +32,7 @@ class ReadingCompanionRepository(Protocol):
         session_id: str,
     ) -> ReadingCompanionRunState | None: ...
 
+    def close_active_episode(
+        self,
+        episode: ReadingCompanionEpisode,
+    ) -> None: ...

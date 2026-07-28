@@ -157,16 +157,17 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 可独立测试的后端阅读伴侣 Loop，可以直接回答，或在可信已读范围内回查此前章节和生词语境。
 长期 Session 由有明确触发点的 Episode 组成，推荐完成只结束当前 Episode。
 
-设计采用两种互补的上下文治理机制：Episode 明确结束后生成被动摘要，当前 Episode 接近模型
-上下文上限时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个
+上下文采用两种互补的治理机制：Episode 明确结束后生成被动摘要，当前 Episode 的未压缩消息
+超过安全阈值时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个
 只读工具分别回查此前完整章节和生词本语境，当前章节整体排除。完整设计见
 [`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)，检索边界见
 [`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`](docs/READING_COMPANION_RETRIEVAL_TOOLS.md)。
 
 当前手动阅读 Loop 已接入最小 HTTP 和阅读页对话抽屉，可创建、继续、重试和读取对话。
-Session、当前 Episode 与包含 Tool Call / Tool Result 的原始消息已写入 SQLite；后端重启后可从
-同一数据库恢复并继续。摘要修订也已有独立存储边界，Episode 结束触发与 Rolling Compaction
-的模型生成流程仍按上述规划逐步接入。
+Session、Episode 与包含 Tool Call / Tool Result 的原始消息已写入 SQLite；后端重启后可从
+同一数据库恢复并继续。用户显式结束一轮时会先关闭 Episode，再生成带来源范围的被动摘要；
+同一 Session 的下一轮会读取既有摘要。长对话压缩成功后只移动模型 Context 游标，压缩失败则
+继续使用原始消息，不影响对话。
 
 ## 项目结构
 

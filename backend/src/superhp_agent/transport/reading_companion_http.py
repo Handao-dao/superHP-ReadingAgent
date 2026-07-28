@@ -1,4 +1,4 @@
-"""HTTP adapter for temporary manual reading-companion conversations.
+"""HTTP adapter for durable manual reading-companion conversations.
 
 Only public user/assistant messages cross this boundary. Prompts, trusted
 scope, Tool Calls, and Tool Results remain internal to the Agent runtime.
@@ -22,7 +22,9 @@ from superhp_agent.contracts import (
 from superhp_agent.schemas import (
     ContinueReadingCompanionSessionRequest,
     CreateReadingCompanionSessionRequest,
+    EndReadingCompanionEpisodeRequest,
     ReadingCompanionChatMessage,
+    ReadingCompanionMemoryResponse,
     ReadingCompanionSessionResponse,
 )
 
@@ -30,7 +32,7 @@ from superhp_agent.schemas import (
 def create_reading_companion_router(
     coordinator: ReadingCompanionSessionCoordinator,
 ) -> APIRouter:
-    """Create a router bound to the transitional in-memory coordinator."""
+    """Create a router bound to the durable companion coordinator."""
     router = APIRouter(
         prefix="/api/reading-companion",
         tags=["reading-companion"],
@@ -112,6 +114,32 @@ def create_reading_companion_router(
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return _public_session(reply.state, error_code=reply.error_code)
 
+    @router.post(
+        "/sessions/{session_id}/end",
+        response_model=ReadingCompanionMemoryResponse,
+    )
+    async def end_episode(
+        session_id: str,
+        payload: EndReadingCompanionEpisodeRequest,
+    ) -> ReadingCompanionMemoryResponse:
+        """Close the active Episode before generating its passive summary."""
+        try:
+            memory = await coordinator.end(
+                session_id,
+                reason=payload.reason,
+            )
+        except ReadingCompanionSessionNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return ReadingCompanionMemoryResponse(
+            session_id=memory.session_id,
+            episode_id=memory.episode_id,
+            kind=memory.kind,
+            revision=memory.revision,
+            status=memory.status,
+            summary=memory.summary,
+            error_code=memory.error_code,
+        )
+
     @router.get(
         "/sessions/{session_id}",
         response_model=ReadingCompanionSessionResponse,
@@ -121,6 +149,14 @@ def create_reading_companion_router(
     ) -> ReadingCompanionSessionResponse:
         state = coordinator.load(session_id)
         if state is None:
+            if coordinator.session_exists(session_id):
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "reading companion session has no active episode: "
+                        f"{session_id}"
+                    ),
+                )
             raise HTTPException(
                 status_code=404,
                 detail=f"reading companion session not found: {session_id}",

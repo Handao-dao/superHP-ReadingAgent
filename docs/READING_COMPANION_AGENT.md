@@ -1,7 +1,8 @@
 # 阅读伴侣 Agent：长期会话、情景记忆与阅读检索设计
 
 > 状态：手动阅读场景的后端 Loop、ContextBuilder、两类检索工具、最小 HTTP 和前端对话抽屉
-> 已经可运行；长期消息持久化尚未接入，当前选书会话仍使用 `RecommendationAgentSession`。
+> 已经可运行；长期 Session / Episode / Message、被动摘要与 Rolling Compaction 已接入。
+> 当前选书会话仍使用 `RecommendationAgentSession`，尚未统一迁移到阅读伴侣存储。
 >
 > 本文定义后续演进方向。第一阶段只稳定边界和 Contract，不立即扩大工具权限，也不改变现有
 > 译注、查词和阅读监控主链路。
@@ -202,11 +203,12 @@ ReadingCompanionRunState(
 - Session 同一时间最多有一个 active Episode；
 - 结构化选择、书籍 id 和阅读证据继续保存在 Contract 中，不能只存在于自由文本摘要。
 
-当前 `ReadingCompanionRunState` 是手动入口的内存态运行边界，消息已经包含未来持久化所需的
-`message_id/session_id/episode_id`，但尚未创建 SQLite 表。`ManualReadingCompanionRunner`
+当前 `ReadingCompanionRunState` 是手动入口在一次 Loop 调用中的不可变运行快照，消息通过
+`reading_companion_sessions / episodes / messages` 三张表持久化。`ManualReadingCompanionRunner`
 冻结当前 unit，每次模型运行前重新构建可信 Scope；`ReadingCompanionAgent` 只负责原生
 user/assistant/tool 消息与有限 Observe → Tool → Observe 循环。HTTP 通过
-`InMemoryReadingCompanionSessionCoordinator` 暂存状态，后端进程重启后会话即丢失。
+`ReadingCompanionSessionCoordinator` 组织加载、保存、结束和压缩，后端重启后可恢复 active
+Episode。
 
 ## 6. 两种压缩机制
 
@@ -240,12 +242,12 @@ Memory 变为 ready
 ## 关联图书与章节
 ```
 
-摘要调用失败不能阻塞用户关闭对话。原始消息仍然有效，Memory 保持 `pending` 或 `failed`，由
-后台任务或下一次唤醒时重试。
+摘要调用失败不能阻塞用户关闭对话。当前实现会把 Memory 从 `pending` 推进到 `failed`，原始
+消息仍然有效；后台重试仍是后续能力。
 
 ### 6.2 当前 Episode 过长时自动压缩
 
-每次调用 Provider 前估算模型工作 Context；接近安全阈值时创建 `rolling_compaction`：
+每次完整 Agent 运行后检查未压缩 Context；超过安全阈值时创建 `rolling_compaction`：
 
 ```text
 Context 接近阈值
@@ -268,8 +270,9 @@ Context 接近阈值
 5. 超长 Tool Result 在摘要输入中先做有边界的序列化；
 6. 摘要失败且仍低于硬上限时可以保守继续，达到硬上限时返回可恢复错误。
 
-触发阈值不立即写死。先记录 Provider input token usage、Context 字符规模和压缩后规模，再根据
-真实模型窗口确定安全比例。
+当前保守阈值是 36 条未压缩消息或约 3 万字符，并尽量从最近 12 条附近的 user 消息边界保留
+完整近期对话。该值是可替换 Policy，不代表最终模型窗口；后续应结合真实 input token usage
+继续校准。
 
 ## 7. Context 投影
 
@@ -370,8 +373,8 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 4. 让选书完成只结束 Episode，长期 Session 保持 active；
 5. 已完成：增加手动阅读后端入口、`search_previous_chapters` 和
    `search_vocabulary_history`；
-6. 接入 Episode 结束摘要；
-7. 记录真实 token 数据后再接入自动 Rolling Compaction；
+6. 已完成（手动阅读）：接入 Episode 结束摘要；
+7. 已完成（手动阅读）：接入可替换阈值的自动 Rolling Compaction；
 8. 最后增加历史消息检索和稳定偏好记忆。
 
 现有 `context_start_index` 可以继续作为迁移期工具协议边界；进入 Episode 模型后，由稳定
@@ -388,8 +391,9 @@ reading_companion_messages
 conversation_memories
 ```
 
-第一轮迁移可以继续把消息保存在 Session JSON 中，避免同时重构 Loop 与存储。只有当 Episode
-摘要、按历史范围检索和消息数量增长成为真实需求时，再把消息拆为独立表。
+手动阅读入口已经采用独立关系表：原始 Message 只追加不覆盖，Episode 保存运行游标，
+Conversation Memory 保存来源消息范围、revision、状态和 token usage。选书旧 Session JSON
+暂不迁移，避免同时重写已经稳定的推荐流程。
 
 ## 13. 已确定的设计决策
 
@@ -416,11 +420,12 @@ conversation_memories
 4. 已完成：此前章节摘要与原文段落检索 Application Service；
 5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
 6. 已完成：两个阅读历史 Tool Adapter、共享 Registry 注册与可信 Context 注入；
-7. 已完成：手动阅读场景的 ContextBuilder、有限工具 Loop、内存态 Episode 入口和真实工具回合；
-8. 已完成：最小 HTTP 接口、内存态会话协调、公开消息投影与失败重试；
+7. 已完成：手动阅读场景的 ContextBuilder、有限工具 Loop、持久化 Episode 入口和真实工具回合；
+8. 已完成：最小 HTTP 接口、持久化会话协调、公开消息投影与失败重试；
 9. 已完成：阅读页常驻入口、对话抽屉、首轮选段、恢复与重试交互；
-10. 暂不接入摘要模型调用和 SQLite migration。
+10. 已完成：Session / Episode / 原始消息 / Memory SQLite migration；
+11. 已完成：结束本轮、被动摘要、同 Session 新 Episode 和记忆回注；
+12. 已完成：保留近期完整用户轮次的自动 Rolling Compaction。
 
-手动阅读场景现在可以从阅读页直接创建、继续、重试和恢复进程内会话。下一批适合先使用真实
-英文小说验证对话与检索体验，再决定是否进入长期消息表、Episode 结束摘要和自动压缩；不为
-尚未验证的长期需求提前扩大前端状态。
+下一批适合用真实英文小说验证摘要质量、压缩触发延迟和跨 Episode 延续效果，再决定是否增加
+后台摘要重试、原始会话历史检索，以及把旧选书 Session 迁入统一长期会话。

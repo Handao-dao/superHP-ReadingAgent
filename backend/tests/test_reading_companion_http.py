@@ -10,6 +10,9 @@ from superhp_agent.application import (
     ReadingCompanionSessionNotFoundError,
 )
 from superhp_agent.contracts import (
+    ConversationMemory,
+    ConversationMemoryKind,
+    ConversationMemoryStatus,
     LLMToolCall,
     ReadingCompanionEpisode,
     ReadingCompanionEpisodeTrigger,
@@ -29,9 +32,11 @@ class FakeCoordinator:
         self.started = None
         self.resumed = None
         self.retried = None
+        self.ended = None
         self.start_error = None
         self.resume_error = None
         self.retry_error = None
+        self.end_error = None
 
     async def start(self, **kwargs):
         if self.start_error:
@@ -57,8 +62,28 @@ class FakeCoordinator:
         self.states[session_id] = state
         return ReadingCompanionReply(state=state, message="重试成功")
 
+    async def end(self, session_id, *, reason):
+        if self.end_error:
+            raise self.end_error
+        self.ended = (session_id, reason)
+        state = self.states.pop(session_id)
+        return ConversationMemory(
+            memory_id="memory-1",
+            session_id=session_id,
+            episode_id=state.episode.episode_id,
+            kind=ConversationMemoryKind.EPISODE_SUMMARY,
+            revision=1,
+            source_start_message_id=state.conversation[0].message_id,
+            source_end_message_id=state.conversation[-1].message_id,
+            status=ConversationMemoryStatus.READY,
+            summary="用户询问了人物此前是否出现。",
+        )
+
     def load(self, session_id):
         return self.states.get(session_id)
+
+    def session_exists(self, session_id):
+        return session_id in self.states
 
 
 def _public_state(session_id="session-1", *, final_answer="回答"):
@@ -181,6 +206,29 @@ def test_continue_retry_and_get_session():
     assert coordinator.retried == "session-1"
     assert restored.status_code == 200
     assert restored.json()["messages"][-1]["content"] == "重试成功"
+
+
+def test_end_episode_returns_passive_summary():
+    client, coordinator = _client()
+    coordinator.states["session-1"] = _public_state()
+
+    response = client.post(
+        "/api/reading-companion/sessions/session-1/end",
+        json={"reason": "user_ended"},
+    )
+
+    assert response.status_code == 200
+    assert coordinator.ended[0] == "session-1"
+    assert coordinator.ended[1].value == "user_ended"
+    assert response.json() == {
+        "session_id": "session-1",
+        "episode_id": "session-1-episode",
+        "kind": "episode_summary",
+        "revision": 1,
+        "status": "ready",
+        "summary": "用户询问了人物此前是否出现。",
+        "error_code": "",
+    }
 
 
 def test_http_maps_missing_conflict_stale_and_invalid_turn_errors():

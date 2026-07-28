@@ -77,6 +77,7 @@ class ReadingCompanionAgent:
         chapter_title: str,
         chapter_no: int,
         user_message: str | None = None,
+        conversation_memory: str = "",
     ) -> ReadingCompanionReply:
         """Advance one user turn through zero or more bounded tool calls."""
         self._validate_tool_context(state, tool_context, chapter_no)
@@ -92,6 +93,7 @@ class ReadingCompanionAgent:
                     0,
                     self.max_tool_calls - state.tool_call_count,
                 ),
+                conversation_memory=conversation_memory,
             )
             try:
                 response = await self.provider.chat_with_retry(

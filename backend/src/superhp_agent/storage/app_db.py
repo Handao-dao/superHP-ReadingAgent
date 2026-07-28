@@ -41,6 +41,9 @@ from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import (
     SQLiteVocabularyRepository,
 )
+from superhp_agent.storage.sqlite.vocabulary_history import (
+    SQLiteVocabularyHistoryRepository,
+)
 
 
 class AppDB:
@@ -57,6 +60,9 @@ class AppDB:
         self.vocabulary_repository = SQLiteVocabularyRepository(
             self.database,
             sync_unit=self.unit_repository.sync,
+        )
+        self.vocabulary_history_repository = (
+            SQLiteVocabularyHistoryRepository(self.database)
         )
         self.bookmark_repository = SQLiteBookmarkRepository(
             self.database,

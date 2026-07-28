@@ -290,8 +290,10 @@ contracts/
 内容；模型不能通过工具参数扩大范围。生词历史读取能力由只读
 `VocabularyHistoryRepository` Port 声明。`application/previous_reading_scope.py` 已通过
 Corpus 与完整章节检查点的交集构建可信范围；
-`application/previous_chapter_search.py` 已在该范围内检索章节摘要与有限原文段落。当前尚未
-接入词汇历史 Storage Adapter、ToolRegistry 和 Agent 运行主链路，完整方案见项目根目录
+`application/previous_chapter_search.py` 已在该范围内检索章节摘要与有限原文段落。
+`application/vocabulary_history_search.py` 与
+`storage/sqlite/vocabulary_history.py` 已按书、精确词项和可信 unit 集合读取历史语境。当前
+尚未接入 ToolRegistry 和 Agent 运行主链路，完整方案见项目根目录
 `docs/READING_COMPANION_RETRIEVAL_TOOLS.md`。
 
 `application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期
@@ -329,6 +331,7 @@ ports/                         # 上层业务需要哪些底层能力
 ├── recommendation_agent.py    # 选书 Agent 的单步模型决策接口
 └── repositories/              # 可查询、可更新的数据能力接口
     ├── vocabulary.py
+    ├── vocabulary_history.py # Agent 只读生词语境
     ├── bookmarks.py
     ├── reading_progress.py
     ├── reading_support.py      # 每本书的英文译注支持目标
@@ -341,6 +344,7 @@ storage/                       # 存储类 Port 如何具体实现
 └── sqlite/                    # Repository 的 SQLite Adapter
     ├── units.py
     ├── vocabulary.py
+    ├── vocabulary_history.py
     ├── bookmarks.py
     ├── reading_progress.py
     ├── reading_support.py
@@ -384,6 +388,7 @@ storage/
 └── sqlite/                # Repository 的 SQLite 实现
     ├── units.py           # 内部 unit metadata 同步
     ├── vocabulary.py      # 已完成：词汇 SQL 实现
+    ├── vocabulary_history.py # 已完成：可信范围内的只读生词语境
     ├── bookmarks.py       # 已完成：书签 SQL 实现
     ├── reading_progress.py # 已完成：阅读进度 SQL 实现
     ├── reading_support.py  # 已完成：每本书译注目标 SQL 实现
@@ -403,6 +408,10 @@ storage/
 Runtime 当前通过 `ports/repositories/vocabulary.py` 中的最小 `VocabularyRepository` 使用
 词汇能力；`SQLiteVocabularyRepository` 实现该 Port 并拥有全部词汇 SQL。`AppDB` 暂时保留
 同名转发方法，使 HTTP 端和历史调用可以渐进迁移。
+
+阅读伴侣通过独立的只读 `VocabularyHistoryRepository` 查询生词语境；
+`SQLiteVocabularyHistoryRepository` 复用现有词汇表，但必须同时满足当前图书、精确
+`normalized_word` 和 Scope 授权的 `unit_ids`。它不扩张常规词表读写 Port。
 
 书签 HTTP 入口通过 `ports/repositories/bookmarks.py` 中的 `BookmarkRepository` 访问书签；
 `SQLiteBookmarkRepository` 实现该 Port 并拥有全部书签 SQL，Composition Root 直接注入该实现。

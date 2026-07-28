@@ -209,6 +209,9 @@ AnnotatedCopyStore
 VocabularyRepository
     查询和更新关系型单词数据
 
+VocabularyHistoryRepository
+    在可信阅读范围内只读查询同一词的既往语境
+
 BookmarkRepository
     查询和更新关系型书签数据
 

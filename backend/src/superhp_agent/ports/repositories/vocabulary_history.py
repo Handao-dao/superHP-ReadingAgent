@@ -5,9 +5,17 @@ from typing import Protocol, runtime_checkable
 from superhp_agent.contracts import VocabularyEncounter
 
 
+class VocabularyHistoryRepositoryError(RuntimeError):
+    """Infrastructure-neutral failure raised by a history adapter."""
+
+
 @runtime_checkable
 class VocabularyHistoryRepository(Protocol):
-    """Find exact-lexeme encounters inside an explicit trusted unit set."""
+    """Find recent exact-lexeme encounters inside a trusted unit set.
+
+    Results are returned in chronological order even when ``limit`` selects
+    only the most recent stored contexts.
+    """
 
     def find_encounters(
         self,

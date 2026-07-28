@@ -1,8 +1,7 @@
 # 阅读伴侣的已读内容检索
 
 本文定义阅读伴侣第一批“阅读历史”工具的职责、可信范围和返回边界。当前已完成 Contract、
-Port、可信范围构建器与此前章节检索 Service，尚未实现工具注册、词汇检索 Service 或 SQLite
-Adapter。
+Port、可信范围构建器、两个检索 Service 与词汇历史 SQLite Adapter，尚未注册 Agent Tool。
 
 ## 1. 目标
 
@@ -124,6 +123,8 @@ VocabularyEncounter
 - 这是生词语境检索，不是普通词典查询；
 - 第一版只做精确规范词匹配，不进行词形还原或模糊匹配；
 - Tool 返回保存的事实，Agent 负责解释各语境中的词义差别；
+- 超过预算时选取最近的若干语境，再按章节顺序返回；
+- 没有 context 的词条不参与用法比较；
 - 当前存储在同一 unit 内只保留一个代表性语境并累计次数，因此第一版主要比较跨 unit、跨章节
   的语境。
 
@@ -188,8 +189,8 @@ Tool 不直接读取文件路径或执行 SQL；Repository 不生成面向模型
 2. 已完成：只读 `VocabularyHistoryRepository` Port；
 3. 已完成：基于 Corpus 与完整章节检查点的 `PreviousReadingScopeBuilder`；
 4. 已完成：摘要与原文段落的此前章节检索 Application Service；
-5. 下一步：实现 SQLite 词汇历史 Adapter 与词汇检索 Service；
-6. 最后：把两个 Tool 注册进现有 `ToolRegistry`，再接入 Agent 提示词和端到端测试。
+5. 已完成：SQLite 词汇历史 Adapter 与词汇检索 Application Service；
+6. 下一步：把两个 Tool 注册进现有 `ToolRegistry`，再接入 Agent 提示词和端到端测试。
 
 按这个顺序可以先证明无剧透边界，再接入真实检索；不会让 Agent Loop、Corpus 和 SQLite 在同一
 步中一起变化。

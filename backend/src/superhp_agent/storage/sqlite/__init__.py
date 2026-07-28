@@ -22,6 +22,9 @@ from superhp_agent.storage.sqlite.recommendation_sessions import (
 )
 from superhp_agent.storage.sqlite.units import SQLiteUnitRepository
 from superhp_agent.storage.sqlite.vocabulary import SQLiteVocabularyRepository
+from superhp_agent.storage.sqlite.vocabulary_history import (
+    SQLiteVocabularyHistoryRepository,
+)
 
 __all__ = [
     "SQLiteBookmarkRepository",
@@ -34,4 +37,5 @@ __all__ = [
     "SQLiteRecommendationSessionRepository",
     "SQLiteUnitRepository",
     "SQLiteVocabularyRepository",
+    "SQLiteVocabularyHistoryRepository",
 ]

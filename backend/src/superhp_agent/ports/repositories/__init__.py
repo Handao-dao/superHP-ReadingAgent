@@ -16,6 +16,7 @@ from superhp_agent.ports.repositories.recommendation_sessions import (
 from superhp_agent.ports.repositories.vocabulary import VocabularyRepository
 from superhp_agent.ports.repositories.vocabulary_history import (
     VocabularyHistoryRepository,
+    VocabularyHistoryRepositoryError,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "RecommendationSessionRepository",
     "VocabularyRepository",
     "VocabularyHistoryRepository",
+    "VocabularyHistoryRepositoryError",
 ]

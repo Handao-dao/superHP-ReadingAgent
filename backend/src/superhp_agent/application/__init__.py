@@ -43,6 +43,10 @@ from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
 )
+from superhp_agent.application.vocabulary_history_search import (
+    VocabularyHistorySearchError,
+    VocabularyHistorySearchService,
+)
 
 __all__ = [
     "AppContainer",
@@ -67,6 +71,8 @@ __all__ = [
     "RecommendationCompanionProjection",
     "RecommendationCompanionProjectionError",
     "RecommendationSessionNotFoundError",
+    "VocabularyHistorySearchError",
+    "VocabularyHistorySearchService",
     "build_container",
     "legacy_recommendation_episode_id",
     "legacy_recommendation_message_id",

@@ -390,8 +390,8 @@ conversation_memories
    Repository Port；
 3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
 4. 已完成：此前章节摘要与原文段落检索 Application Service；
-5. 下一步：在不替换现有推荐接口的前提下建立长期 Session 状态协调器；
+5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
 6. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-下一批可以实现词汇历史 SQLite Adapter 与 Application Service，使两个阅读历史工具都具备
-独立运行的后端能力；之后再统一注册到 ToolRegistry。
+两个阅读历史工具现在都具备独立运行的后端能力。下一批适合统一建立 Agent Tool Adapter，
+通过 `AgentToolExecutionContext` 注入可信 Scope，再注册到现有 ToolRegistry。

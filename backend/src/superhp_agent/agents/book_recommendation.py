@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass, replace
 from uuid import uuid4
 
-from superhp_agent.agent_tools import (
+from superhp_agent.agent_tools.registry import (
     AgentToolNotAllowedError,
     ToolRegistry,
     UnknownAgentToolError,

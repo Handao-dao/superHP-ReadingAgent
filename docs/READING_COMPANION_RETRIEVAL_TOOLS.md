@@ -1,7 +1,8 @@
 # 阅读伴侣的已读内容检索
 
 本文定义阅读伴侣第一批“阅读历史”工具的职责、可信范围和返回边界。当前已完成 Contract、
-Port、可信范围构建器、两个检索 Service 与词汇历史 SQLite Adapter，尚未注册 Agent Tool。
+Port、可信范围构建器、两个检索 Service、词汇历史 SQLite Adapter 与 Agent Tool 注册；尚未
+接入阅读伴侣 Loop 的提示词和真实对话入口。
 
 ## 1. 目标
 
@@ -42,7 +43,8 @@ PreviousReadingScope
 章节、页面和选中文本应作为 Invocation Context 直接提供给 Agent。
 
 `AgentToolExecutionContext` 将这份可信范围与 `session_id`、`episode_id` 一起传给 Tool。它与
-模型生成的工具参数分离，因此模型不能伪造 `book_id`、章节号或可访问的 `unit_id`。
+模型生成的工具参数分离，并携带由当前阅读单元确定的 `language_id`，因此模型不能伪造
+`book_id`、语言、章节号或可访问的 `unit_id`。
 
 ## 3. `search_previous_chapters`
 
@@ -159,6 +161,11 @@ Application Search Service
 Tool 不直接读取文件路径或执行 SQL；Repository 不生成面向模型的回答；Agent 不决定数据访问
 范围。
 
+两个 Tool 已注册到共享的显式 `ToolRegistry`。注册本身不代表授权：选书 Agent 仍只允许原来的
+目录检索、候选展示和选书确认三个工具；未来阅读伴侣必须用自己的 allowlist 显式启用
+`search_previous_chapters` 与 `search_vocabulary_history`，执行时还必须额外传入
+`AgentToolExecutionContext`。模型可见 schema 中不存在 Scope 字段。
+
 ## 6. 空结果与错误
 
 “没有找到”是正常结果：
@@ -190,7 +197,8 @@ Tool 不直接读取文件路径或执行 SQL；Repository 不生成面向模型
 3. 已完成：基于 Corpus 与完整章节检查点的 `PreviousReadingScopeBuilder`；
 4. 已完成：摘要与原文段落的此前章节检索 Application Service；
 5. 已完成：SQLite 词汇历史 Adapter 与词汇检索 Application Service；
-6. 下一步：把两个 Tool 注册进现有 `ToolRegistry`，再接入 Agent 提示词和端到端测试。
+6. 已完成：两个 Tool Adapter、共享 Registry 注册和可信执行上下文注入；
+7. 下一步：接入阅读伴侣 Loop 提示词、调用入口与端到端测试。
 
 按这个顺序可以先证明无剧透边界，再接入真实检索；不会让 Agent Loop、Corpus 和 SQLite 在同一
 步中一起变化。

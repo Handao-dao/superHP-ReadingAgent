@@ -391,7 +391,9 @@ conversation_memories
 3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
 4. 已完成：此前章节摘要与原文段落检索 Application Service；
 5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
-6. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
+6. 已完成：两个阅读历史 Tool Adapter、共享 Registry 注册与可信 Context 注入；
+7. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-两个阅读历史工具现在都具备独立运行的后端能力。下一批适合统一建立 Agent Tool Adapter，
-通过 `AgentToolExecutionContext` 注入可信 Scope，再注册到现有 ToolRegistry。
+两个阅读历史工具现在都具备独立运行和受控调用能力。下一批适合回到阅读伴侣 Loop：定义它的
+allowlist 和工具使用提示词，并让手动阅读入口构造 `AgentToolExecutionContext` 后执行真实
+工具回合。

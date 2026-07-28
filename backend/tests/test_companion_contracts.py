@@ -263,6 +263,7 @@ def test_previous_reading_scope_contains_only_checkpointed_prior_units():
     context = AgentToolExecutionContext(
         session_id="session-1",
         episode_id="episode-1",
+        language_id="en",
         previous_reading_scope=scope,
     )
 
@@ -272,6 +273,13 @@ def test_previous_reading_scope_contains_only_checkpointed_prior_units():
         "chapter-2-b",
     )
     assert context.previous_reading_scope == scope
+
+    with pytest.raises(ValueError, match="requires language_id"):
+        AgentToolExecutionContext(
+            session_id="session-1",
+            episode_id="episode-1",
+            previous_reading_scope=scope,
+        )
 
 
 def test_previous_chapter_result_groups_summary_and_source_evidence():

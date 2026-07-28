@@ -23,6 +23,10 @@ def test_build_container_wires_shared_capabilities(tmp_path):
         assert container.event_log_store.event_log_path == settings.event_log_path
         assert not (settings.memory_dir / "reading_memory.json").exists()
         assert container.vocabulary_repository is container.db.vocabulary_repository
+        assert (
+            container.vocabulary_history_repository
+            is container.db.vocabulary_history_repository
+        )
         assert container.bookmark_repository is container.db.bookmark_repository
         assert (
             container.reading_progress_repository
@@ -90,6 +94,26 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             container.book_catalog_search_tool.service
             is container.recommendation_candidate_service
         )
+        assert (
+            container.recommendation_tool_registry
+            is container.agent_tool_registry
+        )
+        assert (
+            container.previous_reading_scope_builder.checkpoint_repository
+            is container.chapter_checkpoint_repository
+        )
+        assert (
+            container.previous_chapter_search_tool.service
+            is container.previous_chapter_search_service
+        )
+        assert (
+            container.vocabulary_history_search_service.repository
+            is container.vocabulary_history_repository
+        )
+        assert (
+            container.vocabulary_history_search_tool.service
+            is container.vocabulary_history_search_service
+        )
         assert container.recommendation_tool_registry.describe(
             (
                 "search_local_book_catalog",
@@ -103,6 +127,18 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             )[0]["name"]
             == "select_recommended_book"
         )
+        assert [
+            description["name"]
+            for description in container.recommendation_tool_registry.describe(
+                (
+                    "search_previous_chapters",
+                    "search_vocabulary_history",
+                )
+            )
+        ] == [
+            "search_previous_chapters",
+            "search_vocabulary_history",
+        ]
         assert (
             container.state_reader.progress_repository
             is container.reading_progress_repository

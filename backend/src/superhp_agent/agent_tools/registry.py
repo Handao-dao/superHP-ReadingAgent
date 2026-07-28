@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Protocol, runtime_checkable
 
+from superhp_agent.contracts import AgentToolExecutionContext
+
 
 @runtime_checkable
 class AgentTool(Protocol):
@@ -19,7 +21,12 @@ class AgentTool(Protocol):
     description: str
     input_schema: Mapping[str, object]
 
-    async def run(self, **arguments: object) -> dict[str, object]: ...
+    async def run(
+        self,
+        *,
+        context: AgentToolExecutionContext | None = None,
+        **arguments: object,
+    ) -> dict[str, object]: ...
 
 
 class UnknownAgentToolError(LookupError):
@@ -84,15 +91,22 @@ class ToolRegistry:
         arguments: Mapping[str, object],
         *,
         allowed_tools: Iterable[str],
+        context: AgentToolExecutionContext | None = None,
     ) -> dict[str, object]:
-        """Execute one registered and explicitly allowed tool."""
+        """Execute one allowed tool with optional trusted runtime context."""
         tool = self._get(tool_name)
         allowed = set(_unique_names(allowed_tools))
         if tool_name not in allowed:
             raise AgentToolNotAllowedError(
                 f"tool is not allowed for this agent: {tool_name}"
             )
-        result = await tool.run(**dict(arguments))
+        if context is None:
+            result = await tool.run(**dict(arguments))
+        else:
+            result = await tool.run(
+                context=context,
+                **dict(arguments),
+            )
         if not isinstance(result, dict):
             raise TypeError(f"tool {tool_name!r} returned a non-object result")
         return result

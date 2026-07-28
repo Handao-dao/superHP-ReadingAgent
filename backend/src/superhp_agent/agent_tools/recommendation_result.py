@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from superhp_agent.contracts import AgentToolExecutionContext
+
 
 class PresentBookRecommendationsTool:
     """Present one to three candidates without ending the conversation."""
@@ -37,10 +39,12 @@ class PresentBookRecommendationsTool:
     async def run(
         self,
         *,
+        context: AgentToolExecutionContext | None = None,
         catalog_ids: Iterable[str],
         message: str,
     ) -> dict[str, object]:
         """Return a pause result after validating its stable payload."""
+        del context
         if isinstance(catalog_ids, str):
             raise ValueError("catalog_ids must be an array")
         normalized_ids = tuple(
@@ -82,10 +86,12 @@ class SelectRecommendedBookTool:
     async def run(
         self,
         *,
+        context: AgentToolExecutionContext | None = None,
         catalog_id: str,
         message: str,
     ) -> dict[str, object]:
         """Return a terminal selection for Loop-level provenance checks."""
+        del context
         normalized_id = catalog_id.strip()
         if not normalized_id:
             raise ValueError("catalog_id must not be empty")

@@ -8,17 +8,26 @@ business rules; Transport receives the assembled capabilities from here.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from superhp_agent.agent_tools import (
-    BookCatalogSearchTool,
+from superhp_agent.agent_tools.book_catalog import BookCatalogSearchTool
+from superhp_agent.agent_tools.recommendation_result import (
     PresentBookRecommendationsTool,
     SelectRecommendedBookTool,
+)
+from superhp_agent.agent_tools.registry import (
     ToolRegistry,
 )
 from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
 from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
 from superhp_agent.application.difficulty_handoff import (
     DifficultyRecommendationHandoffBuilder,
+)
+from superhp_agent.application.previous_chapter_search import (
+    PreviousChapterSearchService,
+)
+from superhp_agent.application.previous_reading_scope import (
+    PreviousReadingScopeBuilder,
 )
 from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
@@ -29,6 +38,9 @@ from superhp_agent.application.reading_difficulty_prompts import (
 from superhp_agent.application.reading_monitor import ReadingDifficultyMonitor
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
+)
+from superhp_agent.application.vocabulary_history_search import (
+    VocabularyHistorySearchService,
 )
 from superhp_agent.artifacts import AnnotatedCopyStore
 from superhp_agent.config import Settings, get_settings
@@ -59,8 +71,15 @@ from superhp_agent.storage.sqlite import (
     SQLiteReadingProgressRepository,
     SQLiteReadingSupportRepository,
     SQLiteRecommendationSessionRepository,
+    SQLiteVocabularyHistoryRepository,
     SQLiteVocabularyRepository,
 )
+
+if TYPE_CHECKING:
+    from superhp_agent.agent_tools.reading_history import (
+        PreviousChapterSearchTool,
+        VocabularyHistorySearchTool,
+    )
 
 
 @dataclass
@@ -75,6 +94,7 @@ class AppContainer:
     event_log_store: EventLogStore
     db: AppDB
     vocabulary_repository: SQLiteVocabularyRepository
+    vocabulary_history_repository: SQLiteVocabularyHistoryRepository
     bookmark_repository: SQLiteBookmarkRepository
     reading_progress_repository: SQLiteReadingProgressRepository
     reading_lookup_repository: SQLiteReadingLookupRepository
@@ -93,10 +113,15 @@ class AppContainer:
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
     recommendation_candidate_service: RecommendationCandidateService
+    previous_reading_scope_builder: PreviousReadingScopeBuilder
+    previous_chapter_search_service: PreviousChapterSearchService
+    vocabulary_history_search_service: VocabularyHistorySearchService
     book_catalog_search_tool: BookCatalogSearchTool
+    previous_chapter_search_tool: PreviousChapterSearchTool
+    vocabulary_history_search_tool: VocabularyHistorySearchTool
     present_book_recommendations_tool: PresentBookRecommendationsTool
     select_recommended_book_tool: SelectRecommendedBookTool
-    recommendation_tool_registry: ToolRegistry
+    agent_tool_registry: ToolRegistry
     recommendation_context_builder: RecommendationContextBuilder
     recommendation_agent_runner: RecommendationAgentRunner
     annotated_copies: AnnotatedCopyStore
@@ -105,6 +130,11 @@ class AppContainer:
     state_reader: ReadingStateReader
     flow_router: ReadingFlowRouter
 
+    @property
+    def recommendation_tool_registry(self) -> ToolRegistry:
+        """Compatibility alias for the now shared explicit ToolRegistry."""
+        return self.agent_tool_registry
+
     def close(self) -> None:
         """Release resources owned by the composition root."""
         self.db.close()
@@ -112,6 +142,11 @@ class AppContainer:
 
 def build_container(settings: Settings | None = None) -> AppContainer:
     """Construct the backend object graph from resolved Settings."""
+    from superhp_agent.agent_tools.reading_history import (
+        PreviousChapterSearchTool,
+        VocabularyHistorySearchTool,
+    )
+
     resolved_settings = settings or get_settings()
     profile_registry = create_default_registry(resolved_settings.default_profile_id)
     default_profile = profile_registry.get()
@@ -131,6 +166,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     event_log_store = EventLogStore(resolved_settings.event_log_path)
     db = AppDB(resolved_settings.db_path)
     vocabulary_repository = db.vocabulary_repository
+    vocabulary_history_repository = db.vocabulary_history_repository
     bookmark_repository = db.bookmark_repository
     reading_progress_repository = db.reading_progress_repository
     reading_lookup_repository = db.reading_lookup_repository
@@ -155,14 +191,30 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     recommendation_candidate_service = RecommendationCandidateService(
         book_difficulty_catalog
     )
+    previous_reading_scope_builder = PreviousReadingScopeBuilder(
+        corpus,
+        chapter_checkpoint_repository,
+    )
+    previous_chapter_search_service = PreviousChapterSearchService(corpus)
+    vocabulary_history_search_service = VocabularyHistorySearchService(
+        vocabulary_history_repository
+    )
     book_catalog_search_tool = BookCatalogSearchTool(recommendation_candidate_service)
+    previous_chapter_search_tool = PreviousChapterSearchTool(
+        previous_chapter_search_service
+    )
+    vocabulary_history_search_tool = VocabularyHistorySearchTool(
+        vocabulary_history_search_service
+    )
     present_book_recommendations_tool = PresentBookRecommendationsTool()
     select_recommended_book_tool = SelectRecommendedBookTool()
-    recommendation_tool_registry = ToolRegistry(
+    agent_tool_registry = ToolRegistry(
         (
             book_catalog_search_tool,
             present_book_recommendations_tool,
             select_recommended_book_tool,
+            previous_chapter_search_tool,
+            vocabulary_history_search_tool,
         )
     )
     recommendation_context_builder = RecommendationContextBuilder()
@@ -193,7 +245,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         lambda: BookRecommendationAgent(
             provider_factory(),
             recommendation_context_builder,
-            recommendation_tool_registry,
+            agent_tool_registry,
         ),
         recommendation_session_repository,
     )
@@ -230,6 +282,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         event_log_store=event_log_store,
         db=db,
         vocabulary_repository=vocabulary_repository,
+        vocabulary_history_repository=vocabulary_history_repository,
         bookmark_repository=bookmark_repository,
         reading_progress_repository=reading_progress_repository,
         reading_lookup_repository=reading_lookup_repository,
@@ -248,10 +301,15 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,
         recommendation_candidate_service=recommendation_candidate_service,
+        previous_reading_scope_builder=previous_reading_scope_builder,
+        previous_chapter_search_service=previous_chapter_search_service,
+        vocabulary_history_search_service=vocabulary_history_search_service,
         book_catalog_search_tool=book_catalog_search_tool,
+        previous_chapter_search_tool=previous_chapter_search_tool,
+        vocabulary_history_search_tool=vocabulary_history_search_tool,
         present_book_recommendations_tool=present_book_recommendations_tool,
         select_recommended_book_tool=select_recommended_book_tool,
-        recommendation_tool_registry=recommendation_tool_registry,
+        agent_tool_registry=agent_tool_registry,
         recommendation_context_builder=recommendation_context_builder,
         recommendation_agent_runner=recommendation_agent_runner,
         annotated_copies=annotated_copies,

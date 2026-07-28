@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from superhp_agent.contracts import (
+    AgentToolExecutionContext,
     BookCandidateMatch,
     BookEntryKind,
     BookSearchQuery,
@@ -51,6 +52,7 @@ class BookCatalogSearchTool:
     async def run(
         self,
         *,
+        context: AgentToolExecutionContext | None = None,
         lexile_min: int | None = None,
         lexile_max: int | None = None,
         genres: Iterable[str] = (),
@@ -59,6 +61,7 @@ class BookCatalogSearchTool:
         limit: int = 5,
     ) -> dict[str, object]:
         """Search with model-friendly values and return a JSON-ready result."""
+        del context
         if limit > 10:
             raise ValueError("limit must not exceed 10 candidates")
         normalized_genres = _normalize_values(genres)

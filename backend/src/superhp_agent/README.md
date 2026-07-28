@@ -293,7 +293,9 @@ Corpus 与完整章节检查点的交集构建可信范围；
 `application/previous_chapter_search.py` 已在该范围内检索章节摘要与有限原文段落。
 `application/vocabulary_history_search.py` 与
 `storage/sqlite/vocabulary_history.py` 已按书、精确词项和可信 unit 集合读取历史语境。当前
-尚未接入 ToolRegistry 和 Agent 运行主链路，完整方案见项目根目录
+两个 Tool Adapter 已注册到共享 `agent_tool_registry`，执行时由
+`AgentToolExecutionContext` 注入模型不可编辑的 Scope 和语言；选书 Agent 仍受原有三个工具的
+allowlist 限制。当前尚未接入阅读伴侣 Agent 运行主链路，完整方案见项目根目录
 `docs/READING_COMPANION_RETRIEVAL_TOOLS.md`。
 
 `application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期
@@ -371,6 +373,11 @@ HTTP Handler
 当前选书能力进一步证明了这个区别：Agent 看到的是
 `agent_tools.BookCatalogSearchTool`，而不是 `ports.BookDifficultyCatalog`；前者使用
 JSON 友好的窄输入，后者是 Service 与 Adapter 之间的内部能力接口。
+
+Composition Root 只创建一个共享的显式 `agent_tool_registry`。工具是否注册、某个 Agent 是否
+获准使用、一次调用可访问哪些阅读数据是三个独立边界：Registry 管理注册，Agent allowlist 管理
+授权，`AgentToolExecutionContext` 管理本次调用的可信数据范围。旧
+`recommendation_tool_registry` 名称暂保留为同一对象的兼容属性。
 
 ### Storage / Repository / Artifact Store
 

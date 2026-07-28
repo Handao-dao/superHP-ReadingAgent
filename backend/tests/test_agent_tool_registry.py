@@ -7,6 +7,7 @@ from superhp_agent.agent_tools import (
     ToolRegistry,
     UnknownAgentToolError,
 )
+from superhp_agent.contracts import AgentToolExecutionContext
 
 
 class EchoTool:
@@ -78,3 +79,23 @@ async def test_registry_separates_registration_from_agent_authorization():
             {"text": "blocked"},
             allowed_tools=(),
         )
+
+
+@pytest.mark.asyncio
+async def test_registry_injects_context_outside_model_arguments():
+    tool = EchoTool()
+    registry = ToolRegistry((tool,))
+    context = AgentToolExecutionContext(
+        session_id="session-1",
+        episode_id="episode-1",
+    )
+
+    result = await registry.execute(
+        "echo",
+        {"text": "hello"},
+        allowed_tools=("echo",),
+        context=context,
+    )
+
+    assert result == {"text": "hello"}
+    assert tool.calls == [{"text": "hello", "context": context}]

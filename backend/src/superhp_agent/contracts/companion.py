@@ -274,6 +274,7 @@ class AgentToolExecutionContext:
 
     session_id: str
     episode_id: str
+    language_id: str = ""
     previous_reading_scope: PreviousReadingScope | None = None
 
     def __post_init__(self) -> None:
@@ -281,6 +282,10 @@ class AgentToolExecutionContext:
             raise ValueError("session_id must not be empty")
         if not self.episode_id.strip():
             raise ValueError("episode_id must not be empty")
+        if self.previous_reading_scope is not None and not self.language_id.strip():
+            raise ValueError(
+                "reading tool context requires language_id"
+            )
 
 
 @dataclass(frozen=True)

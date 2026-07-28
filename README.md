@@ -162,6 +162,8 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 只读工具分别回查此前完整章节和生词本语境，当前章节整体排除。完整设计见
 [`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)，检索边界见
 [`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`](docs/READING_COMPANION_RETRIEVAL_TOOLS.md)。
+真实模型、长期记忆和故障注入的延后验证步骤见
+[`docs/READING_COMPANION_VALIDATION_PLAN.md`](docs/READING_COMPANION_VALIDATION_PLAN.md)。
 
 当前手动阅读 Loop 已接入最小 HTTP 和阅读页对话抽屉，可创建、继续、重试和读取对话。
 Session、Episode 与包含 Tool Call / Tool Result 的原始消息已写入 SQLite；后端重启后可从

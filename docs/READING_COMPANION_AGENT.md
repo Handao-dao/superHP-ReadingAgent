@@ -429,3 +429,5 @@ Conversation Memory 保存来源消息范围、revision、状态和 token usage�
 
 下一批适合用真实英文小说验证摘要质量、压缩触发延迟和跨 Episode 延续效果，再决定是否增加
 后台摘要重试、原始会话历史检索，以及把旧选书 Session 迁入统一长期会话。
+具体场景、故障注入方法、证据字段和验收标准已经记录在
+[`READING_COMPANION_VALIDATION_PLAN.md`](READING_COMPANION_VALIDATION_PLAN.md)，当前暂缓执行。

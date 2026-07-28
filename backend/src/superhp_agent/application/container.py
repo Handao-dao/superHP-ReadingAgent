@@ -41,7 +41,7 @@ from superhp_agent.application.reading_adaptation_evaluator import (
     ReadingAdaptationEvaluator,
 )
 from superhp_agent.application.reading_companion_sessions import (
-    InMemoryReadingCompanionSessionCoordinator,
+    ReadingCompanionSessionCoordinator,
 )
 from superhp_agent.application.reading_difficulty_prompts import (
     ReadingDifficultyPromptCoordinator,
@@ -77,6 +77,8 @@ from superhp_agent.storage.sqlite import (
     SQLiteBookDifficultyCatalog,
     SQLiteBookmarkRepository,
     SQLiteChapterReadingCheckpointRepository,
+    SQLiteConversationMemoryRepository,
+    SQLiteReadingCompanionRepository,
     SQLiteReadingDifficultyPromptRepository,
     SQLiteReadingLookupRepository,
     SQLiteReadingProgressRepository,
@@ -123,6 +125,8 @@ class AppContainer:
     difficulty_handoff_builder: DifficultyRecommendationHandoffBuilder
     book_difficulty_catalog: SQLiteBookDifficultyCatalog
     recommendation_session_repository: SQLiteRecommendationSessionRepository
+    reading_companion_repository: SQLiteReadingCompanionRepository
+    conversation_memory_repository: SQLiteConversationMemoryRepository
     recommendation_candidate_service: RecommendationCandidateService
     previous_reading_scope_builder: PreviousReadingScopeBuilder
     previous_chapter_search_service: PreviousChapterSearchService
@@ -138,7 +142,7 @@ class AppContainer:
     reading_companion_context_builder: ReadingCompanionContextBuilder
     manual_reading_companion_runner: ManualReadingCompanionRunner
     reading_companion_session_coordinator: (
-        InMemoryReadingCompanionSessionCoordinator
+        ReadingCompanionSessionCoordinator
     )
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
@@ -204,6 +208,8 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         reading_progress_repository,
     )
     recommendation_session_repository = db.recommendation_session_repository
+    reading_companion_repository = db.reading_companion_repository
+    conversation_memory_repository = db.conversation_memory_repository
     recommendation_candidate_service = RecommendationCandidateService(
         book_difficulty_catalog
     )
@@ -276,8 +282,9 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         ),
     )
     reading_companion_session_coordinator = (
-        InMemoryReadingCompanionSessionCoordinator(
-            manual_reading_companion_runner
+        ReadingCompanionSessionCoordinator(
+            manual_reading_companion_runner,
+            reading_companion_repository,
         )
     )
     annotator_service = LazyAnnotatorService(
@@ -331,6 +338,8 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         difficulty_handoff_builder=difficulty_handoff_builder,
         book_difficulty_catalog=book_difficulty_catalog,
         recommendation_session_repository=recommendation_session_repository,
+        reading_companion_repository=reading_companion_repository,
+        conversation_memory_repository=conversation_memory_repository,
         recommendation_candidate_service=recommendation_candidate_service,
         previous_reading_scope_builder=previous_reading_scope_builder,
         previous_chapter_search_service=previous_chapter_search_service,

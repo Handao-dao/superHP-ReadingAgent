@@ -1,8 +1,8 @@
-"""Coordinate temporary HTTP sessions around the manual companion Runner.
+"""Coordinate durable HTTP sessions around the manual companion Runner.
 
-This is deliberately an in-memory transition boundary. It keeps FastAPI from
-owning Agent state while the long-lived Session/Message repository is still
-being designed. Restarting the backend clears every state stored here.
+The coordinator owns atomic start/resume/retry application operations. Raw
+Episode state is checkpointed before the first model call and after every
+bounded Agent run, so a backend restart does not erase the conversation.
 """
 
 from __future__ import annotations
@@ -16,25 +16,31 @@ from superhp_agent.application.manual_reading_companion import (
 from superhp_agent.contracts import (
     ReadingCompanionReply,
     ReadingCompanionRunState,
+    ReadingCompanionSession,
 )
+from superhp_agent.ports.repositories import ReadingCompanionRepository
 
 
 class ReadingCompanionSessionNotFoundError(LookupError):
-    """Raised when an HTTP caller references an unknown in-memory session."""
+    """Raised when an HTTP caller references an unknown durable session."""
 
 
 class ReadingCompanionSessionConflictError(RuntimeError):
-    """Raised when a caller tries to replace an active in-memory session."""
+    """Raised when a caller tries to replace an existing durable session."""
 
 
-class InMemoryReadingCompanionSessionCoordinator:
-    """Start, resume, retry, and inspect manual reading conversations."""
+class ReadingCompanionSessionCoordinator:
+    """Start, resume, retry, and restore manual reading conversations."""
 
-    def __init__(self, runner: ManualReadingCompanionRunner):
+    def __init__(
+        self,
+        runner: ManualReadingCompanionRunner,
+        repository: ReadingCompanionRepository,
+    ):
         self.runner = runner
-        self._states: dict[str, ReadingCompanionRunState] = {}
+        self.repository = repository
         # The current product is single-user. One lock makes state replacement
-        # atomic without introducing premature per-session lock management.
+        # atomic inside this process without premature lock management.
         self._lock = asyncio.Lock()
 
     async def start(
@@ -51,7 +57,7 @@ class InMemoryReadingCompanionSessionCoordinator:
             raise ValueError("session_id must not be empty")
 
         async with self._lock:
-            if resolved_session_id in self._states:
+            if self.repository.load_session(resolved_session_id) is not None:
                 raise ReadingCompanionSessionConflictError(
                     "reading companion session already exists: "
                     f"{resolved_session_id}"
@@ -62,8 +68,25 @@ class InMemoryReadingCompanionSessionCoordinator:
                 user_message=user_message,
                 selected_text=selected_text,
             )
+            self.repository.create_session(
+                ReadingCompanionSession(
+                    session_id=resolved_session_id,
+                    active_episode_id=state.episode.episode_id,
+                )
+            )
+            # Preserve the user request even if the process stops during the
+            # first provider call.
+            self.repository.save_run_state(state)
+            persisted_state = self.repository.load_active_run(
+                resolved_session_id
+            )
+            if persisted_state is None:
+                raise RuntimeError(
+                    "failed to restore the newly persisted companion run"
+                )
+            state = persisted_state
             reply = await self.runner.run(state)
-            self._states[resolved_session_id] = reply.state
+            self.repository.save_run_state(reply.state)
             return reply
 
     async def resume(
@@ -79,7 +102,7 @@ class InMemoryReadingCompanionSessionCoordinator:
                 state,
                 user_message=user_message,
             )
-            self._states[state.episode.session_id] = reply.state
+            self.repository.save_run_state(reply.state)
             return reply
 
     async def retry(self, session_id: str) -> ReadingCompanionReply:
@@ -87,16 +110,23 @@ class InMemoryReadingCompanionSessionCoordinator:
         async with self._lock:
             state = self._require_state(session_id)
             reply = await self.runner.run(state)
-            self._states[state.episode.session_id] = reply.state
+            self.repository.save_run_state(reply.state)
             return reply
 
     def load(self, session_id: str) -> ReadingCompanionRunState | None:
-        """Return immutable in-memory state for a public read projection."""
-        return self._states.get(str(session_id or "").strip())
+        """Restore immutable active state for a public read projection."""
+        normalized = str(session_id or "").strip()
+        if not normalized:
+            return None
+        return self.repository.load_active_run(normalized)
 
     def _require_state(self, session_id: str) -> ReadingCompanionRunState:
         normalized = str(session_id or "").strip()
-        state = self._states.get(normalized)
+        state = (
+            self.repository.load_active_run(normalized)
+            if normalized
+            else None
+        )
         if state is None:
             raise ReadingCompanionSessionNotFoundError(
                 f"reading companion session not found: {normalized}"

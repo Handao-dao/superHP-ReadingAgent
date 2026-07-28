@@ -19,6 +19,12 @@ from superhp_agent.storage.sqlite.bookmarks import (
 from superhp_agent.storage.sqlite.chapter_checkpoints import (
     SQLiteChapterReadingCheckpointRepository,
 )
+from superhp_agent.storage.sqlite.conversation_memories import (
+    SQLiteConversationMemoryRepository,
+)
+from superhp_agent.storage.sqlite.reading_companion import (
+    SQLiteReadingCompanionRepository,
+)
 from superhp_agent.storage.sqlite.reading_difficulty_prompts import (
     SQLiteReadingDifficultyPromptRepository,
 )
@@ -85,6 +91,12 @@ class AppDB:
         self.book_difficulty_catalog = SQLiteBookDifficultyCatalog(self.database)
         self.recommendation_session_repository = (
             SQLiteRecommendationSessionRepository(self.database)
+        )
+        self.reading_companion_repository = (
+            SQLiteReadingCompanionRepository(self.database)
+        )
+        self.conversation_memory_repository = (
+            SQLiteConversationMemoryRepository(self.database)
         )
 
     def close(self) -> None:

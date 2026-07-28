@@ -10,9 +10,9 @@ from fastapi import APIRouter, HTTPException, status
 
 from superhp_agent.agents import ReadingCompanionStateError
 from superhp_agent.application import (
-    InMemoryReadingCompanionSessionCoordinator,
     ManualReadingCompanionError,
     ReadingCompanionSessionConflictError,
+    ReadingCompanionSessionCoordinator,
     ReadingCompanionSessionNotFoundError,
 )
 from superhp_agent.contracts import (
@@ -28,7 +28,7 @@ from superhp_agent.schemas import (
 
 
 def create_reading_companion_router(
-    coordinator: InMemoryReadingCompanionSessionCoordinator,
+    coordinator: ReadingCompanionSessionCoordinator,
 ) -> APIRouter:
     """Create a router bound to the transitional in-memory coordinator."""
     router = APIRouter(

@@ -72,6 +72,14 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             container.recommendation_agent_runner.session_repository
             is container.recommendation_session_repository
         )
+        assert (
+            container.reading_companion_repository
+            is container.db.reading_companion_repository
+        )
+        assert (
+            container.conversation_memory_repository
+            is container.db.conversation_memory_repository
+        )
         assert container.book_difficulty_catalog is container.db.book_difficulty_catalog
         assert container.difficulty_handoff_builder.corpus is container.corpus
         assert (
@@ -121,6 +129,10 @@ def test_build_container_wires_shared_capabilities(tmp_path):
         assert (
             container.reading_companion_session_coordinator.runner
             is container.manual_reading_companion_runner
+        )
+        assert (
+            container.reading_companion_session_coordinator.repository
+            is container.reading_companion_repository
         )
         assert (
             container.manual_reading_companion_runner.corpus

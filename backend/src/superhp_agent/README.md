@@ -208,7 +208,8 @@ Loop 不依赖 Storage，Repository 也不调用模型；Runner 只是围绕一�
 
 ```text
 Reading Companion HTTP Router
-    → InMemoryReadingCompanionSessionCoordinator
+    → ReadingCompanionSessionCoordinator
+        → ReadingCompanionRepository
         → ManualReadingCompanionRunner
             → 冻结当前 book / chapter / unit / selected_text
             → PreviousReadingScopeBuilder
@@ -228,11 +229,17 @@ Reading Companion HTTP Router
 而非 system 规则中。Loop 还会再次校验执行 Context 的 Session、Episode、Book 与当前 Chapter，
 防止调用方错配可信范围。
 
-`InMemoryReadingCompanionSessionCoordinator` 在后端进程内保存当前
-`ReadingCompanionRunState`，HTTP 提供创建、继续、重试和读取会话四个动作。公开响应只投影
-user/assistant 消息，不暴露 Prompt、Tool Call 或 Tool Result。当前仍无 SQLite 消息表、
-Episode 结束摘要和自动压缩，后端重启会清空这些对话；这个限制是显式的，不用临时 JSON 冒充
-已经完成的长期记忆。
+`ReadingCompanionSessionCoordinator` 通过 `ReadingCompanionRepository` 保存长期 Session、
+当前 Episode 与原始 `ReadingCompanionMessage`。首条用户消息会在模型调用前落盘，此后每次有限
+Loop 完成都会事务性追加消息并更新运行快照；后端重启后可恢复当前 Episode。消息记录包含原生
+Tool Call / Tool Result，但公开 HTTP 响应仍只投影 user/assistant 消息，不暴露 Prompt 与工具
+流量。
+
+SQLite 将 `reading_companion_sessions`、`reading_companion_episodes` 和
+`reading_companion_messages` 分表保存。已有 Message 不允许改写；`conversation_memories`
+单独保存带来源消息范围和修订号的 pending / ready / failed 摘要，不替代原始 transcript。
+当前已完成长期消息与摘要存储基础，Episode 结束触发和 Rolling Compaction 的生成、回注仍是
+下一阶段。
 
 ```text
 POST /api/reading-companion/sessions
@@ -377,6 +384,8 @@ ports/                         # 上层业务需要哪些底层能力
     ├── vocabulary_history.py # Agent 只读生词语境
     ├── bookmarks.py
     ├── reading_progress.py
+    ├── reading_companion.py  # 长期 Session、Episode 与原始消息
+    ├── conversation_memories.py # 带来源范围的摘要修订
     ├── reading_support.py      # 每本书的英文译注支持目标
     └── chapter_checkpoints.py  # 完整章节阅读快照
 
@@ -390,6 +399,8 @@ storage/                       # 存储类 Port 如何具体实现
     ├── vocabulary_history.py
     ├── bookmarks.py
     ├── reading_progress.py
+    ├── reading_companion.py
+    ├── conversation_memories.py
     ├── reading_support.py
     └── chapter_checkpoints.py
 ```

@@ -130,6 +130,100 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         );
 
+        CREATE TABLE IF NOT EXISTS reading_companion_sessions (
+            session_id TEXT PRIMARY KEY,
+            reader_key TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (status IN ('active', 'archived')),
+            active_episode_id TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS reading_companion_episodes (
+            episode_id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            trigger TEXT NOT NULL
+                CHECK (
+                    trigger IN (
+                        'onboarding',
+                        'manual_reading',
+                        'difficulty_alert',
+                        'user_request'
+                    )
+                ),
+            start_message_id TEXT NOT NULL,
+            state TEXT NOT NULL
+                CHECK (state IN ('active', 'completed', 'abandoned')),
+            book_id TEXT NOT NULL DEFAULT '',
+            chapter_id TEXT NOT NULL DEFAULT '',
+            unit_id TEXT NOT NULL DEFAULT '',
+            selected_text TEXT NOT NULL DEFAULT '',
+            end_message_id TEXT NOT NULL DEFAULT '',
+            end_reason TEXT DEFAULT NULL,
+            tool_call_count INTEGER NOT NULL DEFAULT 0
+                CHECK (tool_call_count >= 0),
+            error_code TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            ended_at TEXT NOT NULL DEFAULT '',
+            FOREIGN KEY (session_id)
+                REFERENCES reading_companion_sessions(session_id)
+                ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS reading_companion_messages (
+            message_id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            episode_id TEXT NOT NULL,
+            sequence_no INTEGER NOT NULL CHECK (sequence_no >= 0),
+            role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'tool')),
+            content TEXT NOT NULL DEFAULT '',
+            tool_calls_json TEXT NOT NULL DEFAULT '[]',
+            tool_call_id TEXT NOT NULL DEFAULT '',
+            tool_name TEXT NOT NULL DEFAULT '',
+            is_error INTEGER NOT NULL DEFAULT 0
+                CHECK (is_error IN (0, 1)),
+            created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+            UNIQUE (episode_id, sequence_no),
+            FOREIGN KEY (session_id)
+                REFERENCES reading_companion_sessions(session_id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (episode_id)
+                REFERENCES reading_companion_episodes(episode_id)
+                ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS conversation_memories (
+            memory_id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            episode_id TEXT NOT NULL,
+            kind TEXT NOT NULL
+                CHECK (kind IN ('episode_summary', 'rolling_compaction')),
+            revision INTEGER NOT NULL CHECK (revision >= 1),
+            source_start_message_id TEXT NOT NULL,
+            source_end_message_id TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (status IN ('pending', 'ready', 'failed')),
+            summary TEXT NOT NULL DEFAULT '',
+            error_code TEXT NOT NULL DEFAULT '',
+            input_tokens INTEGER NOT NULL DEFAULT 0
+                CHECK (input_tokens >= 0),
+            output_tokens INTEGER NOT NULL DEFAULT 0
+                CHECK (output_tokens >= 0),
+            created_at TEXT NOT NULL,
+            UNIQUE (session_id, kind, revision),
+            FOREIGN KEY (session_id)
+                REFERENCES reading_companion_sessions(session_id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (episode_id)
+                REFERENCES reading_companion_episodes(episode_id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (source_start_message_id)
+                REFERENCES reading_companion_messages(message_id),
+            FOREIGN KEY (source_end_message_id)
+                REFERENCES reading_companion_messages(message_id)
+        );
+
         CREATE TABLE IF NOT EXISTS reading_lookup_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             unit_id TEXT NOT NULL,
@@ -217,6 +311,14 @@ def initialize_schema(connection: sqlite3.Connection) -> None:
             ON recommendation_catalog(entry_kind);
         CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_phase_updated
             ON recommendation_sessions(phase, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_companion_sessions_reader_updated
+            ON reading_companion_sessions(reader_key, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_companion_episodes_session_created
+            ON reading_companion_episodes(session_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_companion_messages_episode_sequence
+            ON reading_companion_messages(episode_id, sequence_no);
+        CREATE INDEX IF NOT EXISTS idx_memories_session_kind_revision
+            ON conversation_memories(session_id, kind, revision);
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_book_time
             ON reading_lookup_events(book_id, looked_up_at);
         CREATE INDEX IF NOT EXISTS idx_reading_lookup_events_chapter

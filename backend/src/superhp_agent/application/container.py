@@ -18,10 +18,18 @@ from superhp_agent.agent_tools.recommendation_result import (
 from superhp_agent.agent_tools.registry import (
     ToolRegistry,
 )
-from superhp_agent.agents import BookRecommendationAgent, RecommendationContextBuilder
+from superhp_agent.agents import (
+    BookRecommendationAgent,
+    ReadingCompanionAgent,
+    ReadingCompanionContextBuilder,
+    RecommendationContextBuilder,
+)
 from superhp_agent.application.chapter_checkpoints import ChapterCheckpointRecorder
 from superhp_agent.application.difficulty_handoff import (
     DifficultyRecommendationHandoffBuilder,
+)
+from superhp_agent.application.manual_reading_companion import (
+    ManualReadingCompanionRunner,
 )
 from superhp_agent.application.previous_chapter_search import (
     PreviousChapterSearchService,
@@ -124,6 +132,8 @@ class AppContainer:
     agent_tool_registry: ToolRegistry
     recommendation_context_builder: RecommendationContextBuilder
     recommendation_agent_runner: RecommendationAgentRunner
+    reading_companion_context_builder: ReadingCompanionContextBuilder
+    manual_reading_companion_runner: ManualReadingCompanionRunner
     annotated_copies: AnnotatedCopyStore
     annotator_service: LazyAnnotatorService
     lookup_service: LazyLookupService
@@ -218,6 +228,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         )
     )
     recommendation_context_builder = RecommendationContextBuilder()
+    reading_companion_context_builder = ReadingCompanionContextBuilder()
     annotated_copies = AnnotatedCopyStore(resolved_settings.annotated_dir)
     chapter_checkpoint_recorder = ChapterCheckpointRecorder(
         corpus,
@@ -248,6 +259,15 @@ def build_container(settings: Settings | None = None) -> AppContainer:
             agent_tool_registry,
         ),
         recommendation_session_repository,
+    )
+    manual_reading_companion_runner = ManualReadingCompanionRunner(
+        corpus,
+        previous_reading_scope_builder,
+        lambda: ReadingCompanionAgent(
+            provider_factory(),
+            reading_companion_context_builder,
+            agent_tool_registry,
+        ),
     )
     annotator_service = LazyAnnotatorService(
         provider_factory,
@@ -312,6 +332,10 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         agent_tool_registry=agent_tool_registry,
         recommendation_context_builder=recommendation_context_builder,
         recommendation_agent_runner=recommendation_agent_runner,
+        reading_companion_context_builder=(
+            reading_companion_context_builder
+        ),
+        manual_reading_companion_runner=manual_reading_companion_runner,
         annotated_copies=annotated_copies,
         annotator_service=annotator_service,
         lookup_service=lookup_service,

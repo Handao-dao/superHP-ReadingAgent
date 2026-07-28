@@ -78,6 +78,7 @@ def test_manual_reading_episode_freezes_the_invocation_context():
         start_message_id="message-10",
         book_id="book-1",
         chapter_id="chapter-3",
+        unit_id="chapter-3-sec1",
         selected_text="A short selected passage.",
     )
 
@@ -87,7 +88,7 @@ def test_manual_reading_episode_freezes_the_invocation_context():
 
 
 def test_episode_lifecycle_requires_consistent_scope_and_end_metadata():
-    with pytest.raises(ValueError, match="requires book_id and chapter_id"):
+    with pytest.raises(ValueError, match="requires book, chapter, and unit"):
         ReadingCompanionEpisode(
             episode_id="episode",
             session_id="session",

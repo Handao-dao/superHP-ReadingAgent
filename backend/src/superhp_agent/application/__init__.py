@@ -6,6 +6,10 @@ from superhp_agent.application.difficulty_handoff import (
     DifficultyHandoffBookNotFoundError,
     DifficultyRecommendationHandoffBuilder,
 )
+from superhp_agent.application.manual_reading_companion import (
+    ManualReadingCompanionError,
+    ManualReadingCompanionRunner,
+)
 from superhp_agent.application.previous_chapter_search import (
     PreviousChapterSearchError,
     PreviousChapterSearchPolicy,
@@ -53,6 +57,8 @@ __all__ = [
     "ChapterCheckpointRecorder",
     "DifficultyHandoffBookNotFoundError",
     "DifficultyRecommendationHandoffBuilder",
+    "ManualReadingCompanionError",
+    "ManualReadingCompanionRunner",
     "PreviousChapterSearchError",
     "PreviousChapterSearchPolicy",
     "PreviousChapterSearchService",

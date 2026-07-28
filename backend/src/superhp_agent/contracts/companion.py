@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from superhp_agent.contracts.llm import LLMToolCall
+
 
 class ReadingCompanionSessionStatus(StrEnum):
     """Long-lived availability of one reader's companion conversation."""
@@ -45,6 +47,14 @@ class ReadingCompanionEpisodeEndReason(StrEnum):
     USER_ABANDONED = "user_abandoned"
     BOOK_CHANGED = "book_changed"
     UNRECOVERABLE_ERROR = "unrecoverable_error"
+
+
+class ReadingCompanionMessageRole(StrEnum):
+    """Native transcript roles retained across companion model turns."""
+
+    USER = "user"
+    ASSISTANT = "assistant"
+    TOOL = "tool"
 
 
 class ConversationMemoryKind(StrEnum):
@@ -100,6 +110,7 @@ class ReadingCompanionEpisode:
     state: ReadingCompanionEpisodeState = ReadingCompanionEpisodeState.ACTIVE
     book_id: str = ""
     chapter_id: str = ""
+    unit_id: str = ""
     selected_text: str = ""
     end_message_id: str = ""
     end_reason: ReadingCompanionEpisodeEndReason | None = None
@@ -115,12 +126,14 @@ class ReadingCompanionEpisode:
             raise ValueError("start_message_id must not be empty")
         if self.chapter_id and not self.book_id:
             raise ValueError("chapter_id requires book_id")
+        if self.unit_id and not self.chapter_id:
+            raise ValueError("unit_id requires chapter_id")
         if self.selected_text and not self.chapter_id:
             raise ValueError("selected_text requires chapter_id")
         if self.trigger is ReadingCompanionEpisodeTrigger.MANUAL_READING:
-            if not self.book_id or not self.chapter_id:
+            if not self.book_id or not self.chapter_id or not self.unit_id:
                 raise ValueError(
-                    "manual_reading episode requires book_id and chapter_id"
+                    "manual_reading episode requires book, chapter, and unit"
                 )
         if self.trigger is ReadingCompanionEpisodeTrigger.DIFFICULTY_ALERT:
             if not self.book_id:
@@ -136,6 +149,125 @@ class ReadingCompanionEpisode:
                 raise ValueError("ended episode requires end_message_id")
             if self.end_reason is None:
                 raise ValueError("ended episode requires end_reason")
+
+
+@dataclass(frozen=True)
+class ReadingCompanionMessage:
+    """One persistent-ready user, assistant, or tool transcript message."""
+
+    message_id: str
+    session_id: str
+    episode_id: str
+    role: ReadingCompanionMessageRole
+    content: str = ""
+    tool_calls: tuple[LLMToolCall, ...] = ()
+    tool_call_id: str = ""
+    tool_name: str = ""
+    is_error: bool = False
+
+    def __post_init__(self) -> None:
+        for field_name, value in (
+            ("message_id", self.message_id),
+            ("session_id", self.session_id),
+            ("episode_id", self.episode_id),
+        ):
+            if not value.strip():
+                raise ValueError(f"{field_name} must not be empty")
+        if self.role is ReadingCompanionMessageRole.USER:
+            if not self.content.strip():
+                raise ValueError("user companion message must not be empty")
+            if self.tool_calls or self.tool_call_id or self.tool_name:
+                raise ValueError("user companion message contains tool data")
+            return
+        if self.role is ReadingCompanionMessageRole.ASSISTANT:
+            if not self.content.strip() and not self.tool_calls:
+                raise ValueError(
+                    "assistant companion message requires content or tool calls"
+                )
+            if self.tool_call_id or self.tool_name:
+                raise ValueError(
+                    "assistant companion message contains tool-result data"
+                )
+            return
+        if not self.content.strip():
+            raise ValueError("companion tool result must not be empty")
+        if not self.tool_call_id.strip() or not self.tool_name.strip():
+            raise ValueError(
+                "companion tool result requires call id and tool name"
+            )
+        if self.tool_calls:
+            raise ValueError(
+                "companion tool result contains assistant tool calls"
+            )
+
+
+@dataclass(frozen=True)
+class ReadingCompanionRunState:
+    """In-memory active Episode state passed between companion Loop calls."""
+
+    episode: ReadingCompanionEpisode
+    conversation: tuple[ReadingCompanionMessage, ...]
+    tool_call_count: int = 0
+    error_code: str = ""
+
+    def __post_init__(self) -> None:
+        if self.episode.state is not ReadingCompanionEpisodeState.ACTIVE:
+            raise ValueError("companion run requires an active episode")
+        if not self.conversation:
+            raise ValueError("companion run requires a conversation")
+        if self.conversation[0].message_id != self.episode.start_message_id:
+            raise ValueError(
+                "first companion message must match episode start_message_id"
+            )
+        if self.conversation[0].role is not ReadingCompanionMessageRole.USER:
+            raise ValueError("companion conversation must start with a user")
+        if any(
+            message.session_id != self.episode.session_id
+            or message.episode_id != self.episode.episode_id
+            for message in self.conversation
+        ):
+            raise ValueError(
+                "companion messages must belong to the active episode"
+            )
+        message_ids = [
+            message.message_id for message in self.conversation
+        ]
+        if len(set(message_ids)) != len(message_ids):
+            raise ValueError("companion message ids must be unique")
+        if self.tool_call_count < 0:
+            raise ValueError("tool_call_count must not be negative")
+
+
+@dataclass(frozen=True)
+class ReadingCompanionObservation:
+    """Trusted facts and transcript supplied to one companion model turn."""
+
+    state: ReadingCompanionRunState
+    book_title: str
+    chapter_title: str
+    chapter_no: int
+    remaining_tool_calls: int
+
+    def __post_init__(self) -> None:
+        if not self.book_title.strip() or not self.chapter_title.strip():
+            raise ValueError("companion observation requires reading titles")
+        if self.chapter_no < 1:
+            raise ValueError("chapter_no must be positive")
+        if self.remaining_tool_calls < 0:
+            raise ValueError("remaining_tool_calls must not be negative")
+
+
+@dataclass(frozen=True)
+class ReadingCompanionReply:
+    """User-facing response plus resumable active Episode state."""
+
+    state: ReadingCompanionRunState
+    message: str
+    error_code: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.message.strip():
+            raise ValueError("companion reply message must not be empty")
 
 
 @dataclass(frozen=True)

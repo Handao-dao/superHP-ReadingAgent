@@ -17,9 +17,10 @@
     → 重新生成 Cards
 ```
 
-LLM 负责译注和查词，不负责自主规划阅读主流程，也不直接取得无限工具执行权限。选书扩展已经在
-`agents/book_recommendation.py` 建立一个独立、有限工具和有限轮次的 Agent Loop；它不改变现有
-guided reading runtime 的确定性 Action 边界。
+LLM 负责译注和查词，不负责自主规划阅读主流程，也不直接取得无限工具执行权限。选书扩展和
+手动阅读伴侣分别在 `agents/book_recommendation.py`、`agents/reading_companion.py` 建立独立、
+有限工具和有限轮次的 Agent Loop；它们不改变现有 guided reading runtime 的确定性 Action
+边界。
 
 ## 核心设计原则
 
@@ -200,6 +201,35 @@ Recommendation HTTP Router
 
 Loop 不依赖 Storage，Repository 也不调用模型；Runner 只是围绕一次 Agent 运行组织加载与保存。
 
+### Reading Companion Agent
+
+`agents/reading_companion.py` 实现手动阅读场景的有限 Loop，使用独立的
+`ReadingCompanionMessage` 与 `ReadingCompanionRunState`，不反向复用选书任务消息。
+
+```text
+ManualReadingCompanionRunner
+    → 冻结当前 book / chapter / unit / selected_text
+    → PreviousReadingScopeBuilder
+    → AgentToolExecutionContext
+    → ReadingCompanionAgent
+        → ReadingCompanionContextBuilder
+        → LLMProvider
+        ├── 直接回答
+        └── 受限 Tool Call
+            → search_previous_chapters / search_vocabulary_history
+            → Tool Result
+            → 下一轮 LLMProvider
+```
+
+固定提示词要求模型在“直接回答、此前章节检索、生词语境检索”中选择最简单的方式，并明确禁止
+检索当前或未来章节、修改阅读状态以及为了展示能力而调用工具。运行时选中文本放在 metadata
+而非 system 规则中。Loop 还会再次校验执行 Context 的 Session、Episode、Book 与当前 Chapter，
+防止调用方错配可信范围。
+
+当前消息和 Episode 只保存在调用方持有的内存态 `ReadingCompanionRunState` 中；尚无 HTTP
+入口、SQLite 消息表、Episode 结束摘要和自动压缩。这个限制是显式的，不用临时 JSON 冒充已经
+完成的长期记忆。
+
 ### Context Builder
 
 当前由 `context.py`、Profile 的 context 构造方法和 `AnnotatorService` 共同实现。
@@ -295,7 +325,7 @@ Corpus 与完整章节检查点的交集构建可信范围；
 `storage/sqlite/vocabulary_history.py` 已按书、精确词项和可信 unit 集合读取历史语境。当前
 两个 Tool Adapter 已注册到共享 `agent_tool_registry`，执行时由
 `AgentToolExecutionContext` 注入模型不可编辑的 Scope 和语言；选书 Agent 仍受原有三个工具的
-allowlist 限制。当前尚未接入阅读伴侣 Agent 运行主链路，完整方案见项目根目录
+allowlist 限制。手动阅读后端 Loop 已接入该能力，尚未开放 HTTP 和前端入口，完整方案见项目根目录
 `docs/READING_COMPANION_RETRIEVAL_TOOLS.md`。
 
 `application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期

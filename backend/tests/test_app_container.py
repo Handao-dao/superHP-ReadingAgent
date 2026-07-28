@@ -114,6 +114,14 @@ def test_build_container_wires_shared_capabilities(tmp_path):
             container.vocabulary_history_search_tool.service
             is container.vocabulary_history_search_service
         )
+        assert (
+            container.manual_reading_companion_runner.scope_builder
+            is container.previous_reading_scope_builder
+        )
+        assert (
+            container.manual_reading_companion_runner.corpus
+            is container.corpus
+        )
         assert container.recommendation_tool_registry.describe(
             (
                 "search_local_book_catalog",

@@ -153,15 +153,17 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 
 ## 阅读伴侣 Agent 规划
 
-当前已经运行的选书 Agent 支持初次推荐、自然语言调整候选和阅读困难后的再次推荐。后续会将其
-扩展为可在阅读中随时呼出的长期阅读伴侣：同一个长期 Session 由多个有明确触发点的 Episode
-组成，推荐完成只结束当前 Episode，不终止整个会话。
+当前选书 Agent 支持初次推荐、自然语言调整候选和阅读困难后的再次推荐；手动阅读场景也已建立
+可独立测试的后端阅读伴侣 Loop，可以直接回答，或在可信已读范围内回查此前章节和生词语境。
+长期 Session 仍规划为多个有明确触发点的 Episode，推荐完成只结束当前 Episode。
 
 设计采用两种互补的上下文治理机制：Episode 明确结束后生成被动摘要，当前 Episode 接近模型
 上下文上限时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个
 只读工具分别回查此前完整章节和生词本语境，当前章节整体排除。完整设计见
 [`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)，检索边界见
 [`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`](docs/READING_COMPANION_RETRIEVAL_TOOLS.md)。
+
+当前手动阅读 Loop 仍是内存态后端能力，尚未接入 HTTP、前端抽屉和长期消息存储。
 
 ## 项目结构
 

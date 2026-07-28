@@ -1,6 +1,7 @@
 # 阅读伴侣 Agent：长期会话、情景记忆与阅读检索设计
 
-> 状态：首批 Contract 已建立，尚未替换当前运行中的 `RecommendationAgentSession`。
+> 状态：手动阅读场景的后端 Loop、ContextBuilder 和两类检索工具已经可运行；长期消息持久化、
+> HTTP 与前端入口尚未接入，当前选书会话仍使用 `RecommendationAgentSession`。
 >
 > 本文定义后续演进方向。第一阶段只稳定边界和 Contract，不立即扩大工具权限，也不改变现有
 > 译注、查词和阅读监控主链路。
@@ -152,6 +153,7 @@ ReadingCompanionEpisode(
     state: "active | completed | abandoned",
     book_id: str,
     chapter_id: str,
+    unit_id: str,
     selected_text: str,
     start_message_id: str,
     end_message_id: str,
@@ -174,6 +176,22 @@ ConversationMemory(
     output_tokens: int,
     created_at: str,
 )
+
+ReadingCompanionMessage(
+    message_id: str,
+    session_id: str,
+    episode_id: str,
+    role: "user | assistant | tool",
+    content: str,
+    tool_calls: tuple,
+)
+
+ReadingCompanionRunState(
+    episode: ReadingCompanionEpisode,
+    conversation: tuple[ReadingCompanionMessage, ...],
+    tool_call_count: int,
+    error_code: str,
+)
 ```
 
 关键约束：
@@ -183,6 +201,11 @@ ConversationMemory(
 - 同一覆盖范围和 revision 的摘要生成需要幂等；
 - Session 同一时间最多有一个 active Episode；
 - 结构化选择、书籍 id 和阅读证据继续保存在 Contract 中，不能只存在于自由文本摘要。
+
+当前 `ReadingCompanionRunState` 是手动入口的内存态运行边界，消息已经包含未来持久化所需的
+`message_id/session_id/episode_id`，但本批次不创建 SQLite 表。`ManualReadingCompanionRunner`
+冻结当前 unit，每次模型运行前重新构建可信 Scope；`ReadingCompanionAgent` 只负责原生
+user/assistant/tool 消息与有限 Observe → Tool → Observe 循环。
 
 ## 6. 两种压缩机制
 
@@ -344,7 +367,7 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 2. 已完成：将当前一次推荐纯投影为一个 Recommendation Episode；
 3. 把 Session 的长期状态与推荐任务状态分开；
 4. 让选书完成只结束 Episode，长期 Session 保持 active；
-5. 增加手动阅读入口、`search_previous_chapters` 和
+5. 已完成：增加手动阅读后端入口、`search_previous_chapters` 和
    `search_vocabulary_history`；
 6. 接入 Episode 结束摘要；
 7. 记录真实 token 数据后再接入自动 Rolling Compaction；
@@ -392,8 +415,9 @@ conversation_memories
 4. 已完成：此前章节摘要与原文段落检索 Application Service；
 5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
 6. 已完成：两个阅读历史 Tool Adapter、共享 Registry 注册与可信 Context 注入；
-7. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
+7. 已完成：手动阅读场景的 ContextBuilder、有限工具 Loop、内存态 Episode 入口和真实工具回合；
+8. 暂不接入摘要模型调用、SQLite migration、HTTP 和前端按钮。
 
-两个阅读历史工具现在都具备独立运行和受控调用能力。下一批适合回到阅读伴侣 Loop：定义它的
-allowlist 和工具使用提示词，并让手动阅读入口构造 `AgentToolExecutionContext` 后执行真实
-工具回合。
+手动阅读场景现在已经可以在后端完成一次直接回答或真实工具回合。下一批适合先建立最小 HTTP
+接口和内存态会话协调，让前端对话页面能够验证交互；长期消息表、Episode 结束摘要与自动压缩
+仍留在之后独立实施。

@@ -1,6 +1,12 @@
-# 选书 Agent 的上下文压缩与记忆规划
+# 选书 Agent 的上下文压缩与记忆规划（早期方案）
 
 > 本文是后续规划，不表示压缩器和长期记忆已经接入运行主链路。
+>
+> 阅读助手现已规划为跨多次触发长期存在的 Reading Companion。Session、Episode、被动摘要、
+> 自动 Rolling Compaction 和历史回溯的总设计以
+> [`READING_COMPANION_AGENT.md`](READING_COMPANION_AGENT.md) 为准。本文保留选书 Agent 阶段的
+> 技术背景，其中“完整历史不删除、完整 Turn 切分、预留输出空间和摘要 revision”等原则继续
+> 有效，但 `RecommendationContextMemory` 不再是最终命名。
 
 ## 1. 为什么需要这项能力
 

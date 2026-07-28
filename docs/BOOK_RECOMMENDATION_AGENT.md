@@ -5,6 +5,10 @@
 > 初次选书 Agent、SQLite 会话恢复、HTTP 对话页和主动查词事实存储已经实现；长期聚合策略、
 > 困难授权提示和带 Reading Handoff 的会话重激活已经接入章节完成流程；推荐结果反馈仍按本文
 > 后续路线推进。
+>
+> 选书能力后续将归入长期存在的阅读伴侣 Agent；Session、Episode、两种上下文压缩和阅读内容
+> 检索的演进设计见 [`READING_COMPANION_AGENT.md`](READING_COMPANION_AGENT.md)。本文继续记录
+> 当前已经运行的推荐闭环和迁移基础。
 
 ## 1. 设计目标
 

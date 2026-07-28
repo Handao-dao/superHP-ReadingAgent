@@ -151,6 +151,17 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 - 默认 Profile、Corpus Profile 和 selection policy 在启动阶段严格校验，拼写错误不会静默回退。
 - 内置英文小说与文言文 Profile，共享运行时骨架但允许不同 Prompt、标记和 Renderer。
 
+## 阅读伴侣 Agent 规划
+
+当前已经运行的选书 Agent 支持初次推荐、自然语言调整候选和阅读困难后的再次推荐。后续会将其
+扩展为可在阅读中随时呼出的长期阅读伴侣：同一个长期 Session 由多个有明确触发点的 Episode
+组成，推荐完成只结束当前 Episode，不终止整个会话。
+
+设计采用两种互补的上下文治理机制：Episode 明确结束后生成被动摘要，当前 Episode 接近模型
+上下文上限时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的只读工具
+同时检索章节摘要和已读正文，防止读取未读章节。完整设计见
+[`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)。
+
 ## 项目结构
 
 ```text

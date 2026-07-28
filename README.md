@@ -163,8 +163,8 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 [`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)，检索边界见
 [`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`](docs/READING_COMPANION_RETRIEVAL_TOOLS.md)。
 
-当前手动阅读 Loop 已接入最小 HTTP 接口，可创建、继续、重试和读取进程内对话。尚未接入前端
-抽屉和长期消息存储，后端重启会清空这些手动阅读会话。
+当前手动阅读 Loop 已接入最小 HTTP 和阅读页对话抽屉，可创建、继续、重试和读取进程内对话。
+尚未接入长期消息存储，后端重启会清空这些手动阅读会话。
 
 ## 项目结构
 

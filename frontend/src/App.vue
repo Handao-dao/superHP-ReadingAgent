@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import VocabularyPanel from './components/VocabularyPanel.vue'
 import GuidancePanel from './components/reading/GuidancePanel.vue'
 import LookupPopover from './components/reading/LookupPopover.vue'
+import ReadingCompanionDrawer from './components/reading/ReadingCompanionDrawer.vue'
 import ReadingDifficultyPrompt from './components/reading/ReadingDifficultyPrompt.vue'
 import ReaderStatePage from './components/reading/ReaderStatePage.vue'
 import ReadingPaperFooter from './components/reading/ReadingPaperFooter.vue'
@@ -14,6 +15,7 @@ import { continueReadingAfterDifficulty } from './api/readingDifficultyPrompts'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
+import { useReadingCompanion } from './composables/useReadingCompanion'
 import { useRecommendationSession } from './composables/useRecommendationSession'
 import { useReadingSocket } from './composables/useReadingSocket'
 import { useWordLookup } from './composables/useWordLookup'
@@ -23,6 +25,8 @@ const PAPER_THEME_STORAGE_KEY = 'superhp_reader_theme'
 const PAPER_THEMES = new Set(['parchment', 'white-paper'])
 
 const completeCardsRequestedFor = ref('')
+const companionOpen = ref(false)
+const companionSelectedText = ref('')
 const sidebarOpen = ref(false)
 const storedPaperTheme = localStorage.getItem(PAPER_THEME_STORAGE_KEY)
 const paperTheme = ref(PAPER_THEMES.has(storedPaperTheme) ? storedPaperTheme : 'parchment')
@@ -99,6 +103,22 @@ const {
 } = useRecommendationSession()
 
 const {
+  canRetry: companionCanRetry,
+  canSend: companionCanSend,
+  clearSession: clearCompanionSession,
+  errorCode: companionErrorCode,
+  errorMessage: companionError,
+  hasSession: hasCompanionSession,
+  loading: companionLoading,
+  messages: companionMessages,
+  restoreSession: restoreCompanionSession,
+  retrySession: retryCompanionSession,
+  sendMessage: sendCompanionMessage,
+  session: companionSession,
+  startSession: startCompanionSession,
+} = useReadingCompanion()
+
+const {
   addLookupAnnotation,
   closeLookupBubble,
   handleReadingClick,
@@ -135,6 +155,13 @@ const renderedBlocks = computed(() => paragraphs.value.map((block) => currentRen
   hiddenAnnotations: hiddenAnnotations.value,
 })))
 const hasActiveReading = computed(() => Boolean(activeChapter.value && renderedBlocks.value.length > 0))
+const companionContextChanged = computed(() => {
+  if (!hasCompanionSession.value || !activeChapter.value?.meta) return false
+  return (
+    companionSession.value.book_id !== activeChapter.value.meta.book_id
+    || companionSession.value.chapter_id !== activeChapter.value.meta.chapter_id
+  )
+})
 const {
   canGoNext,
   canGoPrev,
@@ -159,6 +186,11 @@ const {
 const isGenerating = computed(() => {
   return ['generating_annotation', 'model_retrying'].includes(loadStatus.value)
 })
+const companionAvailable = computed(() => (
+  activeView.value === 'reader'
+  && Boolean(activeChapter.value?.meta?.id)
+  && !isGenerating.value
+))
 
 const readerMode = computed(() => {
   if (isGenerating.value) return 'generating'
@@ -279,6 +311,7 @@ function handleSelectChapter(chapter) {
   resetPagination()
   completeCardsRequestedFor.value = ''
   closeLookupBubble()
+  companionOpen.value = false
   const sent = requestCards('start', chapter.id)
   if (sent) sidebarOpen.value = false
 }
@@ -294,6 +327,8 @@ async function handleSelectProfile(profileId) {
   completeCardsRequestedFor.value = ''
   selectedVocabularyUnitId.value = ''
   closeLookupBubble()
+  companionOpen.value = false
+  companionSelectedText.value = ''
   await loadChapterList()
   requestCards('start', '')
 }
@@ -332,14 +367,51 @@ function handleReadingElements({ flow, viewport }) {
 
 function toggleSidebar() {
   paperThemeOpen.value = false
+  if (!sidebarOpen.value) companionOpen.value = false
   sidebarOpen.value = !sidebarOpen.value
 }
 
 function handleViewChange(view) {
   activeView.value = view
+  companionOpen.value = false
   closeLookupBubble()
   paperThemeOpen.value = false
   if (view !== 'reader') sidebarOpen.value = false
+}
+
+function toggleReadingCompanion() {
+  if (!companionAvailable.value) return
+  companionOpen.value = !companionOpen.value
+  paperThemeOpen.value = false
+  sidebarOpen.value = false
+  closeLookupBubble()
+}
+
+function clearCompanionSelection() {
+  companionSelectedText.value = ''
+  window.getSelection()?.removeAllRanges()
+}
+
+function handleReadingSelection(text) {
+  companionSelectedText.value = String(text || '').trim()
+}
+
+function handleNewCompanionSession() {
+  clearCompanionSession()
+}
+
+async function handleCompanionSend(message) {
+  const unitId = activeChapter.value?.meta?.id
+  if (!unitId || companionContextChanged.value) return
+  if (hasCompanionSession.value) {
+    await sendCompanionMessage(message)
+    return
+  }
+  await startCompanionSession({
+    currentUnitId: unitId,
+    message,
+    selectedText: companionSelectedText.value,
+  })
 }
 
 async function handleContinueAfterDifficulty() {
@@ -379,10 +451,15 @@ function selectPaperTheme(theme) {
 
 function handleKeydown(event) {
   if (event.key === 'Escape') {
+    if (companionOpen.value) {
+      companionOpen.value = false
+      return
+    }
     closeLookupBubble()
     paperThemeOpen.value = false
     return
   }
+  if (companionOpen.value) return
   if (activeView.value !== 'reader') return
   if (isGenerating.value) return
   if (event.key === 'ArrowRight' || event.key === ' ') {
@@ -413,6 +490,7 @@ watch(
     clearDifficultyAlert()
     difficultyPromptError.value = ''
     resetLookupAnnotations()
+    companionSelectedText.value = ''
     closeLookupBubble()
     recalculatePages()
     const unitId = activeChapter.value?.meta?.id
@@ -443,6 +521,7 @@ onMounted(() => {
   loadChapterList()
   loadBookmarks()
   restoreRecommendationSession()
+  restoreCompanionSession()
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
@@ -487,11 +566,14 @@ onBeforeUnmount(() => {
         :active-view="activeView"
         :book-title="topbarTitle"
         :chapter-label="topbarSubtitle"
+        :companion-available="companionAvailable"
+        :companion-open="companionOpen"
         :connected="connected"
         :page-label="topbarPageLabel"
         :paper-theme="paperTheme"
         :paper-theme-open="paperThemeOpen"
         @paper-theme-change="selectPaperTheme"
+        @toggle-companion="toggleReadingCompanion"
         @toggle-paper-theme="paperThemeOpen = !paperThemeOpen"
         @toggle-sidebar="toggleSidebar"
         @view-change="handleViewChange"
@@ -528,6 +610,7 @@ onBeforeUnmount(() => {
             :flow-transform="flowTransform"
             @elements-change="handleReadingElements"
             @reading-click="handleReadingClick"
+            @text-selection="handleReadingSelection"
           />
         </template>
 
@@ -636,5 +719,25 @@ onBeforeUnmount(() => {
         </article>
       </section>
     </section>
+
+    <ReadingCompanionDrawer
+      :can-retry="companionCanRetry"
+      :can-send="companionCanSend"
+      :context-changed="companionContextChanged"
+      :current-meta="activeChapter?.meta || null"
+      :error-code="companionErrorCode"
+      :error-message="companionError"
+      :has-session="hasCompanionSession"
+      :loading="companionLoading"
+      :messages="companionMessages"
+      :open="companionOpen"
+      :selected-text="companionSelectedText"
+      :session="companionSession"
+      @clear-selection="clearCompanionSelection"
+      @close="companionOpen = false"
+      @new-session="handleNewCompanionSession"
+      @retry="retryCompanionSession"
+      @send="handleCompanionSend"
+    />
   </main>
 </template>

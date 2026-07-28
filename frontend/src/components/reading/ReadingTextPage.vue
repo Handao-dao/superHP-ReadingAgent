@@ -12,7 +12,7 @@ defineProps({
   flowTransform: { type: Object, default: () => ({}) },
 })
 
-const emit = defineEmits(['elements-change', 'reading-click'])
+const emit = defineEmits(['elements-change', 'reading-click', 'text-selection'])
 const readingViewport = ref(null)
 const readingFlow = ref(null)
 
@@ -26,6 +26,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   emit('elements-change', { flow: null, viewport: null })
 })
+
+function captureSelection() {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  const range = selection.getRangeAt(0)
+  if (!readingFlow.value?.contains(range.commonAncestorContainer)) return
+  emit('text-selection', selection.toString().trim().slice(0, 12000))
+}
 </script>
 
 <template>
@@ -36,6 +44,7 @@ onBeforeUnmount(() => {
         class="reading-flow"
         :style="flowTransform"
         @click="$emit('reading-click', $event)"
+        @mouseup="captureSelection"
       >
         <div
           v-for="(html, index) in blocks"

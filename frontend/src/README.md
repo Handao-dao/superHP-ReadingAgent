@@ -25,6 +25,7 @@ src/
 │   ├── useBookmarks.js             # 书签 CRUD、分组和跳页解析
 │   ├── useReaderPagination.js      # CSS columns 分页和 DOM 测量
 │   ├── useReadingCatalog.js        # Profile、章节目录和选择持久化
+│   ├── useReadingCompanion.js      # 阅读助手进程内会话、恢复和请求状态
 │   ├── useRecommendationSession.js # 选书对话、恢复和请求状态
 │   ├── useReadingSocket.js         # WebSocket 会话和后端事件状态
 │   └── useWordLookup.js            # 查词、上下文提取和手动标注
@@ -36,6 +37,7 @@ src/
 │       ├── LookupPopover.vue       # 查词结果浮层
 │       ├── ReaderStatePage.vue     # 生成、错误和空状态
 │       ├── ReadingDifficultyPrompt.vue # 章节结束后的困难授权页
+│       ├── ReadingCompanionDrawer.vue # 阅读中随时呼出的助手对话抽屉
 │       ├── ReadingPaperFooter.vue  # 正文模式、书签按钮和页码
 │       ├── ReadingSidebar.vue      # Profile、章节和书签目录
 │       ├── ReadingTextPage.vue     # 正文块与分页 DOM 节点
@@ -103,6 +105,7 @@ Renderer 不负责：
 - 切换 Profile 时同时清空章节、cards、分页和查词状态。
 - 打开书签时协调 WebSocket action 与分页跳转。
 - 在阅读、生词表和选书对话三个顶层视图之间切换。
+- 协调正文选段、当前阅读单元与阅读助手抽屉，但不把 DOM 或 HTTP 逻辑塞进抽屉组件。
 - 组合侧栏、顶栏、纸面状态、正文、生词页和选书页等组件。
 
 如果一段逻辑只依赖一个领域，就应优先下沉到对应 composable；如果只是渲染 props，就应优先进入展示组件。
@@ -119,6 +122,8 @@ flowchart LR
     APP -->|阅读 action| WS["useReadingSocket"]
     APP -->|选书意图| REC["useRecommendationSession"]
     REC -->|HTTP| API
+    APP -->|阅读问答| COMP["useReadingCompanion"]
+    COMP -->|HTTP| API
     WS -->|后端事件与正文| APP
     APP --> R["Renderer"]
     R -->|HTML blocks| TEXT["ReadingTextPage"]
@@ -143,6 +148,11 @@ flowchart LR
 
 候选卡片只是对话中当前批次的可信投影，不承载“选择 / 拒绝 / 换一批”按钮状态机。展示候选后
 会话保持 `awaiting_user`，用户继续用自然语言表达反馈；只有明确选定一本后才进入 `completed`。
+
+阅读助手抽屉也遵循相同方向：`ReadingTextPage` 只上报正文内的文本选区，
+`ReadingCompanionDrawer` 只展示消息并发出 send/retry 意图，`App.vue` 决定首条消息应绑定哪个
+阅读单元，`useReadingCompanion` 再调用 HTTP。打开或关闭抽屉只改变本地 UI 状态，不创建
+Episode，也不改变分页；只有发送首条消息才调用模型。
 
 困难后的再次推荐仍复用这条数据流。用户越过正文最后一页时，`useReadingSocket` 先发送
 `mark_chapter_read`，等待 `unit.marked_read` 中的策略结果，再请求原章节完成卡片。若事件携带
@@ -218,4 +228,5 @@ cd frontend
 npm run build
 ```
 
-涉及分页 DOM 时，还应手动检查：原文与译注分页、窗口缩放、左右键/空格翻页、末页 guidance、书签恢复和点击查词。
+涉及分页 DOM 时，还应手动检查：原文与译注分页、窗口缩放、左右键/空格翻页、末页 guidance、
+书签恢复、点击查词，以及阅读助手抽屉打开/关闭后页码不变。

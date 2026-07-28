@@ -13,6 +13,7 @@ Storage 和 Dispatcher 分层不在这里展开；前端 `src/` 的组件边界�
 - 渲染后端下发的 guided cards，并把用户选择作为 action 发回后端。
 - 展示译注进度、模型重试、降级和失败状态。
 - 提供上下文查词、手动加词、生词复习和显式书签。
+- 在正文上方随时呼出阅读助手，回顾此前章节或比较既往生词语境。
 
 当前主路径是英文小说阅读；文言文 Profile 是迁移扩展点。英文书库现包含 Harry Potter 和
 Agatha Christie · Selected Mysteries 两个 collection。
@@ -28,9 +29,11 @@ App.vue
 ├── useReaderPagination    CSS columns 分页与页面导航
 ├── useBookmarks           书签读取、保存、删除和定位
 ├── useWordLookup          点击查词与手动词汇操作
+├── useReadingCompanion    阅读助手进程内会话与 HTTP 状态
 ├── ReadingSidebar         collection → book → chapter 三级目录
 ├── ReadingTopbar          阅读/生词表切换与纸张主题
 ├── ReadingTextPage        当前正文页
+├── ReadingCompanionDrawer 阅读助手对话抽屉
 ├── GuidancePanel          章节 summary 和 guided cards
 ├── ReaderStatePage        空白、生成中和错误状态
 ├── ReadingPaperFooter     body mode、书签按钮和页码
@@ -51,6 +54,8 @@ App.vue
 - 译注生成期间保留章节上下文，只在纸张内显示进度，不预览未合并的 chunk。
 - 纸张主题支持 `parchment` 和 `white-paper`，只影响显示，不进入后端请求。
 - 英文正文的普通单词和现有译注词可以点击查词；当前不支持用户框选任意短语查词。
+- 正文选区可以作为阅读助手新一轮对话的初始上下文；这不等于点击查词支持任意短语。
+- 打开阅读助手抽屉不会调用模型或重置分页，只有发送首条消息才创建后端 Episode。
 
 当前页面状态可以概括为：
 
@@ -80,6 +85,7 @@ type ReadingLoadStatus =
 | `superhp_current_unit_id` | 当前阅读单元，用于刷新后恢复章节/cards 上下文 |
 | `superhp_reader_theme` | `parchment` 或 `white-paper` |
 | `superhp_recommendation_session_id` | 当前选书 Agent 会话，用于刷新后恢复对话 |
+| `superhp_reading_companion_session_id` | 当前手动阅读助手会话；后端重启返回 404 时自动清除 |
 
 页面位置不自动持久化。精确阅读定位由用户显式保存书签完成。
 
@@ -234,6 +240,60 @@ type RecommendationSessionResponse = {
 
 完成态显示对话中已经确认的候选，并提示用户从左侧本地书库进入既有阅读流程；确认选择不会
 伪造打开、下载或导入图书的写操作。
+
+### 阅读助手对话
+
+阅读页顶栏提供常驻的“阅读助手”按钮；没有打开正文时按钮禁用。抽屉是阅读页上的覆盖层，
+打开、关闭和快捷问题填入草稿都只是本地 UI 操作，不触发模型。当前后端会话仅保存在进程内。
+
+#### `POST /api/reading-companion/sessions`
+
+发送首条问题并冻结当前阅读单元与可选正文选段：
+
+```json
+{
+  "current_unit_id": "hp01-ch03",
+  "message": "这个人物以前出现过吗？",
+  "selected_text": "Mr. Gray stood beside the window."
+}
+```
+
+#### `POST /api/reading-companion/sessions/{session_id}/messages`
+
+继续当前 Episode：
+
+```json
+{ "message": "第一次出现是在哪里？" }
+```
+
+#### `POST /api/reading-companion/sessions/{session_id}/retry`
+
+当 `error_code` 为 `model_error` 或 `invalid_model_response` 时原地重试，不重复追加用户消息。
+
+#### `GET /api/reading-companion/sessions/{session_id}`
+
+刷新页面后尝试恢复进程内会话。后端重启后返回 404 属于当前设计的正常边界，Composable 会清除
+失效的本地 id。以上接口统一返回：
+
+```ts
+type ReadingCompanionSessionResponse = {
+  session_id: string
+  episode_id: string
+  trigger: 'manual_reading'
+  book_id: string
+  chapter_id: string
+  unit_id: string
+  selected_text: string
+  messages: Array<{
+    role: 'user' | 'assistant'
+    content: string
+  }>
+  error_code: string
+}
+```
+
+Tool Call、Tool Result、提示词和可信检索 Scope 不进入前端协议。当前 `selected_text` 只在 Episode
+开始时冻结；对话中选择了新的正文后，前端会明确提示开启一轮新对话，不会静默拼接进普通消息。
 
 章节的最后一页之后是一个虚拟页面边界。进入该边界时，前端先发送已有
 `mark_chapter_read` action；后端记录章节检查点并运行三章滑动窗口：

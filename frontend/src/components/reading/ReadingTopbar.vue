@@ -7,13 +7,21 @@ defineProps({
   activeView: { type: String, default: 'reader' },
   bookTitle: { type: String, default: '' },
   chapterLabel: { type: String, default: '' },
+  companionAvailable: { type: Boolean, default: false },
+  companionOpen: { type: Boolean, default: false },
   connected: { type: Boolean, default: false },
   pageLabel: { type: String, default: '' },
   paperTheme: { type: String, default: 'parchment' },
   paperThemeOpen: { type: Boolean, default: false },
 })
 
-defineEmits(['paper-theme-change', 'toggle-paper-theme', 'toggle-sidebar', 'view-change'])
+defineEmits([
+  'paper-theme-change',
+  'toggle-companion',
+  'toggle-paper-theme',
+  'toggle-sidebar',
+  'view-change',
+])
 </script>
 
 <template>
@@ -32,6 +40,14 @@ defineEmits(['paper-theme-change', 'toggle-paper-theme', 'toggle-sidebar', 'view
         <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="$emit('view-change', 'vocabulary')">生词表</button>
         <button type="button" :class="{ 'is-active': activeView === 'recommendation' }" @click="$emit('view-change', 'recommendation')">选书</button>
       </div>
+      <button
+        type="button"
+        class="companion-trigger"
+        :class="{ 'is-active': companionOpen }"
+        :disabled="!companionAvailable"
+        :aria-expanded="companionOpen"
+        @click="$emit('toggle-companion')"
+      >阅读助手</button>
       <div class="paper-theme-control" @click.stop>
         <button
           type="button"

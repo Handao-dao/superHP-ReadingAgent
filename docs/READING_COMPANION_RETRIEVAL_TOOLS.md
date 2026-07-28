@@ -1,7 +1,7 @@
 # 阅读伴侣的已读内容检索
 
-本文定义阅读伴侣第一批“阅读历史”工具的职责、可信范围和返回边界。当前阶段只建立
-Contract 与 Port，不实现工具注册、检索 Service 或 SQLite Adapter。
+本文定义阅读伴侣第一批“阅读历史”工具的职责、可信范围和返回边界。当前已完成 Contract、
+Port 与可信范围构建器，尚未实现工具注册、检索 Service 或 SQLite Adapter。
 
 ## 1. 目标
 
@@ -33,6 +33,10 @@ PreviousReadingScope
 - 存在完整章节阅读检查点；
 - 章节号严格小于当前章节；
 - Corpus 中的阅读单元确实属于该章节。
+
+`PreviousReadingScopeBuilder` 使用当前 Corpus 作为章节结构真相，并与历史检查点的 `unit_ids`
+求安全交集。只有检查点恰好覆盖当前 Corpus 中该章的全部 section 时才接纳；缺少 section、
+包含失效 unit 或章节元数据不一致的旧检查点会被排除。
 
 当前章节整体排除，即使用户已经读到该章末尾，也不按页面位置裁切后加入检索。当前正在阅读的
 章节、页面和选中文本应作为 Invocation Context 直接提供给 Agent。
@@ -172,7 +176,7 @@ Tool 不直接读取文件路径或执行 SQL；Repository 不生成面向模型
 
 1. 已完成：共享 Scope、两个查询结果 Contract 和越界测试；
 2. 已完成：只读 `VocabularyHistoryRepository` Port；
-3. 下一步：实现 `PreviousReadingScopeBuilder`；
+3. 已完成：基于 Corpus 与完整章节检查点的 `PreviousReadingScopeBuilder`；
 4. 下一步：实现此前章节检索 Application Service；
 5. 下一步：实现 SQLite 词汇历史 Adapter 与词汇检索 Service；
 6. 最后：把两个 Tool 注册进现有 `ToolRegistry`，再接入 Agent 提示词和端到端测试。

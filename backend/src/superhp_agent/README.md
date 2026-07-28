@@ -288,8 +288,9 @@ contracts/
 两类 `ConversationMemory`，以及此前章节与生词语境检索 Contract。两个工具共享由 Application
 提供的 `PreviousReadingScope`，只允许读取当前图书中已经完整读完、且严格早于当前章节的
 内容；模型不能通过工具参数扩大范围。生词历史读取能力由只读
-`VocabularyHistoryRepository` Port 声明。当前只建立数据边界，尚未接入检索 Service、Storage
-Adapter 和 Agent 运行主链路，完整方案见项目根目录
+`VocabularyHistoryRepository` Port 声明。`application/previous_reading_scope.py` 已通过
+Corpus 与完整章节检查点的交集构建可信范围。当前尚未接入检索 Service、Storage Adapter 和
+Agent 运行主链路，完整方案见项目根目录
 `docs/READING_COMPANION_RETRIEVAL_TOOLS.md`。
 
 `application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期

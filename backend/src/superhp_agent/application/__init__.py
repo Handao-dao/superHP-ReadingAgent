@@ -24,6 +24,13 @@ from superhp_agent.application.reading_monitor import (
     ReadingDifficultyMonitor,
     ReadingDifficultyPolicy,
 )
+from superhp_agent.application.recommendation_companion import (
+    RecommendationCompanionProjection,
+    RecommendationCompanionProjectionError,
+    legacy_recommendation_episode_id,
+    legacy_recommendation_message_id,
+    project_recommendation_session,
+)
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
@@ -45,6 +52,11 @@ __all__ = [
     "ReadingDifficultyPolicy",
     "ReadingDifficultyPromptCoordinator",
     "RecommendationAgentRunner",
+    "RecommendationCompanionProjection",
+    "RecommendationCompanionProjectionError",
     "RecommendationSessionNotFoundError",
     "build_container",
+    "legacy_recommendation_episode_id",
+    "legacy_recommendation_message_id",
+    "project_recommendation_session",
 ]

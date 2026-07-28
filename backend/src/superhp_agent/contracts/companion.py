@@ -43,6 +43,7 @@ class ReadingCompanionEpisodeEndReason(StrEnum):
     USER_ENDED = "user_ended"
     USER_ABANDONED = "user_abandoned"
     BOOK_CHANGED = "book_changed"
+    UNRECOVERABLE_ERROR = "unrecoverable_error"
 
 
 class ConversationMemoryKind(StrEnum):

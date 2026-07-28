@@ -290,6 +290,11 @@ contracts/
 拒绝，模型不能通过工具参数扩大可读范围。当前只建立数据边界，尚未接入 Repository 和 Agent
 运行主链路。
 
+`application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期
+Session id，`context_start_index` 成为当前 Episode 边界，数组消息位置转换为确定性迁移游标。
+进行中、已选书完成和遗留失败分别映射为 active、completed 和 abandoned Episode，但不会改写
+旧 SQLite payload，也不会改变现有 Runner 与 HTTP 行为。
+
 ### State / Read Model
 
 当前 `runtime/reading_state.py` 中的 `ReadingStateReader` 聚合：

@@ -344,10 +344,23 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 当前 `RecommendationAgentSession`、Runner、HTTP 对话页和 SQLite 持久化继续作为可运行基础，
 不立即进行大爆炸式重构。
 
+`application/recommendation_companion.py` 已提供无副作用兼容投影。它不改写或保存旧 Session，
+只把当前推荐上下文周期解释为一个 Companion Episode：
+
+| 当前推荐状态 | Companion 投影 |
+| --- | --- |
+| `collecting_preferences / searching / awaiting_user` | active Episode |
+| `completed` 且已选书 | completed Episode，原因为 `book_selected` |
+| 遗留 `failed` | abandoned Episode，原因为 `unrecoverable_error` |
+
+旧 `session_id` 继续作为长期 Session id；`context_start_index` 生成当前 Episode 起点；旧消息按
+`session_id + message index` 生成稳定迁移游标。困难 Handoff 必须带可信的当前图书，否则拒绝
+投影。Episode 完成或放弃后，长期 Session 仍保持 active。
+
 建议按以下顺序迁移：
 
-1. 先新增本文 Contract，但不替换现有接口；
-2. 将当前一次推荐映射为一个 Recommendation Episode；
+1. 已完成：新增本文 Contract，但不替换现有接口；
+2. 已完成：将当前一次推荐纯投影为一个 Recommendation Episode；
 3. 把 Session 的长期状态与推荐任务状态分开；
 4. 让选书完成只结束 Episode，长期 Session 保持 active；
 5. 增加手动阅读入口和 `search_reading_context`；
@@ -392,8 +405,10 @@ conversation_memories
 
 1. 已完成：Session、Episode、Memory Contract 与纯状态测试；
 2. 已完成：`search_reading_context` 请求、结果和无剧透范围 Contract；
-3. 下一步：设计现有 Recommendation Session 到 Episode 的兼容映射；
+3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
 4. 下一步：实现读取章节摘要与已读原文的 Application Service；
-5. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
+5. 下一步：在不替换现有推荐接口的前提下建立长期 Session 状态协调器；
+6. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-兼容映射明确后，再决定先迁移长期 Session，还是先实现阅读内容检索工具。
+下一批优先实现阅读内容检索 Service，因为它可以独立验证摘要、正文和无剧透边界，不要求先迁移
+整个推荐会话的持久化模型。

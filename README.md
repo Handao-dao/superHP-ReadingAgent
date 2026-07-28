@@ -158,9 +158,10 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 组成，推荐完成只结束当前 Episode，不终止整个会话。
 
 设计采用两种互补的上下文治理机制：Episode 明确结束后生成被动摘要，当前 Episode 接近模型
-上下文上限时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的只读工具
-同时检索章节摘要和已读正文，防止读取未读章节。完整设计见
-[`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)。
+上下文上限时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个
+只读工具分别回查此前完整章节和生词本语境，当前章节整体排除。完整设计见
+[`docs/READING_COMPANION_AGENT.md`](docs/READING_COMPANION_AGENT.md)，检索边界见
+[`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`](docs/READING_COMPANION_RETRIEVAL_TOOLS.md)。
 
 ## 项目结构
 

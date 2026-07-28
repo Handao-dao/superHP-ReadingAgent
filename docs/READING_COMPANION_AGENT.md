@@ -284,51 +284,32 @@ search_conversation_history
 
 工具只返回必要片段，并携带 `episode_id` 和消息来源；它不能修改或重写历史。
 
-## 9. 阅读内容检索
+## 9. 已读内容检索
 
-新增只读工具：
+第一批拆成两个职责明确的只读工具：
 
 ```text
-search_reading_context
+search_previous_chapters   # 回查此前完整读完章节中的人物、事件和情节
+search_vocabulary_history  # 回查生词本中同一词的既往语境
 ```
 
-它同时支持章节摘要和已读正文片段：
+两个工具共享由 Application 构建的 `PreviousReadingScope`。范围只包含当前图书中已经产生
+完整章节阅读检查点、且章节号严格小于当前章节的内容；当前章节整体排除，不做页级裁切。模型只能
+提供查询词和结果数量，不能指定或扩大图书、章节与阅读单元范围。
 
-```json
-{
-  "summary_matches": [
-    {
-      "chapter_id": "chapter-5",
-      "summary": "本章主要发生了……"
-    }
-  ],
-  "source_matches": [
-    {
-      "chapter_id": "chapter-5",
-      "excerpt": "原文片段……"
-    }
-  ]
-}
-```
+章节检索同时使用章节摘要和少量原文摘录，生词检索直接使用已有词汇记录中的 translation 与
+context。工具只返回证据，人物关系、事件解释以及不同语境中的词义比较仍由 Agent 完成。
 
-使用原则：
-
-- 情节回顾、人物关系和阅读恢复优先使用章节摘要；
-- 具体措辞、动作和人物对话问题补充少量原文；
-- 默认检索原文，不检索模型译注版本；
-- 结果必须携带图书和章节来源；
-- 后端根据可信阅读进度强制限定最大章节，模型参数不能扩大范围；
-- 当前进度之后的摘要和正文均不可返回，防止剧透。
-
-工具通过 Application Service 读取现有 Corpus 和摘要能力，不让 Agent 直接访问文件路径或
-Storage Adapter。
+完整 Contract、分层和错误语义见
+[`READING_COMPANION_RETRIEVAL_TOOLS.md`](READING_COMPANION_RETRIEVAL_TOOLS.md)。
 
 ## 10. 工具集合
 
 第一阶段保持有限工具：
 
 ```text
-search_reading_context
+search_previous_chapters
+search_vocabulary_history
 search_local_book_catalog
 present_book_recommendations
 select_recommended_book
@@ -337,7 +318,7 @@ select_recommended_book
 后续在确有需要时再增加 `search_conversation_history`。当前阅读状态、触发来源和已知阅读证据由
 ContextBuilder 直接注入，不必包装成模型工具重复读取。
 
-普通讨论直接由模型回复；只有需要恢复正文依据或查询目录时才调用工具。
+普通讨论直接由模型回复；只有需要恢复既往情节、生词语境或查询目录时才调用工具。
 
 ## 11. 与现有推荐实现的迁移关系
 
@@ -363,7 +344,8 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 2. 已完成：将当前一次推荐纯投影为一个 Recommendation Episode；
 3. 把 Session 的长期状态与推荐任务状态分开；
 4. 让选书完成只结束 Episode，长期 Session 保持 active；
-5. 增加手动阅读入口和 `search_reading_context`；
+5. 增加手动阅读入口、`search_previous_chapters` 和
+   `search_vocabulary_history`；
 6. 接入 Episode 结束摘要；
 7. 记录真实 token 数据后再接入自动 Rolling Compaction；
 8. 最后增加历史消息检索和稳定偏好记忆。
@@ -395,7 +377,7 @@ conversation_memories
 - 当前 Episode 过长时进行自动 Rolling Compaction；
 - 两类摘要都不删除原始对话；
 - 摘要不足时允许回查原始消息；
-- 阅读检索同时支持章节摘要和已读正文；
+- 阅读历史分别通过此前章节检索和生词语境检索提供；
 - 无剧透边界由后端数据访问范围强制保证；
 - 第一阶段不允许 Agent 未经确认修改阅读状态。
 
@@ -404,11 +386,11 @@ conversation_memories
 首批边界进度：
 
 1. 已完成：Session、Episode、Memory Contract 与纯状态测试；
-2. 已完成：`search_reading_context` 请求、结果和无剧透范围 Contract；
+2. 已完成：共享的此前完整章节 Scope、两个检索结果 Contract 和词汇历史 Repository Port；
 3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
-4. 下一步：实现读取章节摘要与已读原文的 Application Service；
+4. 下一步：实现可信 Scope Builder 与此前章节检索 Application Service；
 5. 下一步：在不替换现有推荐接口的前提下建立长期 Session 状态协调器；
 6. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-下一批优先实现阅读内容检索 Service，因为它可以独立验证摘要、正文和无剧透边界，不要求先迁移
-整个推荐会话的持久化模型。
+下一批优先实现 Scope Builder 和此前章节检索 Service，因为它们可以独立验证摘要、正文和
+无剧透边界，不要求先迁移整个推荐会话的持久化模型。

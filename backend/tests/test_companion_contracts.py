@@ -5,28 +5,45 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from superhp_agent.contracts import (
+    AgentToolExecutionContext,
+    CompletedChapterScope,
     ConversationMemory,
     ConversationMemoryKind,
     ConversationMemoryStatus,
+    PreviousChapterExcerpt,
+    PreviousChapterMatch,
+    PreviousChapterSearchRequest,
+    PreviousChapterSearchResult,
+    PreviousReadingScope,
     ReadingCompanionEpisode,
     ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeState,
     ReadingCompanionEpisodeTrigger,
     ReadingCompanionSession,
     ReadingCompanionSessionStatus,
-    ReadingContextAccessScope,
-    ReadingContextSearchRequest,
-    ReadingContextSearchResult,
-    ReadingContextSourceMatch,
-    ReadingContextSummaryMatch,
+    VocabularyEncounter,
+    VocabularyHistorySearchRequest,
+    VocabularyHistorySearchResult,
 )
 
 
-def readable_scope() -> ReadingContextAccessScope:
-    return ReadingContextAccessScope(
+def previous_scope() -> PreviousReadingScope:
+    return PreviousReadingScope(
         book_id="book-1",
-        current_chapter_id="chapter-3",
-        readable_chapter_ids=("chapter-1", "chapter-2", "chapter-3"),
+        current_chapter_id="chapter-4",
+        current_chapter_no=4,
+        completed_chapters=(
+            CompletedChapterScope(
+                chapter_id="chapter-1",
+                chapter_no=1,
+                unit_ids=("chapter-1",),
+            ),
+            CompletedChapterScope(
+                chapter_id="chapter-2",
+                chapter_no=2,
+                unit_ids=("chapter-2-a", "chapter-2-b"),
+            ),
+        ),
     )
 
 
@@ -241,101 +258,226 @@ def test_memory_rejects_inconsistent_generation_state(factory, message):
         factory()
 
 
-def test_reading_context_result_can_return_summary_and_source_together():
-    request = ReadingContextSearchRequest(
-        query="第三章里这两个人为什么争吵？",
-        scope=readable_scope(),
+def test_previous_reading_scope_contains_only_checkpointed_prior_units():
+    scope = previous_scope()
+    context = AgentToolExecutionContext(
+        session_id="session-1",
+        episode_id="episode-1",
+        previous_reading_scope=scope,
     )
-    result = ReadingContextSearchResult(
+
+    assert scope.searchable_unit_ids == (
+        "chapter-1",
+        "chapter-2-a",
+        "chapter-2-b",
+    )
+    assert context.previous_reading_scope == scope
+
+
+def test_previous_chapter_result_groups_summary_and_source_evidence():
+    request = PreviousChapterSearchRequest(
+        query="Snape",
+        scope=previous_scope(),
+    )
+    result = PreviousChapterSearchResult(
         request=request,
-        summary_matches=(
-            ReadingContextSummaryMatch(
-                book_id="book-1",
+        matches=(
+            PreviousChapterMatch(
                 chapter_id="chapter-2",
-                summary="两人在上一章已经产生分歧。",
-            ),
-        ),
-        source_matches=(
-            ReadingContextSourceMatch(
-                book_id="book-1",
-                chapter_id="chapter-3",
-                unit_id="chapter-3-part-1",
-                excerpt="They stopped at the doorway and argued.",
+                chapter_no=2,
+                chapter_title="The Second Chapter",
+                summary="Snape appeared during the feast.",
+                excerpts=(
+                    PreviousChapterExcerpt(
+                        unit_id="chapter-2-a",
+                        text="Professor Snape looked across the hall.",
+                    ),
+                ),
             ),
         ),
     )
 
-    assert result.summary_matches[0].chapter_id == "chapter-2"
-    assert result.source_matches[0].unit_id == "chapter-3-part-1"
+    assert result.found is True
+    assert result.matches[0].summary.startswith("Snape")
+    assert result.matches[0].excerpts[0].unit_id == "chapter-2-a"
 
 
 @pytest.mark.parametrize(
-    ("summary_match", "source_match", "message"),
+    ("match", "message"),
     [
         (
-            ReadingContextSummaryMatch(
-                book_id="another-book",
-                chapter_id="chapter-2",
-                summary="Wrong book.",
-            ),
-            None,
-            "another book",
-        ),
-        (
-            ReadingContextSummaryMatch(
-                book_id="book-1",
+            PreviousChapterMatch(
                 chapter_id="chapter-4",
-                summary="Future chapter.",
+                chapter_no=4,
+                chapter_title="Current Chapter",
+                summary="Current chapter must not be searchable.",
             ),
-            None,
-            "exceeds readable chapters",
+            "exceeds completed scope",
         ),
         (
-            None,
-            ReadingContextSourceMatch(
-                book_id="book-1",
-                chapter_id="chapter-8",
-                excerpt="A future spoiler.",
+            PreviousChapterMatch(
+                chapter_id="chapter-2",
+                chapter_no=2,
+                chapter_title="The Second Chapter",
+                excerpts=(
+                    PreviousChapterExcerpt(
+                        unit_id="chapter-2-future",
+                        text="This unit was not checkpointed.",
+                    ),
+                ),
             ),
-            "exceeds readable chapters",
+            "excerpt exceeds completed scope",
         ),
     ],
 )
-def test_reading_context_result_rejects_spoilers_and_other_books(
-    summary_match,
-    source_match,
+def test_previous_chapter_result_rejects_current_or_uncheckpointed_content(
+    match,
     message,
 ):
     with pytest.raises(ValueError, match=message):
-        ReadingContextSearchResult(
-            request=ReadingContextSearchRequest(
-                query="What happens?",
-                scope=readable_scope(),
+        PreviousChapterSearchResult(
+            request=PreviousChapterSearchRequest(
+                query="Snape",
+                scope=previous_scope(),
             ),
-            summary_matches=(summary_match,) if summary_match else (),
-            source_matches=(source_match,) if source_match else (),
+            matches=(match,),
         )
 
 
-def test_reading_context_scope_and_request_reject_invalid_boundaries():
-    with pytest.raises(ValueError, match="must be readable"):
-        ReadingContextAccessScope(
+def test_previous_reading_scope_rejects_current_or_future_chapters():
+    with pytest.raises(ValueError, match="current chapter"):
+        PreviousReadingScope(
             book_id="book-1",
             current_chapter_id="chapter-3",
-            readable_chapter_ids=("chapter-1", "chapter-2"),
-        )
-
-    with pytest.raises(ValueError, match="at least one source kind"):
-        ReadingContextSearchRequest(
-            query="人物关系",
-            scope=readable_scope(),
-            include_summaries=False,
-            include_source=False,
+            current_chapter_no=3,
+            completed_chapters=(
+                CompletedChapterScope(
+                    chapter_id="chapter-3",
+                    chapter_no=3,
+                    unit_ids=("chapter-3",),
+                ),
+            ),
         )
 
     with pytest.raises(ValueError, match="between 1 and 10"):
-        ReadingContextSearchRequest(
+        PreviousChapterSearchRequest(
             query="人物关系",
-            scope=readable_scope(),
-            limit_per_kind=11,
+            scope=previous_scope(),
+            max_chapters=11,
+        )
+
+
+def test_vocabulary_history_result_compares_recorded_prior_contexts():
+    request = VocabularyHistorySearchRequest(
+        word="charge",
+        language_id="en",
+        scope=previous_scope(),
+    )
+    result = VocabularyHistorySearchResult(
+        request=request,
+        normalized_word="charge",
+        encounters=(
+            VocabularyEncounter(
+                book_id="book-1",
+                chapter_id="chapter-1",
+                chapter_no=1,
+                unit_id="chapter-1",
+                word="charge",
+                normalized_word="charge",
+                translation="收费",
+                context="The hotel charged him ten pounds.",
+                pos="verb",
+            ),
+            VocabularyEncounter(
+                book_id="book-1",
+                chapter_id="chapter-2",
+                chapter_no=2,
+                unit_id="chapter-2-b",
+                word="charge",
+                normalized_word="charge",
+                translation="指控",
+                context="He was charged with theft.",
+                pos="verb",
+                encounter_count=2,
+            ),
+        ),
+    )
+
+    assert result.found is True
+    assert [item.translation for item in result.encounters] == [
+        "收费",
+        "指控",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("encounter", "message"),
+    [
+        (
+            VocabularyEncounter(
+                book_id="another-book",
+                chapter_id="chapter-1",
+                chapter_no=1,
+                unit_id="chapter-1",
+                word="charge",
+                normalized_word="charge",
+                translation="收费",
+                context="A stored context.",
+            ),
+            "another book",
+        ),
+        (
+            VocabularyEncounter(
+                book_id="book-1",
+                chapter_id="chapter-4",
+                chapter_no=4,
+                unit_id="chapter-4",
+                word="charge",
+                normalized_word="charge",
+                translation="冲锋",
+                context="An unread context.",
+            ),
+            "exceeds completed scope",
+        ),
+        (
+            VocabularyEncounter(
+                book_id="book-1",
+                chapter_id="chapter-1",
+                chapter_no=1,
+                unit_id="chapter-1",
+                word="charged",
+                normalized_word="charged",
+                translation="收费",
+                context="A different stored lexeme.",
+            ),
+            "different lexeme",
+        ),
+        (
+            VocabularyEncounter(
+                book_id="book-1",
+                chapter_id="chapter-2",
+                chapter_no=2,
+                unit_id="chapter-1",
+                word="charge",
+                normalized_word="charge",
+                translation="收费",
+                context="A context with inconsistent chapter metadata.",
+            ),
+            "inconsistent chapter metadata",
+        ),
+    ],
+)
+def test_vocabulary_history_rejects_other_books_unread_units_and_lexemes(
+    encounter,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        VocabularyHistorySearchResult(
+            request=VocabularyHistorySearchRequest(
+                word="charge",
+                language_id="en",
+                scope=previous_scope(),
+            ),
+            normalized_word="charge",
+            encounters=(encounter,),
         )

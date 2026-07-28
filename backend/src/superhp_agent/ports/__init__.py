@@ -14,6 +14,7 @@ from superhp_agent.ports.repositories import (
     ReadingLookupRepository,
     ReadingSupportRepository,
     RecommendationSessionRepository,
+    VocabularyHistoryRepository,
     VocabularyRepository,
 )
 
@@ -28,6 +29,7 @@ __all__ = [
     "ReadingDifficultyPromptRepository",
     "ReadingSupportRepository",
     "RecommendationSessionRepository",
+    "VocabularyHistoryRepository",
     "VocabularyRepository",
     "emit_backend_event",
 ]

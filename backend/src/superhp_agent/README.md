@@ -262,7 +262,7 @@ Contracts 定义模块之间交换的数据，不负责保存数据或执行行�
 contracts/
 ├── actions.py        # 前端可选择的标准动作
 ├── annotation.py     # 标注结果、chunk outcome 与降级问题
-├── companion.py      # 长期阅读伴侣、Episode、摘要记忆与无剧透检索
+├── companion.py      # 长期阅读伴侣、Episode、摘要记忆与已读内容检索
 ├── events.py         # 已经发生的事实
 ├── llm.py            # Provider 返回结果
 ├── reading.py        # 阅读单元与卡片
@@ -285,10 +285,12 @@ contracts/
 `AnnotationResult`、`AnnotationChunkOutcome`、`AnnotationItem` 和 `ServiceIssue` 位于
 `contracts/annotation.py`；Provider 与内容校验失败以稳定的 `category/code` 传递，不依赖异常文案。
 `contracts/companion.py` 已定义长期 `ReadingCompanionSession`、有明确触发边界的 Episode、
-两类 `ConversationMemory`，以及同时支持章节摘要和原文片段的阅读上下文检索 Contract。检索
-范围由 Application 提供 `ReadingContextAccessScope`；返回范围外图书或章节时 Contract 会直接
-拒绝，模型不能通过工具参数扩大可读范围。当前只建立数据边界，尚未接入 Repository 和 Agent
-运行主链路。
+两类 `ConversationMemory`，以及此前章节与生词语境检索 Contract。两个工具共享由 Application
+提供的 `PreviousReadingScope`，只允许读取当前图书中已经完整读完、且严格早于当前章节的
+内容；模型不能通过工具参数扩大范围。生词历史读取能力由只读
+`VocabularyHistoryRepository` Port 声明。当前只建立数据边界，尚未接入检索 Service、Storage
+Adapter 和 Agent 运行主链路，完整方案见项目根目录
+`docs/READING_COMPANION_RETRIEVAL_TOOLS.md`。
 
 `application/recommendation_companion.py` 提供迁移期纯投影：旧推荐 `session_id` 保持为长期
 Session id，`context_start_index` 成为当前 Episode 边界，数组消息位置转换为确定性迁移游标。

@@ -6,6 +6,11 @@ from superhp_agent.application.difficulty_handoff import (
     DifficultyHandoffBookNotFoundError,
     DifficultyRecommendationHandoffBuilder,
 )
+from superhp_agent.application.previous_chapter_search import (
+    PreviousChapterSearchError,
+    PreviousChapterSearchPolicy,
+    PreviousChapterSearchService,
+)
 from superhp_agent.application.previous_reading_scope import (
     PreviousReadingScopeBuilder,
 )
@@ -44,6 +49,9 @@ __all__ = [
     "ChapterCheckpointRecorder",
     "DifficultyHandoffBookNotFoundError",
     "DifficultyRecommendationHandoffBuilder",
+    "PreviousChapterSearchError",
+    "PreviousChapterSearchPolicy",
+    "PreviousChapterSearchService",
     "PreviousReadingScopeBuilder",
     "ReadingAdaptationAction",
     "ReadingAdaptationDecision",

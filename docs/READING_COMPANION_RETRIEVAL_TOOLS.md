@@ -1,7 +1,8 @@
 # 阅读伴侣的已读内容检索
 
 本文定义阅读伴侣第一批“阅读历史”工具的职责、可信范围和返回边界。当前已完成 Contract、
-Port 与可信范围构建器，尚未实现工具注册、检索 Service 或 SQLite Adapter。
+Port、可信范围构建器与此前章节检索 Service，尚未实现工具注册、词汇检索 Service 或 SQLite
+Adapter。
 
 ## 1. 目标
 
@@ -80,6 +81,15 @@ PreviousChapterMatch
 
 第一版可以采用关键词匹配，不必引入向量库。后续只有在真实问题证明关键词召回不足时，再替换
 检索实现；Tool Contract 不需要因此改变。
+
+当前 `PreviousChapterSearchService` 已采用以下轻量策略：
+
+- 模型应传入简短人物名或事件短语，而不是完整问题；
+- 英文短词按单词边界匹配，避免 `he` 命中 `the`；
+- 摘要命中获得更高权重，原文按 Markdown 空行划分为候选段落；
+- 每章默认最多返回两段、每段最多 500 字符；
+- 先按匹配强度选取 `max_chapters` 个章节，再按章节顺序返回；
+- 执行前再次核对 Scope 与当前 Corpus；不一致时返回稳定的 `scope_stale` 错误。
 
 ## 4. `search_vocabulary_history`
 
@@ -177,7 +187,7 @@ Tool 不直接读取文件路径或执行 SQL；Repository 不生成面向模型
 1. 已完成：共享 Scope、两个查询结果 Contract 和越界测试；
 2. 已完成：只读 `VocabularyHistoryRepository` Port；
 3. 已完成：基于 Corpus 与完整章节检查点的 `PreviousReadingScopeBuilder`；
-4. 下一步：实现此前章节检索 Application Service；
+4. 已完成：摘要与原文段落的此前章节检索 Application Service；
 5. 下一步：实现 SQLite 词汇历史 Adapter 与词汇检索 Service；
 6. 最后：把两个 Tool 注册进现有 `ToolRegistry`，再接入 Agent 提示词和端到端测试。
 

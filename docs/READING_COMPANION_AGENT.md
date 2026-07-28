@@ -389,9 +389,9 @@ conversation_memories
 2. 已完成：共享的此前完整章节 Scope、Scope Builder、两个检索结果 Contract 和词汇历史
    Repository Port；
 3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
-4. 下一步：实现此前章节检索 Application Service；
+4. 已完成：此前章节摘要与原文段落检索 Application Service；
 5. 下一步：在不替换现有推荐接口的前提下建立长期 Session 状态协调器；
 6. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-下一批优先实现此前章节检索 Service，因为 Scope Builder 已经能够独立保证可信范围，不要求先
-迁移整个推荐会话的持久化模型。
+下一批可以实现词汇历史 SQLite Adapter 与 Application Service，使两个阅读历史工具都具备
+独立运行的后端能力；之后再统一注册到 ToolRegistry。

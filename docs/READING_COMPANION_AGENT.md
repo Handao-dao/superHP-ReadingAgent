@@ -1,6 +1,6 @@
 # 阅读伴侣 Agent：长期会话、情景记忆与阅读检索设计
 
-> 状态：设计已确定，尚未替换当前运行中的 `RecommendationAgentSession`。
+> 状态：首批 Contract 已建立，尚未替换当前运行中的 `RecommendationAgentSession`。
 >
 > 本文定义后续演进方向。第一阶段只稳定边界和 Contract，不立即扩大工具权限，也不改变现有
 > 译注、查词和阅读监控主链路。
@@ -130,9 +130,10 @@ Session 的生命周期。
 
 网络中断、Provider 失败、关闭抽屉和刷新页面都不自动结束 Episode。
 
-## 5. Contract 草案
+## 5. 首批 Contract
 
-以下字段用于稳定职责，不要求第一版一次性全部落库：
+`backend/src/superhp_agent/contracts/companion.py` 已建立首批不可变 Contract 和构造期校验。
+以下结构用于稳定职责，不表示已经接入 Repository：
 
 ```python
 ReadingCompanionSession(
@@ -140,8 +141,8 @@ ReadingCompanionSession(
     reader_key: str,
     status: "active | archived",
     active_episode_id: str,
-    created_at: datetime,
-    updated_at: datetime,
+    created_at: str,
+    updated_at: str,
 )
 
 ReadingCompanionEpisode(
@@ -155,8 +156,8 @@ ReadingCompanionEpisode(
     start_message_id: str,
     end_message_id: str,
     end_reason: str,
-    created_at: datetime,
-    ended_at: datetime | None,
+    created_at: str,
+    ended_at: str,
 )
 
 ConversationMemory(
@@ -169,8 +170,9 @@ ConversationMemory(
     source_start_message_id: str,
     source_end_message_id: str,
     status: "pending | ready | failed",
-    usage: dict[str, int],
-    created_at: datetime,
+    input_tokens: int,
+    output_tokens: int,
+    created_at: str,
 )
 ```
 
@@ -386,11 +388,12 @@ conversation_memories
 
 ## 14. 下一步
 
-下一实现批次优先做最小纵向切片：
+首批边界进度：
 
-1. 新增 Session、Episode、Memory Contract 与纯状态测试；
-2. 设计现有 Recommendation Session 到 Episode 的兼容映射；
-3. 为 `search_reading_context` 定义输入、输出和无剧透校验 Contract；
-4. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
+1. 已完成：Session、Episode、Memory Contract 与纯状态测试；
+2. 已完成：`search_reading_context` 请求、结果和无剧透范围 Contract；
+3. 下一步：设计现有 Recommendation Session 到 Episode 的兼容映射；
+4. 下一步：实现读取章节摘要与已读原文的 Application Service；
+5. 暂不接入摘要模型调用、SQLite migration 和前端按钮。
 
-完成这些边界后，再决定先迁移长期 Session，还是先实现阅读内容检索工具。
+兼容映射明确后，再决定先迁移长期 Session，还是先实现阅读内容检索工具。

@@ -262,9 +262,11 @@ Contracts 定义模块之间交换的数据，不负责保存数据或执行行�
 contracts/
 ├── actions.py        # 前端可选择的标准动作
 ├── annotation.py     # 标注结果、chunk outcome 与降级问题
+├── companion.py      # 长期阅读伴侣、Episode、摘要记忆与无剧透检索
 ├── events.py         # 已经发生的事实
 ├── llm.py            # Provider 返回结果
-└── reading.py        # 阅读单元与卡片
+├── reading.py        # 阅读单元与卡片
+└── recommendation.py # 选书、阅读困难证据与当前推荐 Loop 状态
 ```
 
 语义约定：
@@ -282,6 +284,11 @@ contracts/
 由 `transport/event_mapper.py` 转换，Application Event 不再了解 WebSocket 格式。
 `AnnotationResult`、`AnnotationChunkOutcome`、`AnnotationItem` 和 `ServiceIssue` 位于
 `contracts/annotation.py`；Provider 与内容校验失败以稳定的 `category/code` 传递，不依赖异常文案。
+`contracts/companion.py` 已定义长期 `ReadingCompanionSession`、有明确触发边界的 Episode、
+两类 `ConversationMemory`，以及同时支持章节摘要和原文片段的阅读上下文检索 Contract。检索
+范围由 Application 提供 `ReadingContextAccessScope`；返回范围外图书或章节时 Contract 会直接
+拒绝，模型不能通过工具参数扩大可读范围。当前只建立数据边界，尚未接入 Repository 和 Agent
+运行主链路。
 
 ### State / Read Model
 

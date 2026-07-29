@@ -157,6 +157,9 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 可独立测试的后端阅读伴侣 Loop，可以直接回答，或在可信已读范围内回查此前章节和生词语境。
 长期 Session 由有明确触发点的 Episode 组成，推荐完成只结束当前 Episode。每条原始 Message
 只属于一个 Episode；长期记忆以 Episode 摘要为基本来源，而不是反复压缩整段 Session。
+推荐侧已经增加无持久化的专用 Episode Runner：继续复用原有选书 Agent、ContextBuilder 和
+三个推荐工具，同时把 onboarding 与 difficulty handoff 投影成不同的统一 Episode/Message
+边界；现有推荐 HTTP 和数据库入口暂未切换。
 
 上下文采用两种互补的治理机制：Episode 明确结束后生成被动摘要，当前 Episode 的未压缩消息
 超过安全阈值时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个

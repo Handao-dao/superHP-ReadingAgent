@@ -13,9 +13,11 @@ from superhp_agent.application import (
 from superhp_agent.contracts import (
     BookRecommendationHandoff,
     BookSnapshot,
+    LLMToolCall,
     ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeState,
     ReadingCompanionEpisodeTrigger,
+    ReadingCompanionMessageRole,
     ReadingCompanionSessionStatus,
     ReadingDifficultyEvidence,
     RecommendationAgentMessage,
@@ -63,6 +65,10 @@ def test_onboarding_session_projects_to_one_active_episode():
         "legacy-recommendation:session-1:message:0",
     )
     assert projection.episode.start_message_id == projection.message_ids[0]
+    assert projection.messages[0].role is (
+        ReadingCompanionMessageRole.ASSISTANT
+    )
+    assert projection.messages[0].content == "你喜欢哪类故事？"
 
 
 def test_difficulty_handoff_uses_current_context_epoch_and_book():
@@ -120,6 +126,14 @@ def test_difficulty_handoff_uses_current_context_epoch_and_book():
     )
     assert projection.episode.episode_id.endswith(":episode:2")
     assert len(projection.message_ids) == 4
+    assert [item.content for item in projection.messages] == [
+        "现在我想换一本更轻松的。",
+        "我会结合最近的阅读情况。",
+    ]
+    assert all(
+        item.episode_id == projection.episode.episode_id
+        for item in projection.messages
+    )
 
 
 def test_selected_book_completes_episode_but_not_companion_session():
@@ -194,6 +208,7 @@ def test_empty_recoverable_session_uses_a_stable_start_boundary():
 
     assert first == second
     assert first.message_ids == ()
+    assert first.messages == ()
     assert first.episode.start_message_id == (
         "legacy-recommendation:session-1:message:0"
     )
@@ -241,3 +256,39 @@ def test_projection_does_not_mutate_source_session():
     project_recommendation_session(source)
 
     assert source == expected
+
+
+def test_projection_preserves_native_tool_call_and_result_fields():
+    tool_call = LLMToolCall(
+        id="call-1",
+        name="search_local_book_catalog",
+        arguments={"categories": ["detective"]},
+    )
+    source = RecommendationAgentSession(
+        session_id="session-1",
+        request=RecommendationRequest(
+            origin=RecommendationOrigin.ONBOARDING
+        ),
+        phase=RecommendationAgentPhase.SEARCHING,
+        conversation=(
+            RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.ASSISTANT,
+                tool_calls=(tool_call,),
+            ),
+            RecommendationAgentMessage(
+                role=RecommendationAgentMessageRole.TOOL,
+                content='{"ok":true}',
+                tool_call_id="call-1",
+                tool_name="search_local_book_catalog",
+            ),
+        ),
+    )
+
+    projection = project_recommendation_session(source)
+
+    assert projection.messages[0].tool_calls == (tool_call,)
+    assert projection.messages[1].role is ReadingCompanionMessageRole.TOOL
+    assert projection.messages[1].tool_call_id == "call-1"
+    assert projection.messages[1].tool_name == (
+        "search_local_book_catalog"
+    )

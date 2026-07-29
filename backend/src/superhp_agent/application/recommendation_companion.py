@@ -14,7 +14,11 @@ from superhp_agent.contracts import (
     ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeState,
     ReadingCompanionEpisodeTrigger,
+    ReadingCompanionMessage,
+    ReadingCompanionMessageRole,
     ReadingCompanionSession,
+    RecommendationAgentMessage,
+    RecommendationAgentMessageRole,
     RecommendationAgentPhase,
     RecommendationAgentSession,
     RecommendationOrigin,
@@ -27,11 +31,12 @@ class RecommendationCompanionProjectionError(ValueError):
 
 @dataclass(frozen=True)
 class RecommendationCompanionProjection:
-    """Long-lived companion view plus deterministic legacy message ids."""
+    """Long-lived companion view plus current-Episode native messages."""
 
     session: ReadingCompanionSession
     episode: ReadingCompanionEpisode
     message_ids: tuple[str, ...]
+    messages: tuple[ReadingCompanionMessage, ...]
 
 
 def project_recommendation_session(
@@ -94,6 +99,16 @@ def project_recommendation_session(
         session=companion_session,
         episode=episode,
         message_ids=message_ids,
+        messages=tuple(
+            _project_message(
+                message,
+                session_id=source.session_id,
+                episode_id=episode_id,
+                message_id=message_ids[index],
+            )
+            for index, message in enumerate(source.conversation)
+            if index >= source.context_start_index
+        ),
     )
 
 
@@ -163,3 +178,35 @@ def _episode_completion(
             ReadingCompanionEpisodeEndReason.UNRECOVERABLE_ERROR,
         )
     return ReadingCompanionEpisodeState.ACTIVE, None
+
+
+def _project_message(
+    source: RecommendationAgentMessage,
+    *,
+    session_id: str,
+    episode_id: str,
+    message_id: str,
+) -> ReadingCompanionMessage:
+    """Translate one legacy message without changing its native tool data."""
+    role = {
+        RecommendationAgentMessageRole.USER: (
+            ReadingCompanionMessageRole.USER
+        ),
+        RecommendationAgentMessageRole.ASSISTANT: (
+            ReadingCompanionMessageRole.ASSISTANT
+        ),
+        RecommendationAgentMessageRole.TOOL: (
+            ReadingCompanionMessageRole.TOOL
+        ),
+    }[source.role]
+    return ReadingCompanionMessage(
+        message_id=message_id,
+        session_id=session_id,
+        episode_id=episode_id,
+        role=role,
+        content=source.content,
+        tool_calls=source.tool_calls,
+        tool_call_id=source.tool_call_id,
+        tool_name=source.tool_name,
+        is_error=source.is_error,
+    )

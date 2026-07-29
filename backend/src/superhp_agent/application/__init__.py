@@ -48,6 +48,10 @@ from superhp_agent.application.recommendation_companion import (
     legacy_recommendation_message_id,
     project_recommendation_session,
 )
+from superhp_agent.application.recommendation_episode import (
+    RecommendationEpisodeReply,
+    RecommendationEpisodeRunner,
+)
 from superhp_agent.application.recommendation_runner import (
     RecommendationAgentRunner,
     RecommendationSessionNotFoundError,
@@ -84,6 +88,8 @@ __all__ = [
     "RecommendationAgentRunner",
     "RecommendationCompanionProjection",
     "RecommendationCompanionProjectionError",
+    "RecommendationEpisodeReply",
+    "RecommendationEpisodeRunner",
     "RecommendationSessionNotFoundError",
     "VocabularyHistorySearchError",
     "VocabularyHistorySearchService",

@@ -366,7 +366,8 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 不立即进行大爆炸式重构。
 
 `application/recommendation_companion.py` 已提供无副作用兼容投影。它不改写或保存旧 Session，
-只把当前推荐上下文周期解释为一个 Companion Episode：
+只把当前推荐上下文周期解释为一个 Companion Episode，并把本轮原生 user / assistant / tool
+消息转换为统一 `ReadingCompanionMessage`：
 
 | 当前推荐状态 | Companion 投影 |
 | --- | --- |
@@ -378,12 +379,31 @@ ContextBuilder 直接注入，不必包装成模型工具重复读取。
 `session_id + message index` 生成稳定迁移游标。困难 Handoff 必须带可信的当前图书，否则拒绝
 投影。Episode 完成或放弃后，长期 Session 仍保持 active。
 
+`application/recommendation_episode.py` 在此基础上建立了
+`RecommendationEpisodeRunner`。它直接复用 `BookRecommendationAgent`、Provider、
+`RecommendationContextBuilder` 和现有 ToolRegistry 权限，不增加第二套推荐 Loop：
+
+```text
+RecommendationEpisodeRunner
+    → BookRecommendationAgent
+        → RecommendationContextBuilder
+        → Provider
+        → 推荐工具 allowlist
+    → RecommendationAgentReply        # phase、候选集和选择等专用状态
+    → Companion Projection            # Session、Episode、统一 Message
+```
+
+推荐任务状态仍由 `RecommendationAgentSession` 保存，不把 `phase`、已观察候选和当前展示批次
+塞进通用 RunState。困难 Handoff 保留旧对话，并以旧消息总数作为新
+`context_start_index`，因此同一 Session 的初次推荐和再次推荐会得到不同、稳定的 Episode id。
+当前 Runner 仍是无持久化迁移入口，尚未替换正式推荐 HTTP 和旧 Repository。
+
 建议按以下顺序迁移：
 
 1. 已完成：新增本文 Contract，但不替换现有接口；
-2. 已完成：将当前一次推荐纯投影为一个 Recommendation Episode；
-3. 把 Session 的长期状态与推荐任务状态分开；
-4. 让选书完成只结束 Episode，长期 Session 保持 active；
+2. 已完成：将当前一次推荐投影为包含统一 Message 的 Recommendation Episode；
+3. 已完成（运行边界）：Session 长期状态与推荐任务状态分别投影；
+4. 已完成（运行边界）：选书完成只结束 Episode，长期 Session 保持 active；
 5. 已完成：增加手动阅读后端入口、`search_previous_chapters` 和
    `search_vocabulary_history`；
 6. 已完成（手动阅读）：接入 Episode 结束摘要；
@@ -429,7 +449,7 @@ Conversation Memory 保存来源消息范围、revision、状态和 token usage�
 1. 已完成：Session、Episode、Memory Contract 与纯状态测试；
 2. 已完成：共享的此前完整章节 Scope、Scope Builder、两个检索结果 Contract 和词汇历史
    Repository Port；
-3. 已完成：现有 Recommendation Session 到 Episode 的无副作用兼容投影；
+3. 已完成：现有 Recommendation Session 到 Episode/Message 的无副作用兼容投影；
 4. 已完成：此前章节摘要与原文段落检索 Application Service；
 5. 已完成：精确词项的词汇历史 SQLite Adapter 与 Application Service；
 6. 已完成：两个阅读历史 Tool Adapter、共享 Registry 注册与可信 Context 注入；
@@ -439,8 +459,11 @@ Conversation Memory 保存来源消息范围、revision、状态和 token usage�
 10. 已完成：Session / Episode / 原始消息 / Memory SQLite migration；
 11. 已完成：结束本轮、被动摘要、同 Session 新 Episode 和记忆回注；
 12. 已完成：保留近期完整用户轮次的自动 Rolling Compaction。
+13. 已完成：无持久化 `RecommendationEpisodeRunner`，复用现有推荐 Loop 与工具权限，并为
+    onboarding / difficulty handoff 生成不同 Episode 边界。
 
-下一批适合用真实英文小说验证摘要质量、压缩触发延迟和跨 Episode 延续效果，再决定是否增加
-后台摘要重试、原始会话历史检索，以及把旧选书 Session 迁入统一长期会话。
+下一批适合让统一的 Companion Coordinator 按 Episode 类型选择专用 Runner，并先以双写或
+迁移测试接入推荐持久化；正式推荐 HTTP 与前端入口在关系表 round-trip 稳定后再切换。真实英文
+小说的摘要质量、压缩延迟和跨 Episode 延续仍按验证计划延后执行。
 具体场景、故障注入方法、证据字段和验收标准已经记录在
 [`READING_COMPANION_VALIDATION_PLAN.md`](READING_COMPANION_VALIDATION_PLAN.md)，当前暂缓执行。

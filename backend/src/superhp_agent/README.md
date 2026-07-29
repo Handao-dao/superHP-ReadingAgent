@@ -201,6 +201,12 @@ Recommendation HTTP Router
 
 Loop 不依赖 Storage，Repository 也不调用模型；Runner 只是围绕一次 Agent 运行组织加载与保存。
 
+迁移期的 `RecommendationEpisodeRunner` 不替换上述正式入口。它复用同一个推荐 Agent 与
+ToolRegistry，把一次推荐结果同时保留为专用 `RecommendationAgentReply`，并投影为通用
+Companion Session、Episode 和原生 Message。初次推荐使用 `onboarding` Episode；困难 Handoff
+保留旧对话，以新的 `context_start_index` 开启独立 `difficulty_alert` Episode。这样统一的是
+生命周期与未来存储边界，不会把推荐 phase、候选集等专用状态塞入手动阅读 RunState。
+
 ### Reading Companion Agent
 
 `agents/reading_companion.py` 实现手动阅读场景的有限 Loop，使用独立的

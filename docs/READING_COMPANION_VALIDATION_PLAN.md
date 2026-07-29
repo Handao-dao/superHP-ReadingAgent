@@ -119,11 +119,12 @@
 | 工具内部异常 | 让检索 Service 抛出异常 | 返回 `tool_unavailable`，不暴露内部异常文案 |
 | 工具循环过多 | 连续请求工具 | 达到上限后暂停并给出可继续的用户提示 |
 | Episode 摘要失败 | 让摘要 Provider 最终失败 | Episode 仍关闭，Memory 为 `failed`，原始消息完整 |
+| Episode 摘要期间进程中断 | pending 落盘并关闭 Episode 后中断 | 重试复用同一 revision 和已关闭 Transcript，不创建重复摘要 |
 | Rolling Summary 失败 | 在达到阈值后使摘要失败 | Context 游标不移动，继续使用原始消息 |
 | SQLite 写入失败 | 使用只读文件或受控锁冲突 | 不向前端报告已经保存成功；记录明确存储错误 |
 | 后端请求中断 | 在模型调用或保存附近停止进程 | 重启后至少恢复已经落盘的最后一个安全检查点 |
 | 浏览器保存过期 id | 删除数据库中的对应 Session | GET 返回 404，前端清理无效 id |
-| 长期 Session 暂无 active Episode | 结束本轮后刷新页面 | GET 返回 409，前端保留长期 Session id |
+| 长期 Session 暂无 active Episode | 结束本轮后刷新页面 | GET 返回 200 Envelope、`active_episode=null`，前端保留长期 Session id |
 
 存储写入失败和进程中断具有破坏性，只能使用一次性数据库进行。
 
@@ -176,4 +177,3 @@
 - 每个修复对应的自动回归测试；
 - 根据真实 usage 校准后的 Compaction Policy；
 - 是否需要后台摘要重试、`search_conversation_history` 和统一推荐 Session 的结论。
-

@@ -179,6 +179,12 @@ def test_closing_episode_clears_only_the_active_pointer(tmp_path):
 
         assert repository.load_active_run("session-1") is None
         assert repository.load_session("session-1").active_episode_id == ""
+        latest = repository.load_latest_run("session-1")
+        assert latest is not None
+        assert latest.episode.state is (
+            ReadingCompanionEpisodeState.COMPLETED
+        )
+        assert latest.conversation == state.conversation
         row = db.database.connection.execute(
             """
             SELECT state, end_reason, end_message_id

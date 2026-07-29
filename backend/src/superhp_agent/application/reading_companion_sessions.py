@@ -18,6 +18,7 @@ from superhp_agent.application.manual_reading_companion import (
 from superhp_agent.contracts import (
     ConversationMemory,
     ConversationMemoryKind,
+    ConversationMemoryStatus,
     ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeState,
     ReadingCompanionReply,
@@ -128,32 +129,58 @@ class ReadingCompanionSessionCoordinator:
             ReadingCompanionEpisodeEndReason.USER_ENDED
         ),
     ) -> ConversationMemory:
-        """Close one Episode, then generate its passive durable summary."""
+        """Close one Episode and idempotently finish its passive summary."""
         async with self._lock:
-            state = self._require_state(session_id)
-            final_state = (
-                ReadingCompanionEpisodeState.ABANDONED
-                if reason
-                in {
-                    ReadingCompanionEpisodeEndReason.USER_ABANDONED,
-                    ReadingCompanionEpisodeEndReason.UNRECOVERABLE_ERROR,
-                }
-                else ReadingCompanionEpisodeState.COMPLETED
+            session = self.load_session(session_id)
+            if session is None:
+                raise ReadingCompanionSessionNotFoundError(
+                    f"reading companion session not found: {session_id}"
+                )
+            state = (
+                self.repository.load_active_run(session.session_id)
+                if session.active_episode_id
+                else self.repository.load_latest_run(session.session_id)
             )
-            episode = replace(
-                state.episode,
-                state=final_state,
-                end_message_id=state.conversation[-1].message_id,
-                end_reason=reason,
-                ended_at=datetime.now().astimezone().isoformat(
-                    timespec="seconds"
-                ),
-            )
-            self.repository.close_active_episode(episode)
-            return await self.memory_generator.generate(
-                state,
+            if state is None:
+                raise ReadingCompanionSessionNotFoundError(
+                    "reading companion session has no episode: "
+                    f"{session.session_id}"
+                )
+            memory = self.memory_generator.latest_for_episode(
+                session.session_id,
+                state.episode.episode_id,
                 kind=ConversationMemoryKind.EPISODE_SUMMARY,
             )
+            if memory is None:
+                # Pending is durable before the Episode pointer is cleared.
+                # A retry can therefore resume either side of a process exit.
+                memory = self.memory_generator.prepare(
+                    state,
+                    kind=ConversationMemoryKind.EPISODE_SUMMARY,
+                )
+            if session.active_episode_id:
+                final_state = (
+                    ReadingCompanionEpisodeState.ABANDONED
+                    if reason
+                    in {
+                        ReadingCompanionEpisodeEndReason.USER_ABANDONED,
+                        ReadingCompanionEpisodeEndReason.UNRECOVERABLE_ERROR,
+                    }
+                    else ReadingCompanionEpisodeState.COMPLETED
+                )
+                episode = replace(
+                    state.episode,
+                    state=final_state,
+                    end_message_id=state.conversation[-1].message_id,
+                    end_reason=reason,
+                    ended_at=datetime.now().astimezone().isoformat(
+                        timespec="seconds"
+                    ),
+                )
+                self.repository.close_active_episode(episode)
+            if memory.status is not ConversationMemoryStatus.PENDING:
+                return memory
+            return await self.memory_generator.finish(state, memory)
 
     def load(self, session_id: str) -> ReadingCompanionRunState | None:
         """Restore immutable active state for a public read projection."""

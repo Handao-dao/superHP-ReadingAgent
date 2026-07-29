@@ -247,6 +247,30 @@ class ReadingCompanionRunState:
 
 
 @dataclass(frozen=True)
+class ReadingCompanionTranscript:
+    """Immutable raw messages for either an active or closed Episode."""
+
+    episode: ReadingCompanionEpisode
+    conversation: tuple[ReadingCompanionMessage, ...]
+
+    def __post_init__(self) -> None:
+        if not self.conversation:
+            raise ValueError("companion transcript requires messages")
+        if self.conversation[0].message_id != self.episode.start_message_id:
+            raise ValueError(
+                "first companion message must match episode start_message_id"
+            )
+        if any(
+            message.session_id != self.episode.session_id
+            or message.episode_id != self.episode.episode_id
+            for message in self.conversation
+        ):
+            raise ValueError(
+                "companion messages must belong to the transcript episode"
+            )
+
+
+@dataclass(frozen=True)
 class ReadingCompanionObservation:
     """Trusted facts and transcript supplied to one companion model turn."""
 

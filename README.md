@@ -155,7 +155,8 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 
 当前选书 Agent 支持初次推荐、自然语言调整候选和阅读困难后的再次推荐；手动阅读场景也已建立
 可独立测试的后端阅读伴侣 Loop，可以直接回答，或在可信已读范围内回查此前章节和生词语境。
-长期 Session 由有明确触发点的 Episode 组成，推荐完成只结束当前 Episode。
+长期 Session 由有明确触发点的 Episode 组成，推荐完成只结束当前 Episode。每条原始 Message
+只属于一个 Episode；长期记忆以 Episode 摘要为基本来源，而不是反复压缩整段 Session。
 
 上下文采用两种互补的治理机制：Episode 明确结束后生成被动摘要，当前 Episode 的未压缩消息
 超过安全阈值时生成 Rolling Compaction；两者均保留原始消息。阅读问答通过受进度限制的两个
@@ -167,9 +168,10 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 
 当前手动阅读 Loop 已接入最小 HTTP 和阅读页对话抽屉，可创建、继续、重试和读取对话。
 Session、Episode 与包含 Tool Call / Tool Result 的原始消息已写入 SQLite；后端重启后可从
-同一数据库恢复并继续。用户显式结束一轮时会先关闭 Episode，再生成带来源范围的被动摘要；
-同一 Session 的下一轮会读取既有摘要。长对话压缩成功后只移动模型 Context 游标，压缩失败则
-继续使用原始消息，不影响对话。
+同一数据库恢复并继续。用户显式结束一轮时会先持久化带来源范围的 pending 摘要任务，再关闭
+Episode；即使摘要调用期间中断，重复请求也能从已关闭 Episode 的原始 Transcript 继续完成。
+同一 Session 的下一轮会按需读取既有 Episode 摘要。长对话压缩成功后只移动模型 Context
+游标，压缩失败则继续使用原始消息，不影响对话。
 
 ## 项目结构
 

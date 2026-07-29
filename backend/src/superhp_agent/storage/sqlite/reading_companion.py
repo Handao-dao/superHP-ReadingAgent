@@ -22,6 +22,7 @@ from superhp_agent.contracts import (
     ReadingCompanionRunState,
     ReadingCompanionSession,
     ReadingCompanionSessionStatus,
+    ReadingCompanionTranscript,
 )
 from superhp_agent.storage.database import SQLiteDatabase
 
@@ -131,6 +132,53 @@ class SQLiteReadingCompanionRepository:
         session = self.load_session(session_id)
         if session is None or not session.active_episode_id:
             return None
+        state = self._load_run(
+            session.session_id,
+            session.active_episode_id,
+        )
+        if state is None:
+            raise ValueError(
+                "companion session points to a missing active episode"
+            )
+        if not isinstance(state, ReadingCompanionRunState):
+            raise ValueError(
+                "companion session points to a non-active episode"
+            )
+        return state
+
+    def load_latest_run(
+        self,
+        session_id: str,
+    ) -> ReadingCompanionTranscript | None:
+        """Restore the newest Episode, including one already closed."""
+        session_id = _require_id(session_id, "session_id")
+        with self.database.lock:
+            row = self.database.connection.execute(
+                """
+                SELECT episode_id
+                FROM reading_companion_episodes
+                WHERE session_id = ?
+                ORDER BY created_at DESC, rowid DESC
+                LIMIT 1
+                """,
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        state = self._load_run(session_id, str(row["episode_id"]))
+        if state is None:
+            return None
+        return ReadingCompanionTranscript(
+            episode=state.episode,
+            conversation=state.conversation,
+        )
+
+    def _load_run(
+        self,
+        session_id: str,
+        episode_id: str,
+    ) -> ReadingCompanionRunState | ReadingCompanionTranscript | None:
+        """Load one immutable Episode aggregate by stable identity."""
         with self.database.lock:
             episode_row = self.database.connection.execute(
                 """
@@ -138,7 +186,7 @@ class SQLiteReadingCompanionRepository:
                 FROM reading_companion_episodes
                 WHERE episode_id = ? AND session_id = ?
                 """,
-                (session.active_episode_id, session.session_id),
+                (episode_id, session_id),
             ).fetchone()
             message_rows = self.database.connection.execute(
                 """
@@ -147,16 +195,17 @@ class SQLiteReadingCompanionRepository:
                 WHERE episode_id = ?
                 ORDER BY sequence_no ASC
                 """,
-                (session.active_episode_id,),
+                (episode_id,),
             ).fetchall()
         if episode_row is None:
-            raise ValueError(
-                "companion session points to a missing active episode"
-            )
+            return None
         episode = _episode_from_row(episode_row)
         if episode.state is not ReadingCompanionEpisodeState.ACTIVE:
-            raise ValueError(
-                "companion session points to a non-active episode"
+            return ReadingCompanionTranscript(
+                episode=episode,
+                conversation=tuple(
+                    _message_from_row(row) for row in message_rows
+                ),
             )
         return ReadingCompanionRunState(
             episode=episode,

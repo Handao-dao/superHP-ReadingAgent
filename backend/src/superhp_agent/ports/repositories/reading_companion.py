@@ -11,6 +11,7 @@ from superhp_agent.contracts import (
     ReadingCompanionEpisode,
     ReadingCompanionRunState,
     ReadingCompanionSession,
+    ReadingCompanionTranscript,
 )
 
 
@@ -31,6 +32,11 @@ class ReadingCompanionRepository(Protocol):
         self,
         session_id: str,
     ) -> ReadingCompanionRunState | None: ...
+
+    def load_latest_run(
+        self,
+        session_id: str,
+    ) -> ReadingCompanionTranscript | None: ...
 
     def close_active_episode(
         self,

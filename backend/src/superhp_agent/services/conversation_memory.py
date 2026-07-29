@@ -19,6 +19,7 @@ from superhp_agent.contracts import (
     ConversationMemoryStatus,
     ReadingCompanionMessage,
     ReadingCompanionRunState,
+    ReadingCompanionTranscript,
 )
 from superhp_agent.ports import LLMProvider
 from superhp_agent.ports.repositories import ConversationMemoryRepository
@@ -108,6 +109,27 @@ class ConversationMemoryGenerator:
         prior_summary: str = "",
     ) -> ConversationMemory:
         """Persist pending state, summarize, then persist the final outcome."""
+        pending = self.prepare(
+            state,
+            kind=kind,
+            source_start_index=source_start_index,
+            source_end_index=source_end_index,
+        )
+        return await self.finish(
+            state,
+            pending,
+            prior_summary=prior_summary,
+        )
+
+    def prepare(
+        self,
+        state: ReadingCompanionRunState | ReadingCompanionTranscript,
+        *,
+        kind: ConversationMemoryKind,
+        source_start_index: int = 0,
+        source_end_index: int | None = None,
+    ) -> ConversationMemory:
+        """Persist an auditable pending revision before external work."""
         messages = state.conversation
         resolved_end = (
             len(messages) - 1
@@ -130,13 +152,24 @@ class ConversationMemoryGenerator:
             source_end_message_id=source_messages[-1].message_id,
         )
         self.repository.save(pending)
-        pending = self._stored_memory(pending)
+        return self._stored_memory(pending)
 
+    async def finish(
+        self,
+        state: ReadingCompanionRunState | ReadingCompanionTranscript,
+        pending: ConversationMemory,
+        *,
+        prior_summary: str = "",
+    ) -> ConversationMemory:
+        """Finish a previously persisted revision; completed rows are stable."""
+        if pending.status is not ConversationMemoryStatus.PENDING:
+            return pending
+        source_messages = _memory_source_messages(state, pending)
         try:
             response = await self.provider_factory().chat_with_retry(
                 _summary_messages(
                     source_messages,
-                    kind=kind,
+                    kind=pending.kind,
                     prior_summary=prior_summary,
                 )
             )
@@ -172,6 +205,24 @@ class ConversationMemoryGenerator:
         )
         self.repository.save(memory)
         return memory
+
+    def latest_for_episode(
+        self,
+        session_id: str,
+        episode_id: str,
+        *,
+        kind: ConversationMemoryKind,
+    ) -> ConversationMemory | None:
+        """Return the latest revision tied to one exact Episode."""
+        matches = [
+            memory
+            for memory in self.repository.list_for_session(
+                session_id,
+                kind=kind,
+            )
+            if memory.episode_id == episode_id
+        ]
+        return matches[-1] if matches else None
 
     def context_for_session(
         self,
@@ -317,6 +368,32 @@ def _summary_messages(
             ),
         },
     ]
+
+
+def _memory_source_messages(
+    state: ReadingCompanionRunState | ReadingCompanionTranscript,
+    memory: ConversationMemory,
+) -> tuple[ReadingCompanionMessage, ...]:
+    """Resolve persisted provenance against the immutable raw transcript."""
+    if (
+        memory.session_id != state.episode.session_id
+        or memory.episode_id != state.episode.episode_id
+    ):
+        raise ValueError("conversation memory does not belong to this episode")
+    indexes = {
+        message.message_id: index
+        for index, message in enumerate(state.conversation)
+    }
+    try:
+        start = indexes[memory.source_start_message_id]
+        end = indexes[memory.source_end_message_id]
+    except KeyError as exc:
+        raise ValueError(
+            "conversation memory source message is missing"
+        ) from exc
+    if start > end:
+        raise ValueError("conversation memory source range is reversed")
+    return state.conversation[start : end + 1]
 
 
 def _usage_value(

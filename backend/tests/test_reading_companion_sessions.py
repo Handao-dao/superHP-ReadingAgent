@@ -79,10 +79,10 @@ class FakeManualRunner:
 class FakeMemoryGenerator:
     def __init__(self):
         self.calls = []
+        self.memories = {}
 
-    async def generate(self, state, *, kind):
-        self.calls.append((state, kind))
-        return ConversationMemory(
+    def prepare(self, state, *, kind):
+        memory = ConversationMemory(
             memory_id=f"{state.episode.session_id}-memory",
             session_id=state.episode.session_id,
             episode_id=state.episode.episode_id,
@@ -90,9 +90,23 @@ class FakeMemoryGenerator:
             revision=1,
             source_start_message_id=state.conversation[0].message_id,
             source_end_message_id=state.conversation[-1].message_id,
+        )
+        self.memories[(state.episode.episode_id, kind)] = memory
+        return memory
+
+    def latest_for_episode(self, session_id, episode_id, *, kind):
+        del session_id
+        return self.memories.get((episode_id, kind))
+
+    async def finish(self, state, memory):
+        self.calls.append((state, memory.kind))
+        ready = replace(
+            memory,
             status=ConversationMemoryStatus.READY,
             summary="本轮摘要",
         )
+        self.memories[(state.episode.episode_id, memory.kind)] = ready
+        return ready
 
     def context_for_session(self, session_id, *, episode_id=""):
         del episode_id
@@ -340,6 +354,49 @@ async def test_coordinator_closes_episode_before_generating_summary(
             ).active_episode_id
             == ""
         )
+        assert len(memory_generator.calls) == 1
+    finally:
+        db.close()
+
+
+@pytest.mark.asyncio
+async def test_end_resumes_pending_episode_summary_after_interruption(
+    tmp_path,
+):
+    class InterruptingMemoryGenerator(FakeMemoryGenerator):
+        def __init__(self):
+            super().__init__()
+            self.interrupted = False
+
+        async def finish(self, state, memory):
+            if not self.interrupted:
+                self.interrupted = True
+                raise RuntimeError("summary interrupted")
+            return await super().finish(state, memory)
+
+    db = AppDB(tmp_path / "app.db")
+    try:
+        memory_generator = InterruptingMemoryGenerator()
+        coordinator = _coordinator(
+            FakeManualRunner(),
+            db,
+            memory_generator,
+        )
+        await coordinator.start(
+            session_id="session-1",
+            current_unit_id="unit-2",
+            user_message="问题",
+        )
+
+        with pytest.raises(RuntimeError, match="summary interrupted"):
+            await coordinator.end("session-1")
+
+        assert coordinator.load("session-1") is None
+        recovered = await coordinator.end("session-1")
+        repeated = await coordinator.end("session-1")
+
+        assert recovered.status is ConversationMemoryStatus.READY
+        assert repeated == recovered
         assert len(memory_generator.calls) == 1
     finally:
         db.close()

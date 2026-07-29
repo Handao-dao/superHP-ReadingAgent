@@ -239,10 +239,12 @@ SQLite 将 `reading_companion_sessions`、`reading_companion_episodes` 和
 `reading_companion_messages` 分表保存。已有 Message 不允许改写；`conversation_memories`
 单独保存带来源消息范围和修订号的 pending / ready / failed 摘要，不替代原始 transcript。
 `ConversationMemoryGenerator` 在模型调用前保存 pending 记录，成功或失败后推进为 ready /
-failed。显式结束一轮时，协调器先关闭 Episode 再生成被动摘要；同一长期 Session 可以继续创建
-新 Episode，并把最近的 ready 摘要作为 metadata 注入。当前 Episode 超过 36 条未压缩消息或
-约 3 万字符时触发 Rolling Compaction，至少保留最近 12 条附近、从 user 消息开始的完整对话。
-只有摘要成功才更新 `context_start_index`；失败时原始 Context 和对话能力保持不变。
+failed。显式结束一轮时，协调器先保存 pending revision，再关闭 Episode 并生成被动摘要；
+中断后的重复结束请求通过不可变 `ReadingCompanionTranscript` 恢复同一 revision，不会伪装成
+active RunState 或创建重复摘要。同一长期 Session 可以继续创建新 Episode，并把最近的 ready
+摘要作为低信任 metadata 注入。当前 Episode 超过 36 条未压缩消息或约 3 万字符时触发 Rolling
+Compaction，至少保留最近 12 条附近、从 user 消息开始的完整对话。只有摘要成功才更新
+`context_start_index`；失败时原始 Context 和对话能力保持不变。
 
 ```text
 POST /api/reading-companion/sessions

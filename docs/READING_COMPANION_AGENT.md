@@ -193,6 +193,11 @@ ReadingCompanionRunState(
     tool_call_count: int,
     error_code: str,
 )
+
+ReadingCompanionTranscript(
+    episode: ReadingCompanionEpisode,
+    conversation: tuple[ReadingCompanionMessage, ...],
+)
 ```
 
 关键约束：
@@ -210,6 +215,10 @@ user/assistant/tool 消息与有限 Observe → Tool → Observe 循环。HTTP �
 `ReadingCompanionSessionCoordinator` 组织加载、保存、结束和压缩，后端重启后可恢复 active
 Episode。
 
+`ReadingCompanionTranscript` 则表示 active 或已结束 Episode 的不可变原始消息投影。它没有
+工具预算和可继续运行状态，只用于摘要恢复、审计和后续历史检索，避免把已关闭 Episode 伪装成
+仍可进入 Agent Loop 的 RunState。
+
 ## 6. 两种压缩机制
 
 两种机制共用摘要器和 Memory Repository，但触发目的不同。
@@ -219,11 +228,11 @@ Episode。
 当 Episode 明确结束后，系统生成 `episode_summary`：
 
 ```text
-Episode 完整结束
-    ↓
-保存 end_message_id 和 end_reason
+确定本轮原始 Message 范围
     ↓
 创建 pending Memory
+    ↓
+保存 end_message_id 和 end_reason，关闭 Episode
     ↓
 生成结构化摘要
     ↓
@@ -242,8 +251,10 @@ Memory 变为 ready
 ## 关联图书与章节
 ```
 
-摘要调用失败不能阻塞用户关闭对话。当前实现会把 Memory 从 `pending` 推进到 `failed`，原始
-消息仍然有效；后台重试仍是后续能力。
+pending revision 在清除 active Episode 指针之前持久化。若进程在关闭之后、摘要完成之前中断，
+重复结束请求会加载最近一个已关闭 Episode 的 `ReadingCompanionTranscript`，继续完成同一条
+pending revision；若该 revision 已经 ready / failed，则直接返回既有结果。Provider 的正常失败
+会把 Memory 从 `pending` 推进到 `failed`，原始消息始终有效。
 
 ### 6.2 当前 Episode 过长时自动压缩
 
@@ -295,8 +306,10 @@ Context 接近阈值
 摘要属于历史数据，不是高权限指令。注入时必须标记为 Memory，不能让旧用户文本经过摘要后获得
 System Instruction 的优先级。
 
-初期 Episode 数量较少时可以注入全部摘要；数量增长后，只选取与当前图书、触发原因和用户问题
-相关的摘要。
+Episode Summary 是长期记忆的最小来源单元，但不意味着未来每轮都要注入所有摘要。初期
+Episode 数量较少时可以注入最近摘要；数量增长后，先按当前图书、触发原因和用户问题选择相关
+Episode，再从这些摘要构建 Session 级工作记忆。这样更高层压缩只处理 Episode 摘要，不必反复
+扫描全部原始 Message。
 
 ## 8. 原始历史回溯
 

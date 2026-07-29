@@ -60,13 +60,16 @@ export function useReadingCompanion() {
     loading.value = true
     errorMessage.value = ''
     try {
-      return rememberSession(await getReadingCompanionSession(sessionId))
-    } catch (error) {
-      if (error.status === 409) {
-        // The long-lived Session exists but currently has no active Episode.
+      const envelope = await getReadingCompanionSession(sessionId)
+      storedSessionId.value = envelope.session_id
+      localStorage.setItem(SESSION_STORAGE_KEY, envelope.session_id)
+      if (!envelope.active_episode) {
+        // An idle Session is normal between two bounded Episodes.
         clearActiveEpisode()
         return null
       }
+      return rememberSession(envelope.active_episode)
+    } catch (error) {
       if (error.status === 404) {
         clearSession()
         return null

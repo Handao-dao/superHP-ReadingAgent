@@ -97,28 +97,7 @@ class ReadingCompanionSessionCoordinator:
                         active_episode_id=state.episode.episode_id,
                     )
                 )
-            # Preserve the user request even if the process stops during the
-            # first provider call.
-            self.repository.save_run_state(state)
-            persisted_state = self.repository.load_active_run(
-                resolved_session_id
-            )
-            if persisted_state is None:
-                raise RuntimeError(
-                    "failed to restore the newly persisted companion run"
-                )
-            state = persisted_state
-            reply = await self.runner.run(
-                state,
-                conversation_memory=(
-                    self.memory_generator.context_for_session(
-                        resolved_session_id,
-                        episode_id=state.episode.episode_id,
-                    )
-                ),
-            )
-            self.repository.save_run_state(reply.state)
-            return await self._compact_reply(reply)
+            return await self._run_and_checkpoint(state)
 
     async def resume(
         self,
@@ -129,34 +108,17 @@ class ReadingCompanionSessionCoordinator:
         """Append one user message and run the next bounded Agent turn."""
         async with self._lock:
             state = self._require_state(session_id)
-            reply = await self.runner.run(
+            state = self.runner.continue_with_user_message(
                 state,
-                user_message=user_message,
-                conversation_memory=(
-                    self.memory_generator.context_for_session(
-                        state.episode.session_id,
-                        episode_id=state.episode.episode_id,
-                    )
-                ),
+                user_message,
             )
-            self.repository.save_run_state(reply.state)
-            return await self._compact_reply(reply)
+            return await self._run_and_checkpoint(state)
 
     async def retry(self, session_id: str) -> ReadingCompanionReply:
         """Retry a recoverable pending model turn without adding a message."""
         async with self._lock:
             state = self._require_state(session_id)
-            reply = await self.runner.run(
-                state,
-                conversation_memory=(
-                    self.memory_generator.context_for_session(
-                        state.episode.session_id,
-                        episode_id=state.episode.episode_id,
-                    )
-                ),
-            )
-            self.repository.save_run_state(reply.state)
-            return await self._compact_reply(reply)
+            return await self._run_and_checkpoint(state)
 
     async def end(
         self,
@@ -200,12 +162,15 @@ class ReadingCompanionSessionCoordinator:
             return None
         return self.repository.load_active_run(normalized)
 
-    def session_exists(self, session_id: str) -> bool:
-        """Distinguish an idle long-lived Session from an unknown id."""
+    def load_session(
+        self,
+        session_id: str,
+    ) -> ReadingCompanionSession | None:
+        """Restore the long-lived Session even when no Episode is active."""
         normalized = str(session_id or "").strip()
-        return bool(
-            normalized and self.repository.load_session(normalized) is not None
-        )
+        if not normalized:
+            return None
+        return self.repository.load_session(normalized)
 
     def _require_state(self, session_id: str) -> ReadingCompanionRunState:
         normalized = str(session_id or "").strip()
@@ -232,3 +197,28 @@ class ReadingCompanionSessionCoordinator:
             return reply
         self.repository.save_run_state(compacted)
         return replace(reply, state=compacted)
+
+    async def _run_and_checkpoint(
+        self,
+        state: ReadingCompanionRunState,
+    ) -> ReadingCompanionReply:
+        """Persist the pending user turn before entering the model Loop."""
+        self.repository.save_run_state(state)
+        persisted = self.repository.load_active_run(
+            state.episode.session_id
+        )
+        if persisted is None:
+            raise RuntimeError(
+                "failed to restore the persisted companion turn"
+            )
+        reply = await self.runner.run(
+            persisted,
+            conversation_memory=(
+                self.memory_generator.context_for_session(
+                    persisted.episode.session_id,
+                    episode_id=persisted.episode.episode_id,
+                )
+            ),
+        )
+        self.repository.save_run_state(reply.state)
+        return await self._compact_reply(reply)

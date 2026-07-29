@@ -26,6 +26,7 @@ from superhp_agent.storage import AppDB
 class FakeManualRunner:
     def __init__(self):
         self.started = []
+        self.continued = []
         self.run_calls = []
 
     def start(
@@ -51,19 +52,22 @@ class FakeManualRunner:
             episode_id=f"{session_id}-episode-{len(self.started)}",
         )
 
-    async def run(
-        self,
-        state,
-        *,
-        user_message=None,
-        conversation_memory="",
-    ):
-        self.run_calls.append((state, user_message, conversation_memory))
+    def continue_with_user_message(self, state, user_message):
+        self.continued.append((state, user_message))
+        conversation = (
+            *state.conversation,
+            _message(state, "user", user_message, len(state.conversation)),
+        )
+        return replace(
+            state,
+            conversation=conversation,
+            tool_call_count=0,
+            error_code="",
+        )
+
+    async def run(self, state, *, conversation_memory=""):
+        self.run_calls.append((state, conversation_memory))
         conversation = list(state.conversation)
-        if user_message is not None:
-            conversation.append(
-                _message(state, "user", user_message, len(conversation))
-            )
         content = f"回答 {len(self.run_calls)}"
         conversation.append(
             _message(state, "assistant", content, len(conversation))
@@ -172,13 +176,16 @@ async def test_coordinator_starts_resumes_retries_and_loads_state(tmp_path):
         assert runner.started == [
             ("session-1", "unit-2", "他以前出现过吗？", "Mr. Gray")
         ]
-        assert [call[1] for call in runner.run_calls] == [
-            None,
-            "第一次是在哪里？",
-            None,
+        assert [item[1] for item in runner.continued] == [
+            "第一次是在哪里？"
         ]
         assert all(
-            call[2] == "session-1 的既有摘要"
+            call[0].conversation[-1].role
+            is ReadingCompanionMessageRole.USER
+            for call in runner.run_calls[:2]
+        )
+        assert all(
+            call[1] == "session-1 的既有摘要"
             for call in runner.run_calls
         )
         assert started.state.conversation[-1].content == "回答 1"
@@ -217,6 +224,44 @@ async def test_coordinator_restores_state_in_a_new_process_boundary(tmp_path):
         assert resumed.state.conversation[-2].content == "继续"
     finally:
         second_db.close()
+
+
+@pytest.mark.asyncio
+async def test_resume_persists_pending_user_turn_before_model_failure(
+    tmp_path,
+):
+    class FailingRunner(FakeManualRunner):
+        async def run(self, state, *, conversation_memory=""):
+            if len(state.conversation) > 2:
+                raise RuntimeError("provider interrupted")
+            return await super().run(
+                state,
+                conversation_memory=conversation_memory,
+            )
+
+    db = AppDB(tmp_path / "app.db")
+    try:
+        coordinator = _coordinator(FailingRunner(), db)
+        await coordinator.start(
+            session_id="session-1",
+            current_unit_id="unit-2",
+            user_message="第一问",
+        )
+
+        with pytest.raises(RuntimeError, match="provider interrupted"):
+            await coordinator.resume(
+                "session-1",
+                user_message="不能丢失的续问",
+            )
+
+        persisted = coordinator.load("session-1")
+        assert persisted is not None
+        assert persisted.conversation[-1].role is (
+            ReadingCompanionMessageRole.USER
+        )
+        assert persisted.conversation[-1].content == "不能丢失的续问"
+    finally:
+        db.close()
 
 
 @pytest.mark.asyncio

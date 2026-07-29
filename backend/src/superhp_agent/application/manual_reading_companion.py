@@ -8,9 +8,13 @@ persist the transcript, expose HTTP, close Episodes, or generate memories.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from uuid import uuid4
 
-from superhp_agent.agents.reading_companion import ReadingCompanionAgent
+from superhp_agent.agents.reading_companion import (
+    ReadingCompanionAgent,
+    ReadingCompanionStateError,
+)
 from superhp_agent.application.previous_reading_scope import (
     PreviousReadingScopeBuilder,
 )
@@ -94,10 +98,9 @@ class ManualReadingCompanionRunner:
         self,
         state: ReadingCompanionRunState,
         *,
-        user_message: str | None = None,
         conversation_memory: str = "",
     ) -> ReadingCompanionReply:
-        """Rebuild trusted scope, then advance the companion Loop."""
+        """Rebuild trusted scope, then run one already-persisted user turn."""
         episode = state.episode
         if episode.trigger is not ReadingCompanionEpisodeTrigger.MANUAL_READING:
             raise ManualReadingCompanionError(
@@ -133,8 +136,39 @@ class ManualReadingCompanionRunner:
             book_title=unit.book_title,
             chapter_title=unit.chapter_title,
             chapter_no=unit.chapter_no,
-            user_message=user_message,
             conversation_memory=conversation_memory,
+        )
+
+    def continue_with_user_message(
+        self,
+        state: ReadingCompanionRunState,
+        user_message: str,
+    ) -> ReadingCompanionRunState:
+        """Create the next pending user turn without calling the model."""
+        if (
+            not isinstance(user_message, str)
+            or not user_message.strip()
+        ):
+            raise ValueError("user_message is required")
+        if (
+            state.conversation[-1].role
+            is not ReadingCompanionMessageRole.ASSISTANT
+        ):
+            raise ReadingCompanionStateError(
+                "cannot append a user message before the prior turn completes"
+            )
+        message = ReadingCompanionMessage(
+            message_id=uuid4().hex,
+            session_id=state.episode.session_id,
+            episode_id=state.episode.episode_id,
+            role=ReadingCompanionMessageRole.USER,
+            content=user_message.strip(),
+        )
+        return replace(
+            state,
+            conversation=(*state.conversation, message),
+            tool_call_count=0,
+            error_code="",
         )
 
     def _find_unit(self, unit_id: str) -> ReadingUnit:

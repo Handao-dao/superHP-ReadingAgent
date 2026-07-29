@@ -10,6 +10,7 @@ from superhp_agent.contracts import (
     ConversationMemoryStatus,
     ReadingCompanionEpisodeEndReason,
     ReadingCompanionEpisodeTrigger,
+    ReadingCompanionSessionStatus,
     ReadingDifficultyState,
     ReadingPreference,
     RecommendationAgentPhase,
@@ -272,6 +273,14 @@ class ReadingCompanionSessionResponse(BaseModel):
     selected_text: str = ""
     messages: list[ReadingCompanionChatMessage]
     error_code: str = ""
+
+
+class ReadingCompanionSessionEnvelope(BaseModel):
+    """Long-lived Session plus its optional active Episode projection."""
+
+    session_id: str
+    status: ReadingCompanionSessionStatus
+    active_episode: ReadingCompanionSessionResponse | None = None
 
 
 class ReadingCompanionMemoryResponse(BaseModel):

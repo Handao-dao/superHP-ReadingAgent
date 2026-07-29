@@ -25,6 +25,7 @@ from superhp_agent.schemas import (
     EndReadingCompanionEpisodeRequest,
     ReadingCompanionChatMessage,
     ReadingCompanionMemoryResponse,
+    ReadingCompanionSessionEnvelope,
     ReadingCompanionSessionResponse,
 )
 
@@ -142,26 +143,25 @@ def create_reading_companion_router(
 
     @router.get(
         "/sessions/{session_id}",
-        response_model=ReadingCompanionSessionResponse,
+        response_model=ReadingCompanionSessionEnvelope,
     )
     async def get_session(
         session_id: str,
-    ) -> ReadingCompanionSessionResponse:
-        state = coordinator.load(session_id)
-        if state is None:
-            if coordinator.session_exists(session_id):
-                raise HTTPException(
-                    status_code=409,
-                    detail=(
-                        "reading companion session has no active episode: "
-                        f"{session_id}"
-                    ),
-                )
+    ) -> ReadingCompanionSessionEnvelope:
+        session = coordinator.load_session(session_id)
+        if session is None:
             raise HTTPException(
                 status_code=404,
                 detail=f"reading companion session not found: {session_id}",
             )
-        return _public_session(state)
+        state = coordinator.load(session.session_id)
+        return ReadingCompanionSessionEnvelope(
+            session_id=session.session_id,
+            status=session.status,
+            active_episode=(
+                _public_session(state) if state is not None else None
+            ),
+        )
 
     return router
 

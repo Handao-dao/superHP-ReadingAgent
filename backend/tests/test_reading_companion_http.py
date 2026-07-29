@@ -20,6 +20,7 @@ from superhp_agent.contracts import (
     ReadingCompanionMessageRole,
     ReadingCompanionReply,
     ReadingCompanionRunState,
+    ReadingCompanionSession,
 )
 from superhp_agent.transport.reading_companion_http import (
     create_reading_companion_router,
@@ -29,6 +30,7 @@ from superhp_agent.transport.reading_companion_http import (
 class FakeCoordinator:
     def __init__(self):
         self.states = {}
+        self.sessions = {}
         self.started = None
         self.resumed = None
         self.retried = None
@@ -44,6 +46,10 @@ class FakeCoordinator:
         self.started = kwargs
         state = _public_state(kwargs.get("session_id") or "generated-session")
         self.states[state.episode.session_id] = state
+        self.sessions[state.episode.session_id] = ReadingCompanionSession(
+            session_id=state.episode.session_id,
+            active_episode_id=state.episode.episode_id,
+        )
         return ReadingCompanionReply(state=state, message="回答")
 
     async def resume(self, session_id, *, user_message):
@@ -67,6 +73,9 @@ class FakeCoordinator:
             raise self.end_error
         self.ended = (session_id, reason)
         state = self.states.pop(session_id)
+        self.sessions[session_id] = ReadingCompanionSession(
+            session_id=session_id,
+        )
         return ConversationMemory(
             memory_id="memory-1",
             session_id=session_id,
@@ -82,8 +91,8 @@ class FakeCoordinator:
     def load(self, session_id):
         return self.states.get(session_id)
 
-    def session_exists(self, session_id):
-        return session_id in self.states
+    def load_session(self, session_id):
+        return self.sessions.get(session_id)
 
 
 def _public_state(session_id="session-1", *, final_answer="回答"):
@@ -187,6 +196,10 @@ def test_create_session_trims_input_and_hides_internal_tool_messages():
 def test_continue_retry_and_get_session():
     client, coordinator = _client()
     coordinator.states["session-1"] = _public_state()
+    coordinator.sessions["session-1"] = ReadingCompanionSession(
+        session_id="session-1",
+        active_episode_id="session-1-episode",
+    )
 
     continued = client.post(
         "/api/reading-companion/sessions/session-1/messages",
@@ -205,12 +218,38 @@ def test_continue_retry_and_get_session():
     assert retried.status_code == 200
     assert coordinator.retried == "session-1"
     assert restored.status_code == 200
-    assert restored.json()["messages"][-1]["content"] == "重试成功"
+    assert restored.json()["status"] == "active"
+    assert (
+        restored.json()["active_episode"]["messages"][-1]["content"]
+        == "重试成功"
+    )
+
+
+def test_get_idle_long_lived_session_returns_normal_envelope():
+    client, coordinator = _client()
+    coordinator.sessions["session-1"] = ReadingCompanionSession(
+        session_id="session-1",
+    )
+
+    restored = client.get(
+        "/api/reading-companion/sessions/session-1"
+    )
+
+    assert restored.status_code == 200
+    assert restored.json() == {
+        "session_id": "session-1",
+        "status": "active",
+        "active_episode": None,
+    }
 
 
 def test_end_episode_returns_passive_summary():
     client, coordinator = _client()
     coordinator.states["session-1"] = _public_state()
+    coordinator.sessions["session-1"] = ReadingCompanionSession(
+        session_id="session-1",
+        active_episode_id="session-1-episode",
+    )
 
     response = client.post(
         "/api/reading-companion/sessions/session-1/end",

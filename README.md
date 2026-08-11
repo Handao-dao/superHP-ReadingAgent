@@ -204,22 +204,27 @@ superhp_Agent/
 
 ## 快速开始
 
-需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和 Node.js。
+需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和 Node.js。推荐直接在项目根目录运行
+一键启动脚本：它会检查端口与依赖，缺少 `.venv` 或 `node_modules` 时自动安装，等待服务就绪后
+打开浏览器；默认强制使用稳定阅读模式。
 
 ```powershell
-# 后端依赖与配置
-cd backend
-uv sync --extra dev
-Copy-Item .env.example .env
-# 在 .env 中填写 LLM_API_KEY，并按需修改模型配置
-
-# 前端依赖
-cd ../frontend
-npm install
-
-# 从项目根目录同时启动前后端
-cd ..
+# 从项目根目录执行
 .\start-dev.ps1
+```
+
+第一次运行时，脚本会在缺少 `backend/.env` 时从模板创建它。要生成译注，仍需在其中填写
+`LLM_API_KEY`。常用诊断与启动参数：
+
+```powershell
+# 只检查环境、依赖和默认端口，不启动服务
+.\start-dev.ps1 -ValidateOnly
+
+# 使用其他端口，且不自动打开浏览器
+.\start-dev.ps1 -BackendPort 8100 -FrontendPort 5174 -NoBrowser
+
+# 仅用于以后重新测试当前隐藏的实验性 Agent 功能
+.\start-dev.ps1 -EnableAgentFeatures
 ```
 
 默认地址：

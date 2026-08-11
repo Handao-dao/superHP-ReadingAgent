@@ -12,6 +12,7 @@ import ReadingTextPage from './components/reading/ReadingTextPage.vue'
 import ReadingTopbar from './components/reading/ReadingTopbar.vue'
 import RecommendationChatPage from './components/recommendation/RecommendationChatPage.vue'
 import { continueReadingAfterDifficulty } from './api/readingDifficultyPrompts'
+import { AGENT_FEATURES_ENABLED } from './config/features'
 import { useBookmarks } from './composables/useBookmarks'
 import { useReaderPagination } from './composables/useReaderPagination'
 import { useReadingCatalog } from './composables/useReadingCatalog'
@@ -23,6 +24,7 @@ import { getReadingRenderer } from './renderers'
 
 const PAPER_THEME_STORAGE_KEY = 'superhp_reader_theme'
 const PAPER_THEMES = new Set(['parchment', 'white-paper'])
+const agentFeaturesEnabled = AGENT_FEATURES_ENABLED
 
 const completeCardsRequestedFor = ref('')
 const companionOpen = ref(false)
@@ -188,7 +190,8 @@ const isGenerating = computed(() => {
   return ['generating_annotation', 'model_retrying'].includes(loadStatus.value)
 })
 const companionAvailable = computed(() => (
-  activeView.value === 'reader'
+  agentFeaturesEnabled
+  && activeView.value === 'reader'
   && Boolean(activeChapter.value?.meta?.id)
   && !isGenerating.value
 ))
@@ -275,7 +278,7 @@ const topbarSubtitle = computed(() => {
 const topbarPageLabel = computed(() => {
   if (activeView.value === 'recommendation') return '选书对话'
   if (activeView.value === 'vocabulary') return '生词表'
-  if (difficultyAlert.value) return '阅读反馈'
+  if (agentFeaturesEnabled && difficultyAlert.value) return '阅读反馈'
   return pageLabel.value
 })
 
@@ -373,6 +376,7 @@ function toggleSidebar() {
 }
 
 function handleViewChange(view) {
+  if (!agentFeaturesEnabled && view === 'recommendation') return
   activeView.value = view
   companionOpen.value = false
   closeLookupBubble()
@@ -433,6 +437,7 @@ async function handleContinueAfterDifficulty() {
 }
 
 async function handleChangeBookAfterDifficulty() {
+  if (!agentFeaturesEnabled) return
   const meta = currentMeta.value
   if (!meta) return
   activeView.value = 'recommendation'
@@ -523,8 +528,10 @@ onMounted(() => {
   loadLibraryCatalog()
   loadChapterList()
   loadBookmarks()
-  restoreRecommendationSession()
-  restoreCompanionSession()
+  if (agentFeaturesEnabled) {
+    restoreRecommendationSession()
+    restoreCompanionSession()
+  }
   connect()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', recalculatePages)
@@ -567,6 +574,7 @@ onBeforeUnmount(() => {
     <section class="reader-shell">
       <ReadingTopbar
         :active-view="activeView"
+        :agent-features-enabled="agentFeaturesEnabled"
         :book-title="topbarTitle"
         :chapter-label="topbarSubtitle"
         :companion-available="companionAvailable"
@@ -619,7 +627,7 @@ onBeforeUnmount(() => {
 
         <template v-else-if="readerMode === 'guidance'">
           <ReadingDifficultyPrompt
-            v-if="difficultyAlert"
+            v-if="agentFeaturesEnabled && difficultyAlert"
             :alert="difficultyAlert"
             :busy="busy || recommendationLoading || difficultyPromptBusy"
             :current-meta="currentMeta"
@@ -699,7 +707,10 @@ onBeforeUnmount(() => {
         </article>
       </section>
 
-      <section v-else class="recommendation-stage">
+      <section
+        v-else-if="agentFeaturesEnabled && activeView === 'recommendation'"
+        class="recommendation-stage"
+      >
         <article class="paper-surface recommendation-surface">
           <RecommendationChatPage
             :can-retry="recommendationCanRetry"
@@ -724,6 +735,7 @@ onBeforeUnmount(() => {
     </section>
 
     <ReadingCompanionDrawer
+      v-if="agentFeaturesEnabled"
       :can-retry="companionCanRetry"
       :can-send="companionCanSend"
       :context-changed="companionContextChanged"

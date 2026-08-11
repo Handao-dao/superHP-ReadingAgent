@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     annotation_max_chunk_words: int = 1000
     annotation_max_concurrency: int = Field(default=8, ge=1, le=32)
     default_profile_id: str = "english_novel"
+    # Experimental conversational Agent surfaces remain dormant by default.
+    # Annotation, lookup, vocabulary, bookmarks, and reading progress do not
+    # depend on this switch.
+    agent_features_enabled: bool = False
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_ROOT / ".env",

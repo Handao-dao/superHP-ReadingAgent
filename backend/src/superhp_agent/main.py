@@ -91,19 +91,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(
-    create_recommendation_router(
-        recommendation_agent_runner,
-        book_difficulty_catalog,
-        container.difficulty_handoff_builder,
-        reading_difficulty_prompt_coordinator,
+if settings.agent_features_enabled:
+    app.include_router(
+        create_recommendation_router(
+            recommendation_agent_runner,
+            book_difficulty_catalog,
+            container.difficulty_handoff_builder,
+            reading_difficulty_prompt_coordinator,
+        )
     )
-)
-app.include_router(
-    create_reading_companion_router(
-        container.reading_companion_session_coordinator
+    app.include_router(
+        create_reading_companion_router(
+            container.reading_companion_session_coordinator
+        )
     )
-)
 
 
 def _unit_meta(unit: ReadingUnit) -> ReadingUnitMeta:
@@ -369,9 +370,11 @@ async def get_reading_difficulty(book_id: str):
 @app.get(
     "/api/reading-difficulty-prompts/{book_id}",
     response_model=ReadingDifficultyPromptResponse,
+    include_in_schema=settings.agent_features_enabled,
 )
 async def get_reading_difficulty_prompt(book_id: str):
     """Restore the latest persisted prompt state for one book."""
+    _require_agent_features()
     prompt = reading_difficulty_prompt_repository.get(book_id)
     if prompt is None:
         raise HTTPException(
@@ -384,9 +387,11 @@ async def get_reading_difficulty_prompt(book_id: str):
 @app.post(
     "/api/reading-difficulty-prompts/{book_id}/continue",
     response_model=ReadingDifficultyPromptResponse,
+    include_in_schema=settings.agent_features_enabled,
 )
 async def continue_after_difficulty_prompt(book_id: str):
     """Persist explicit consent to continue and begin prompt cooldown."""
+    _require_agent_features()
     try:
         prompt = reading_difficulty_prompt_coordinator.choose_continue(
             book_id
@@ -409,6 +414,12 @@ def _difficulty_prompt_response(prompt) -> ReadingDifficultyPromptResponse:
             **asdict(prompt.evidence)
         ),
     )
+
+
+def _require_agent_features() -> None:
+    """Keep dormant Agent endpoints indistinguishable from absent routes."""
+    if not settings.agent_features_enabled:
+        raise HTTPException(status_code=404, detail="not found")
 
 
 @app.post("/api/vocabulary", response_model=AddVocabularyResponse)
@@ -491,9 +502,15 @@ async def reading_socket(websocket: WebSocket):
         reading_support_repository=reading_support_repository,
         reading_difficulty_prompt_repository=(
             reading_difficulty_prompt_repository
+            if settings.agent_features_enabled
+            else None
         ),
         chapter_checkpoint_recorder=chapter_checkpoint_recorder,
-        reading_adaptation_evaluator=reading_adaptation_evaluator,
+        reading_adaptation_evaluator=(
+            reading_adaptation_evaluator
+            if settings.agent_features_enabled
+            else None
+        ),
         selection_policy_resolver=library_catalog,
         profile_registry=profile_registry,
     )

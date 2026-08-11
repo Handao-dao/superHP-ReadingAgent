@@ -1,5 +1,9 @@
 # 阅读伴侣 Agent：长期会话、情景记忆与阅读检索设计
 
+> 当前状态：实现保留但默认停用。产品已暂时回退到稳定的辅助译注、查词和阅读流程；后端不注册
+> 推荐/阅读伴侣 Router，前端不展示对应入口，也不会在章节结束时触发困难推荐。本文件作为未来
+> 采用成熟 Agent Harness 时的领域设计参考。
+
 > 状态：手动阅读场景的后端 Loop、ContextBuilder、两类检索工具、最小 HTTP 和前端对话抽屉
 > 已经可运行；长期 Session / Episode / Message、被动摘要与 Rolling Compaction 已接入。
 > 当前选书会话仍使用 `RecommendationAgentSession`，尚未统一迁移到阅读伴侣存储。

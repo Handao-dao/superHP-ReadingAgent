@@ -2,6 +2,10 @@
 
 本文面向维护 `superhp_agent` 源码的开发者，记录当前后端的职责边界、目标依赖方向和渐进重构顺序。已有功能、接口与模块细节见项目级 [`BACKEND_OVERVIEW.md`](../../BACKEND_OVERVIEW.md)；本文重点回答“代码应该属于哪一层”和“后续怎样重构而不破坏现有行为”。
 
+> 运行状态：对话 Agent、选书 Agent 和困难推荐目前由 `AGENT_FEATURES_ENABLED=false` 默认停用。
+> 推荐与阅读伴侣 Router 不注册，阅读 WebSocket 也不注入困难提示能力；译注、查词、生词、书签、
+> 进度和原有阅读 Action Cards 不受影响。源码保留用于后续 Harness 方案评估。
+
 ## 当前定位
 
 当前后端是一个确定性的 guided reading runtime，而不是自主循环式 Agent：

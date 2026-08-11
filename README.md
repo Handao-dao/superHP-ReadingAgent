@@ -153,6 +153,10 @@ Profile 切换后，迟到响应不会覆盖当前界面。Renderer 只负责文
 
 ## 阅读伴侣 Agent 规划
 
+> 当前产品默认关闭全部对话 Agent、选书 Agent 和困难推荐入口，先回到稳定的译注、查词、生词、
+> 书签与阅读进度主链路。相关实现和设计文档暂时保留，不参与默认运行；只有前后端同时显式启用
+> `AGENT_FEATURES_ENABLED=true` 与 `VITE_AGENT_FEATURES_ENABLED=true` 时才用于后续实验。
+
 当前选书 Agent 支持初次推荐、自然语言调整候选和阅读困难后的再次推荐；手动阅读场景也已建立
 可独立测试的后端阅读伴侣 Loop，可以直接回答，或在可信已读范围内回查此前章节和生词语境。
 长期 Session 由有明确触发点的 Episode 组成，推荐完成只结束当前 Episode。每条原始 Message

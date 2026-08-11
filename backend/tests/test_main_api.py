@@ -197,9 +197,10 @@ def test_profile_api_lists_builtin_profiles():
     assert languages == {"english_novel": "en", "classical_chinese": "lzh"}
 
 
-def test_agent_http_routes_are_registered():
+def test_agent_http_routes_are_hidden_by_default():
     paths = {route.path for route in main.app.routes}
 
+    assert main.settings.agent_features_enabled is False
     assert {
         "/api/recommendations/sessions",
         "/api/recommendations/difficulty-handoffs",
@@ -209,9 +210,18 @@ def test_agent_http_routes_are_registered():
         "/api/reading-companion/sessions/{session_id}/messages",
         "/api/reading-companion/sessions/{session_id}/retry",
         "/api/reading-companion/sessions/{session_id}",
-        "/api/reading-difficulty-prompts/{book_id}",
-        "/api/reading-difficulty-prompts/{book_id}/continue",
-    } <= paths
+    }.isdisjoint(paths)
+
+    with TestClient(main.app) as client:
+        recommendation = client.post("/api/recommendations/sessions")
+        companion = client.post("/api/reading-companion/sessions")
+        prompt = client.get("/api/reading-difficulty-prompts/book-1")
+        openapi_paths = client.get("/openapi.json").json()["paths"]
+
+    assert recommendation.status_code == 404
+    assert companion.status_code == 404
+    assert prompt.status_code == 404
+    assert "/api/reading-difficulty-prompts/{book_id}" not in openapi_paths
 
 
 def test_reading_difficulty_api_exposes_read_only_observation(monkeypatch):
@@ -261,6 +271,7 @@ def test_difficulty_prompt_api_restores_and_records_continue_choice(
         "reading_difficulty_prompt_coordinator",
         coordinator,
     )
+    monkeypatch.setattr(main.settings, "agent_features_enabled", True)
 
     with TestClient(main.app) as client:
         pending = client.get(

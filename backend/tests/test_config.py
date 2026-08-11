@@ -15,6 +15,7 @@ def test_settings_defaults_are_independent_of_cwd(monkeypatch, tmp_path):
     assert settings.corpus_dir == PROJECT_ROOT / "corpus"
     assert settings.annotation_max_chunk_words == 1000
     assert settings.annotation_max_concurrency == 8
+    assert settings.agent_features_enabled is False
 
 
 def test_settings_resolves_relative_env_paths_from_backend_root(monkeypatch, tmp_path):
@@ -38,6 +39,14 @@ def test_settings_keeps_absolute_paths(monkeypatch, tmp_path):
 
     assert settings.data_dir == data_dir
     assert settings.corpus_dir == corpus_dir
+
+
+def test_agent_features_require_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("AGENT_FEATURES_ENABLED", "true")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.agent_features_enabled is True
 
 
 @pytest.mark.parametrize("value", ["0", "33"])

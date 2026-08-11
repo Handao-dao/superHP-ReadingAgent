@@ -5,6 +5,7 @@
 <script setup>
 defineProps({
   activeView: { type: String, default: 'reader' },
+  agentFeaturesEnabled: { type: Boolean, default: false },
   bookTitle: { type: String, default: '' },
   chapterLabel: { type: String, default: '' },
   companionAvailable: { type: Boolean, default: false },
@@ -38,9 +39,15 @@ defineEmits([
       <div class="view-switch" aria-label="页面切换">
         <button type="button" :class="{ 'is-active': activeView === 'reader' }" @click="$emit('view-change', 'reader')">阅读</button>
         <button type="button" :class="{ 'is-active': activeView === 'vocabulary' }" @click="$emit('view-change', 'vocabulary')">生词表</button>
-        <button type="button" :class="{ 'is-active': activeView === 'recommendation' }" @click="$emit('view-change', 'recommendation')">选书</button>
+        <button
+          v-if="agentFeaturesEnabled"
+          type="button"
+          :class="{ 'is-active': activeView === 'recommendation' }"
+          @click="$emit('view-change', 'recommendation')"
+        >选书</button>
       </div>
       <button
+        v-if="agentFeaturesEnabled"
         type="button"
         class="companion-trigger"
         :class="{ 'is-active': companionOpen }"

@@ -209,7 +209,10 @@ superhp_Agent/
 打开浏览器；默认强制使用稳定阅读模式。
 
 ```powershell
-# 从项目根目录执行
+# 推荐：双击 start-dev.cmd，或从终端执行
+.\start-dev.cmd
+
+# PowerShell 中也可以直接运行原脚本
 .\start-dev.ps1
 ```
 
